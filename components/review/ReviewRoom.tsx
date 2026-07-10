@@ -19,6 +19,7 @@ export default function ReviewRoom({
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [comment, setComment] = useState<Record<string, string>>({});
+  const [reviewer, setReviewer] = useState("Merchant Banker Reviewer");
 
   const act = async (sectionId: string, action: string, c?: string) => {
     setBusy(sectionId + action);
@@ -26,7 +27,7 @@ export default function ReviewRoom({
       await fetch("/api/review", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sectionId, action, comment: c, user: "Anita Deshmukh", role: "MERCHANT_BANKER" }),
+        body: JSON.stringify({ sectionId, action, comment: c, user: reviewer || "Merchant Banker Reviewer", role: "MERCHANT_BANKER" }),
       });
       router.refresh();
     } finally { setBusy(null); }
@@ -39,6 +40,16 @@ export default function ReviewRoom({
 
   return (
     <div className="space-y-5">
+      <Card className="p-3 flex flex-wrap items-center gap-3">
+        <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">Reviewing as</span>
+        <span className="px-2 py-0.5 text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 rounded-full">Merchant Banker</span>
+        <input
+          className="px-3 py-1.5 text-sm border border-slate-300 rounded-lg w-64"
+          value={reviewer}
+          onChange={(e) => setReviewer(e.target.value)}
+          placeholder="Reviewer name (shown in comments & audit trail)"
+        />
+      </Card>
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <StatCard label="Draft Completion" value={`${draftCompletion}%`} />
         <StatCard label="Awaiting Review" value={pending} tone={pending ? "warn" : "default"} />

@@ -102,7 +102,8 @@ function amountNear(text: string, keywords: string[]): number | null {
       if (m[1] || m[3]) return v; // currency/unit-bearing amount wins ("Rs. 6.5 crore" over "6 machines")
       if (bare === null) bare = v;
     }
-    if (bare !== null) return bare;
+    // bare numbers ("Top 3 customers…") are only trusted on lines that talk money
+    if (bare !== null && /crore|lakh|lacs|₹|\brs\b/i.test(l)) return bare;
   }
   // fallback: window scan for keyword shortly BEFORE the amount
   const re = new RegExp(AMOUNT, "gi");

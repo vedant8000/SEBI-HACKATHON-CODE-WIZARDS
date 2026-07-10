@@ -1,18 +1,15 @@
 import Link from "next/link";
 import {
-  FolderOpen, Gauge, Grid3x3, FileText, UserCheck, GitBranch, Calculator,
-  MessageSquareWarning, Landmark, ShieldCheck, Upload, Sparkles,
+  FolderOpen, FileSearch, FileText, UserCheck, AlertTriangle,
+  Landmark, ShieldCheck, Upload, Sparkles,
 } from "lucide-react";
 
 const features = [
-  { icon: FolderOpen, title: "Smart Data Room", desc: "Upload real documents — PDFs are read, classified and mined for entities, numbers and inconsistencies. Scanned copies? Correct extracted values manually." },
-  { icon: Gauge, title: "IPO Readiness Score", desc: "A weighted 0–100 score computed from eligibility, financial health, disclosure completeness, governance and document quality rules." },
-  { icon: Grid3x3, title: "Compliance Heatmap", desc: "All 25 offer-document sections with completion %, missing inputs, inconsistencies and risk levels." },
-  { icon: FileText, title: "Source-Linked Draft Generator", desc: "A section-wise draft where every factual statement traces back to the uploaded document it came from — or honestly says the source is missing." },
-  { icon: UserCheck, title: "Merchant Banker Review", desc: "A dedicated review room with approvals, change requests, comments and a full audit trail. AI prepares; professionals decide." },
-  { icon: GitBranch, title: "RPT Risk Engine", desc: "Detects promoter-group entities, related-party loans and fund-diversion patterns — with suggested disclosures and required evidence." },
-  { icon: Calculator, title: "Financial Consistency Checker", desc: "Cross-checks audited revenue vs GST turnover, receivables vs revenue growth, interest vs borrowings, PAT vs reserves." },
-  { icon: MessageSquareWarning, title: "Exchange Observation Simulator", desc: "Predicts the questions exchanges and merchant bankers are likely to ask — before they ask them." },
+  { icon: FolderOpen, title: "Upload documents", desc: "Bring whatever you have — PDFs are read page-by-page, classified and processed automatically. Scanned copies fall back to manual entry." },
+  { icon: FileSearch, title: "Extract source-backed facts", desc: "Every figure carries its source document, page number and confidence — and you can accept, correct or reject anything." },
+  { icon: AlertTriangle, title: "Detect gaps & inconsistencies", desc: "A deterministic rule engine finds missing data, cross-document mismatches, related-party risks and the questions reviewers will ask." },
+  { icon: FileText, title: "Generate draft IPO sections", desc: "Real SME offer-document sections drafted only from your facts — missing data becomes explicit placeholders, never invented text." },
+  { icon: UserCheck, title: "Merchant banker review", desc: "A dedicated review room with approvals, change requests, comments and an audit trail. AI prepares; professionals decide." },
 ];
 
 export default function Landing() {
@@ -29,7 +26,7 @@ export default function Landing() {
             <div className="text-[10px] text-slate-500 leading-tight">AI Disclosure Intelligence for SME IPOs</div>
           </div>
         </div>
-        <Link href="/dashboard" className="px-4 py-2 bg-slate-900 text-white text-sm rounded-lg hover:bg-slate-700">
+        <Link href="/onboarding" className="px-4 py-2 bg-slate-900 text-white text-sm rounded-lg hover:bg-slate-700">
           Open Platform
         </Link>
       </nav>
@@ -84,7 +81,7 @@ export default function Landing() {
       {/* Features */}
       <section className="max-w-6xl mx-auto px-6 py-16">
         <h2 className="text-xl font-semibold text-slate-900 text-center mb-10">What&apos;s inside</h2>
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-5">
           {features.map(({ icon: Icon, title, desc }) => (
             <div key={title} className="border border-slate-200 rounded-xl p-5 hover:shadow-md transition-shadow">
               <span className="w-9 h-9 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center mb-3">

@@ -30,3 +30,14 @@ body {
     display: none !important;
   }
 }
+
+/* Rendered draft-section content (markdown subset from the AI) */
+.prose-draft p { margin: 0.55rem 0; }
+.prose-draft .md-h { font-weight: 600; color: #1e3a5f; margin: 0.9rem 0 0.25rem; font-size: 0.85rem; }
+.prose-draft ul.md-ul { list-style: disc; padding-left: 1.25rem; margin: 0.5rem 0; }
+.prose-draft ul.md-ul li { margin: 0.15rem 0; }
+.prose-draft table.md-table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 12.5px; }
+.prose-draft table.md-table th { background: #f1f5f9; font-weight: 600; text-align: left; }
+.prose-draft table.md-table th, .prose-draft table.md-table td { border: 1px solid #e2e8f0; padding: 5px 9px; }
+.prose-draft table.md-table tr:nth-child(even) td { background: #f8fafc; }
+.prose-draft table.md-table th.num, .prose-draft table.md-table td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }

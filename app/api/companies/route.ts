@@ -16,6 +16,35 @@ export async function POST(req: NextRequest) {
     saveDb(db);
     return NextResponse.json({ ok: true });
   }
+  // Guard against duplicates: re-submitting the same company name updates the
+  // existing record (and its evidence) instead of creating a parallel company.
+  const existing = db.companies.find(
+    (c) => c.name.trim().toLowerCase() === String(body.name ?? "").trim().toLowerCase()
+  );
+  if (existing) {
+    Object.assign(existing, {
+      cin: body.cin ?? existing.cin,
+      industry: body.industry ?? existing.industry,
+      city: body.city ?? existing.city,
+      state: body.state ?? existing.state,
+      yearOfIncorporation: body.yearOfIncorporation ? Number(body.yearOfIncorporation) : existing.yearOfIncorporation,
+      promoterName: body.promoterName ?? existing.promoterName,
+      promoterExperienceYears: body.promoterExperienceYears ? Number(body.promoterExperienceYears) : existing.promoterExperienceYears,
+      issueSizeCr: body.issueSizeCr ? Number(body.issueSizeCr) : existing.issueSizeCr,
+      freshIssueCr: body.freshIssueCr ? Number(body.freshIssueCr) : existing.freshIssueCr,
+      ofsCr: body.ofsCr !== undefined ? Number(body.ofsCr) : existing.ofsCr,
+      proposedListingExchange: body.proposedListingExchange ?? existing.proposedListingExchange,
+      financials: body.financials?.length ? body.financials : existing.financials,
+      top3CustomerPct: body.top3CustomerPct ? Number(body.top3CustomerPct) : existing.top3CustomerPct,
+      independentDirectorsAppointed: body.independentDirectorsAppointed ?? existing.independentDirectorsAppointed,
+      auditCommitteeConstituted: body.auditCommitteeConstituted ?? existing.auditCommitteeConstituted,
+      pendingLitigationNote: body.pendingLitigationNote ?? existing.pendingLitigationNote,
+    });
+    db.activeCompanyId = existing.id;
+    logAudit(db, existing.id, existing.promoterName || "Promoter", "Company profile updated (deduplicated)", "", existing.name);
+    saveDb(db);
+    return NextResponse.json({ company: existing });
+  }
   const company: Company = {
     id: uid("co"),
     name: body.name ?? "",

@@ -116,7 +116,7 @@ export const SME_PROSPECTUS_BLUEPRINT: BlueprintSection[] = [
     "List the top 5 company-specific risks derived by the rule engine."),
 
   // ── Section III — Risk Factors ───────────────────────────────────────────
-  S("r-1", "Internal Risk Factors", "Section III — Risk Factors",
+  S("r-1", "Risk Factors", "Section III — Risk Factors",
     "Company-specific operational and financial risks.",
     ["revenueCr"], ["receivablesCr", "borrowingsCr", "rptPurchasesCr", "profile:top3CustomerPct"], ["Financial Statements"],
     "Derive each risk from the issuer's own numbers (concentration %, receivable days, leverage, RPTs, litigation). Never use generic template risks without company data.",
@@ -298,10 +298,28 @@ export const SME_PROSPECTUS_BLUEPRINT: BlueprintSection[] = [
     "Standard declaration in prescribed form, naming signatories, marked draft-for-review."),
 ];
 
-/** Sections the on-screen generator prioritises (most substantive content). */
+/**
+ * The 16 demo-flow sections, in real SME offer-document order.
+ * These are what "Generate Draft" produces on screen; the full 51-section
+ * blueprint remains available for the export skeleton and coverage matrix.
+ */
 export const PRIORITY_SECTION_IDS = [
-  "s-1", "s-4", "s-5", "s-6", "r-1", "i-1", "i-3", "i-4", "i-5", "i-6",
-  "c-2", "c-5", "c-7", "c-9", "f-2", "f-3", "f-4", "f-6", "l-1", "l-2", "o-1", "o-2",
+  "fm-1", // Cover Page
+  "s-1",  // Summary of Offer Document
+  "r-1",  // Risk Factors
+  "i-1",  // The Issue
+  "i-4",  // Capital Structure
+  "i-5",  // Objects of the Issue
+  "i-6",  // Basis for Issue Price
+  "c-2",  // Our Business
+  "c-5",  // Our Management
+  "c-7",  // Our Promoters and Promoter Group
+  "s-4",  // Summary of Financial Information
+  "c-9",  // Related Party Transactions
+  "l-1",  // Outstanding Litigation and Material Developments
+  "l-2",  // Government and Other Statutory Approvals
+  "o-1",  // Material Contracts and Documents for Inspection
+  "o-2",  // Declaration
 ];
 
 export function blueprintSection(sectionId: string): BlueprintSection | undefined {

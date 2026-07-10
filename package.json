@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:e2e": "node scripts/seed-test-company.mjs"
+    "test:e2e": "node scripts/seed-test-company.mjs",
+    "test:site": "node scripts/full-site-test.mjs"
   },
   "dependencies": {
     "lucide-react": "^1.24.0",

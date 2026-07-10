@@ -20,7 +20,7 @@ export default function MerchantReviewPage() {
       <PageHeader
         title="Merchant Banker Review Room"
         subtitle="IPO Saathi prepares; professionals decide. The merchant banker reviews each AI-drafted section against its source evidence, approves or requests changes, and every action lands in the audit trail."
-        actions={<a href="/api/export/evidence" className="px-3 py-1.5 text-xs font-medium border border-slate-300 rounded-lg hover:bg-slate-50">Export Evidence Pack (JSON)</a>}
+        actions={<a href="/api/export/review-pack" target="_blank" className="px-3 py-1.5 text-xs font-medium bg-slate-800 text-white rounded-lg hover:bg-slate-700">Export Review Pack</a>}
       />
       <ReviewRoom
         company={{ name: company.name, id: company.id }}

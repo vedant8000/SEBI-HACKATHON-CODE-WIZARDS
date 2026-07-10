@@ -32,8 +32,21 @@ export const FACT_META: Record<string, { label: string; sections: string[] }> = 
   boardResolutionDate: { label: "Board resolution (IPO) date", sections: ["General Information", "Other Regulatory and Statutory Disclosures"] },
 };
 
-const factLabel = (key: string) =>
-  FACT_META[key]?.label ?? key.replace(/([A-Z])/g, " $1").replace(/^./, (c) => c.toUpperCase());
+/** "aggregateTaxableTurnoverCr" → "Aggregate Taxable Turnover (₹ Cr)" */
+export function humanizeLabel(s: string): string {
+  if (!s) return s;
+  if (/\s/.test(s) && !/[a-z][A-Z]/.test(s)) return s; // already human text
+  let t = s.replace(/Cr$/, "").replace(/[_-]+/g, " ")
+    .replace(/([a-z\d])([A-Z])/g, "$1 $2")
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2")
+    .trim();
+  t = t.charAt(0).toUpperCase() + t.slice(1);
+  // keep well-known acronyms upper-case
+  t = t.replace(/\b(cin|gst|gstin|pan|din|ipo|rpt|ebitda|pat|cfo|fy|moa|aoa|kyc)\b/gi, (m) => m.toUpperCase());
+  return /Cr$/.test(s) ? `${t} (₹ Cr)` : t;
+}
+
+const factLabel = (key: string) => FACT_META[key]?.label ?? humanizeLabel(key);
 const factSections = (key: string) => FACT_META[key]?.sections ?? [];
 
 // ── Chunking ────────────────────────────────────────────────────────────────
@@ -131,7 +144,7 @@ export async function aiFactsForDocument(
           documentId: doc.id,
           chunkId: chunk.id,
           factKey: f.factKey,
-          factLabel: f.factLabel || factLabel(f.factKey),
+          factLabel: FACT_META[f.factKey]?.label ?? humanizeLabel(f.factLabel || f.factKey),
           factValue: f.factValue,
           normalizedValue: f.normalizedValue || f.factValue,
           financialYear: f.financialYear ?? null,
@@ -169,12 +182,20 @@ export function mergeFacts(facts: ExtractedFact[]): ExtractedFact[] {
   return [...byKey.values()];
 }
 
-/** Same fact key + FY reported differently by different documents → conflict. */
+/**
+ * Same fact key + FY reported differently by different documents → conflict.
+ * Only keys with exactly ONE true value per company/year are compared —
+ * identifiers that legitimately repeat across people/entities (DIN, PAN,
+ * entity names, dates) would produce false conflicts and are excluded.
+ */
+const CONFLICTABLE = (key: string) =>
+  /Cr$/.test(key) || ["cin", "gstin", "authorisedCapital", "top3CustomerPct", "employeeCount"].includes(key);
+
 export function detectConflicts(companyId: string, facts: ExtractedFact[]): FactConflict[] {
   const conflicts: FactConflict[] = [];
   const groups = new Map<string, ExtractedFact[]>();
   for (const f of facts) {
-    if (f.status === "REJECTED") continue;
+    if (f.status === "REJECTED" || !CONFLICTABLE(f.factKey)) continue;
     const k = `${f.factKey}|${f.financialYear ?? ""}`;
     groups.set(k, [...(groups.get(k) ?? []), f]);
   }

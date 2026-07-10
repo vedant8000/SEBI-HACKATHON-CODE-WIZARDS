@@ -5,8 +5,19 @@ import { useState } from "react";
 import { FileCheck, Loader2, MessageSquarePlus, Pencil, RefreshCw, Sparkles } from "lucide-react";
 import type { DraftSection } from "@/lib/types";
 import { AiNote, Card, ReviewStatusBadge } from "@/components/shared/ui";
+import { mdToHtml } from "@/lib/utils/markdown";
 
-export default function DraftViewer({ sections, aiReady = true }: { sections: DraftSection[]; aiReady?: boolean }) {
+export interface SectionMeta {
+  purpose: string;
+  coveragePct: number;
+  missingFacts: string[];
+  questions: { q: string; severity: string }[];
+  professionalReviewRequired: boolean;
+}
+
+export default function DraftViewer({
+  sections, aiReady = true, meta = {},
+}: { sections: DraftSection[]; aiReady?: boolean; meta?: Record<string, SectionMeta> }) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
@@ -75,7 +86,8 @@ export default function DraftViewer({ sections, aiReady = true }: { sections: Dr
               </button>
             </div>
           </div>
-          <div className="px-5 py-4">
+          <div className="px-5 py-4 grid gap-5 xl:grid-cols-[1fr_290px]">
+            <div>
             <AiNote confidence={s.confidence} />
             {editing === s.id ? (
               <div className="mt-3">
@@ -88,7 +100,8 @@ export default function DraftViewer({ sections, aiReady = true }: { sections: Dr
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-slate-700 whitespace-pre-wrap mt-3 leading-relaxed">{s.generatedText}</p>
+              <div className="prose-draft text-sm text-slate-700 mt-3 leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: mdToHtml(s.generatedText) }} />
             )}
 
             {s.sources.length > 0 && (
@@ -129,9 +142,45 @@ export default function DraftViewer({ sections, aiReady = true }: { sections: Dr
                 ))}
               </div>
             )}
+            </div>
+            <SectionInsightPanel m={meta[s.sectionName]} status={s.status} />
           </div>
         </Card>
       ))}
     </div>
+  );
+}
+
+/** Right-side panel: plain-English summary, missing items, likely reviewer questions. */
+function SectionInsightPanel({ m, status }: { m?: SectionMeta; status: string }) {
+  if (!m) return null;
+  return (
+    <aside className="space-y-3 xl:border-l xl:border-slate-100 xl:pl-5">
+      <div>
+        <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1">In plain English</div>
+        <p className="text-[12.5px] text-slate-600 leading-relaxed">
+          This section tells investors {m.purpose.charAt(0).toLowerCase() + m.purpose.slice(1)}{" "}
+          Right now it is <strong>{m.coveragePct}% covered</strong> by your data
+          {status === "AI Drafted" ? " and has been drafted for review." : status === "Approved" ? " and is approved by the merchant banker." : "."}
+          {m.professionalReviewRequired && " Professional review is required before this section is final."}
+        </p>
+      </div>
+      {m.missingFacts.length > 0 && (
+        <div>
+          <div className="text-[11px] font-semibold text-amber-700 uppercase tracking-wide mb-1">Still missing here</div>
+          <ul className="text-[12px] text-amber-900 space-y-1">
+            {m.missingFacts.slice(0, 5).map((x) => <li key={x} className="bg-amber-50 border border-amber-100 rounded px-2 py-1">• {x}</li>)}
+          </ul>
+        </div>
+      )}
+      {m.questions.length > 0 && (
+        <div>
+          <div className="text-[11px] font-semibold text-blue-700 uppercase tracking-wide mb-1">Likely reviewer questions</div>
+          <ul className="text-[12px] text-blue-900 space-y-1">
+            {m.questions.slice(0, 4).map((q, i) => <li key={i} className="bg-blue-50 border border-blue-100 rounded px-2 py-1">❓ {q.q}</li>)}
+          </ul>
+        </div>
+      )}
+    </aside>
   );
 }

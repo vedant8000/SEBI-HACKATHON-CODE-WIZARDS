@@ -86,7 +86,8 @@ export default function DataRoom({ docs }: { docs: DocumentRecord[] }) {
 
       {/* Checklist */}
       <Card className="p-5">
-        <h3 className="text-sm font-semibold text-slate-800 mb-3">What to upload & why</h3>
+        <h3 className="text-sm font-semibold text-slate-800 mb-1">Helpful documents you may upload</h3>
+        <p className="text-xs text-slate-400 mb-3">A guide, not a gate — the platform works with whatever you have and tells you what each missing item would unlock.</p>
         <div className="grid md:grid-cols-2 gap-x-8 gap-y-1.5">
           {CHECKLIST.map((c) => {
             const done = docs.some((d) => d.fileName.toLowerCase().includes(c.label.split(" ")[0].toLowerCase())) ||
