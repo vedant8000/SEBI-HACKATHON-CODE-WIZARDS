@@ -632,7 +632,7 @@ export function runAnalysis(
 
   if (company.independentDirectorsAppointed !== true && !has(govDocs)) {
     addGap({
-      title: "Independent directors & committees not in place", severity: "High", affectedSection: "Management",
+      title: "Independent directors & committees not in place", severity: "High", affectedSection: "Our Management",
       explanation: "Governance structures required for listing (independent directors, audit committee) are not yet evidenced.",
       requiredDocument: "Independent director consents, committee constitution resolutions",
       suggestedFix: "Appoint independent directors, constitute committees, upload supporting resolutions.",

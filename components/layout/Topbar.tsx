@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { AlertTriangle, RefreshCw, Sparkles } from "lucide-react";
+import { AlertTriangle, RefreshCw, Settings, Sparkles } from "lucide-react";
 
 export default function Topbar({
   companyName, statusLine, aiReady,
@@ -57,6 +58,10 @@ export default function Topbar({
             <Sparkles size={13} />
             {busy === "draft" ? "Generating…" : "Generate Draft"}
           </button>
+          <Link href="/settings" title="Settings (AI provider status, data management)"
+            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg">
+            <Settings size={15} />
+          </Link>
         </div>
       </div>
       {err && <div className="text-xs text-red-600 mt-1.5">{err}</div>}

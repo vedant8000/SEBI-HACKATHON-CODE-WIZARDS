@@ -1,6 +1,7 @@
 import { getContext } from "@/lib/server/context";
 import { EmptyState, PageHeader } from "@/components/shared/ui";
 import FactsTable from "@/components/evidence/FactsTable";
+import RunIntelligenceButton from "@/components/evidence/RunIntelligenceButton";
 
 export const dynamic = "force-dynamic";
 
@@ -22,8 +23,9 @@ export default function EvidencePage() {
   return (
     <>
       <PageHeader
-        title="Extraction & Evidence"
+        title="Evidence & Extraction"
         subtitle="Every fact the platform uses, with its source document, page reference, extraction method and confidence. Accept, reject or correct anything — edits are flagged for merchant banker verification, and all downstream analysis updates instantly."
+        actions={<RunIntelligenceButton />}
       />
       <FactsTable facts={facts} conflicts={conflicts} chunkStats={chunkStats} />
     </>

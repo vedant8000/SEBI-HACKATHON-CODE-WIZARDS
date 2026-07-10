@@ -206,7 +206,7 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
         </div>
       </Card>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
         <button
           onClick={submit}
           disabled={saving || !f.name}
@@ -215,6 +215,11 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
           {saving ? "Saving & analysing…" : existing ? "Save & Re-analyse" : "Create Company & Analyse"}
         </button>
         {saved && <span className="text-sm text-emerald-600 font-medium">Saved — analysis updated ✓</span>}
+        {(saved || existing) && (
+          <a href="/data-room" className="px-6 py-2.5 bg-slate-800 text-white text-sm font-medium rounded-lg hover:bg-slate-700">
+            Continue to Upload Documents →
+          </a>
+        )}
         {!f.name && <span className="text-xs text-slate-400">Company name is required to save.</span>}
       </div>
     </div>

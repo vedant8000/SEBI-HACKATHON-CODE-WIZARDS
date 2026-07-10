@@ -14,7 +14,7 @@ import {
   aiFactsForDocument, buildChunks, detectConflicts, factsFromFields,
   mergeFacts, syncFieldsFromFacts,
 } from "@/lib/document-processing/facts";
-import { aiAvailable, classifyDocumentAI } from "@/lib/ai/provider";
+import { aiAvailable, aiCoolingDown, classifyDocumentAI } from "@/lib/ai/provider";
 import { runAnalysis } from "@/lib/engine/analysis";
 import type { DocumentRecord } from "@/lib/types";
 
@@ -123,6 +123,9 @@ export async function POST(req: NextRequest) {
     logAudit(db, company.id, uploadedBy, `Uploaded: ${file.name}`, "",
       `${category} · ${pages.length} page(s) · ${chunks.length} chunk(s) · ${facts.length} fact(s)`);
   }
+
+  if (aiAvailable() && aiCoolingDown())
+    warnings.push("AI provider is rate-limited right now — pattern extraction was used. Re-upload or re-run analysis later (or add more GEMINI_API_KEY_2/3 keys) for full AI fact extraction.");
 
   // conflicts recomputed company-wide
   db.conflicts = db.conflicts.filter((c) => c.companyId !== company.id);

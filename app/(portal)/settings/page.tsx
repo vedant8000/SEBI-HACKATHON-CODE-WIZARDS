@@ -1,7 +1,7 @@
 import { getContext } from "@/lib/server/context";
 import { Card, PageHeader } from "@/components/shared/ui";
 import SettingsPanel from "@/components/settings/SettingsPanel";
-import { activeProvider, aiAvailable, AI_SETUP_MESSAGE } from "@/lib/ai/provider";
+import { activeProvider, aiAvailable, AI_SETUP_MESSAGE, geminiKeys } from "@/lib/ai/provider";
 
 export const dynamic = "force-dynamic";
 
@@ -17,8 +17,14 @@ export default function SettingsPage() {
           {aiAvailable() ? (
             <p className="text-sm text-slate-600">
               Active provider: <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded text-xs">{provider}</span>
-              {provider === "gemini" && <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded text-xs ml-1">{process.env.GEMINI_MODEL ?? "gemini-2.5-flash-lite"}</span>}
+              {provider === "gemini" && <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded text-xs ml-1">{process.env.GEMINI_MODEL ?? "gemini-flash-lite-latest"}</span>}
+              {provider === "gemini" && <span className="text-xs text-slate-500 ml-1">· {geminiKeys().length} key(s) in rotation</span>}
               {" "}— document classification, chunk-wise fact extraction, draft generation and the assistant are enabled.
+              {provider === "gemini" && geminiKeys().length < 2 && (
+                <span className="block text-xs text-amber-700 mt-1">
+                  Tip: add GEMINI_API_KEY_2 / GEMINI_API_KEY_3 in .env.local — calls rotate across keys automatically when one hits its free-tier rate limit.
+                </span>
+              )}
             </p>
           ) : (
             <p className="text-sm text-amber-800">{AI_SETUP_MESSAGE}</p>
@@ -33,21 +39,6 @@ export default function SettingsPage() {
           companies={db.companies.map((c) => ({ id: c.id, name: c.name }))}
           activeId={company?.id ?? null}
         />
-        <Card className="p-5">
-          <h3 className="text-sm font-semibold text-slate-800 mb-2">Roles (mock authentication for MVP)</h3>
-          <table className="text-sm w-full">
-            <tbody>
-              {[["Promoter", "promoter@iposaathi.demo"], ["Merchant Banker", "banker@iposaathi.demo"], ["Admin", "admin@iposaathi.demo"]].map(([role, email]) => (
-                <tr key={role} className="border-t border-slate-100">
-                  <td className="py-2 font-medium text-slate-700">{role}</td>
-                  <td className="text-slate-500">{email}</td>
-                  <td className="text-slate-400 font-mono text-xs">demo123</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <p className="text-xs text-slate-400 mt-2">Role-based login is mocked; the review room simulates the merchant banker role.</p>
-        </Card>
       </div>
     </>
   );

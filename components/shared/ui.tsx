@@ -140,10 +140,10 @@ export function EmptyState({
       {showOnboardCta && (
         <div className="flex justify-center gap-3 mt-5">
           <Link href="/onboarding" className="px-4 py-2 bg-slate-800 text-white text-sm rounded-lg hover:bg-slate-700">
-            Create Company Profile
+            Start Company Setup
           </Link>
-          <Link href="/settings" className="px-4 py-2 border border-slate-300 text-sm rounded-lg hover:bg-slate-50">
-            Load Demo Company
+          <Link href="/data-room" className="px-4 py-2 border border-slate-300 text-sm rounded-lg hover:bg-slate-50">
+            Upload Documents
           </Link>
         </div>
       )}

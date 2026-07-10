@@ -20,11 +20,11 @@ export type AiProviderName = "gemini" | "anthropic" | "openai" | "none";
 
 export function activeProvider(): AiProviderName {
   const p = (process.env.AI_PROVIDER ?? "").toLowerCase();
-  if (p === "gemini" && process.env.GEMINI_API_KEY) return "gemini";
+  if (p === "gemini" && geminiKeys().length) return "gemini";
   if (p === "anthropic" && process.env.ANTHROPIC_API_KEY) return "anthropic";
   if (p === "openai" && process.env.OPENAI_API_KEY) return "openai";
   // auto-detect if AI_PROVIDER unset
-  if (process.env.GEMINI_API_KEY) return "gemini";
+  if (geminiKeys().length) return "gemini";
   if (process.env.ANTHROPIC_API_KEY) return "anthropic";
   if (process.env.OPENAI_API_KEY) return "openai";
   return "none";
@@ -37,21 +37,54 @@ export const AI_SETUP_MESSAGE =
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/** Single completion call. Retries once on rate-limit. Returns null on failure. */
+/**
+ * Multiple Gemini keys are supported to survive free-tier rate limits:
+ *   GEMINI_API_KEY, GEMINI_API_KEY_2, GEMINI_API_KEY_3, …  (or comma-separated
+ *   GEMINI_API_KEYS). On a 429 the call rotates to the next key immediately
+ *   instead of only waiting out the window.
+ */
+export function geminiKeys(): string[] {
+  const keys: string[] = [];
+  if (process.env.GEMINI_API_KEYS)
+    keys.push(...process.env.GEMINI_API_KEYS.split(",").map((k) => k.trim()).filter(Boolean));
+  if (process.env.GEMINI_API_KEY) keys.push(process.env.GEMINI_API_KEY);
+  for (let i = 2; i <= 9; i++) {
+    const k = process.env[`GEMINI_API_KEY_${i}`];
+    if (k) keys.push(k);
+  }
+  return [...new Set(keys)];
+}
+
+let geminiKeyCursor = 0;
+
+/**
+ * Circuit breaker: when every configured key is rate-limited (e.g. daily
+ * free-tier quota exhausted), AI calls short-circuit for a cooldown window
+ * instead of stalling uploads/pages with long backoffs. The app degrades to
+ * pattern extraction and deterministic rules — never hangs.
+ */
+let aiCooldownUntil = 0;
+export const aiCoolingDown = () => Date.now() < aiCooldownUntil;
+
+/** Single completion call. Rotates keys on rate-limit, retries with backoff. Returns null on failure. */
 export async function callAI(prompt: string, opts: { json?: boolean; maxTokens?: number } = {}): Promise<string | null> {
   const provider = activeProvider();
   if (provider === "none") return null;
-  for (let attempt = 0; attempt < 3; attempt++) {
-    // free-tier rate limits are per-minute — back off generously
-    const backoff = 8000 * (attempt + 1);
+  if (provider === "gemini" && aiCoolingDown()) return null;
+  const keys = provider === "gemini" ? geminiKeys() : [];
+  const maxAttempts = provider === "gemini" ? Math.max(3, keys.length * 2) : 3;
+  let sawRateLimit = false;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const backoff = 8000 * (Math.floor(attempt / Math.max(1, keys.length)) + 1);
     try {
       if (provider === "gemini") {
-        const model = process.env.GEMINI_MODEL ?? "gemini-2.5-flash-lite";
+        const model = process.env.GEMINI_MODEL ?? "gemini-flash-lite-latest";
+        const key = keys[geminiKeyCursor % keys.length];
         const res = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
           {
             method: "POST",
-            headers: { "x-goog-api-key": process.env.GEMINI_API_KEY!, "Content-Type": "application/json" },
+            headers: { "x-goog-api-key": key, "Content-Type": "application/json" },
             body: JSON.stringify({
               contents: [{ parts: [{ text: prompt }] }],
               generationConfig: {
@@ -63,7 +96,14 @@ export async function callAI(prompt: string, opts: { json?: boolean; maxTokens?:
           }
         );
         if (res.status === 429 || res.status === 503) {
-          console.warn(`[ai] gemini ${res.status} rate-limited, retrying in ${backoff}ms`);
+          sawRateLimit = true;
+          geminiKeyCursor++; // rotate to the next key
+          if (keys.length > 1 && (attempt + 1) % keys.length !== 0) {
+            console.warn(`[ai] gemini ${res.status} on key #${(geminiKeyCursor - 1) % keys.length + 1}, rotating to next key`);
+            continue; // try next key immediately
+          }
+          if (attempt >= maxAttempts - 1) break; // exhausted — trip the breaker below
+          console.warn(`[ai] gemini ${res.status} on all ${keys.length} key(s), backing off ${backoff}ms`);
           await sleep(backoff); continue;
         }
         if (!res.ok) {
@@ -109,6 +149,10 @@ export async function callAI(prompt: string, opts: { json?: boolean; maxTokens?:
       if (attempt < 2) { await sleep(2000); continue; }
       return null;
     }
+  }
+  if (provider === "gemini" && sawRateLimit) {
+    aiCooldownUntil = Date.now() + 120_000;
+    console.warn("[ai] all gemini keys rate-limited — pausing AI calls for 120s (pattern extraction & rule engine continue)");
   }
   return null;
 }
@@ -218,13 +262,14 @@ ${input.gapsContext || "(none)"}
 
 STRICT RULES:
 - Use ONLY the extracted facts and profile provided. Do not invent names, numbers, dates, approvals, litigation, issue terms, financial values or legal conclusions.
-- Where required data is missing, insert the placeholder [Promoter confirmation required: <what>].
-- Where professional judgment is needed, insert [Merchant banker/legal/auditor review required].
-- Formal prospectus-style language. No markdown headings, no bullets unless a table-like list is natural. 150-450 words.
+- Write a COMPLETE, polished, flowing section from the data that IS available. Do NOT enumerate, flag or apologise for missing data inside the text — simply omit what is unavailable (missing items are tracked separately by the platform). No bracketed placeholders.
+- Present year-wise financial figures and multi-item lists as markdown tables (| Column | ... |) — offer documents are table-heavy.
+- Use **bold** sparingly for sub-headings within the section. No top-level heading (the platform adds the section title).
+- Formal Indian prospectus-style language. 180-500 words.
 - This is an AI-assisted draft, not a regulatory filing — do not claim compliance or approval.
 
 Write the section text now:`,
-    { maxTokens: 1400 }
+    { maxTokens: 1600 }
   );
 }
 

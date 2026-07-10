@@ -17,8 +17,8 @@ export default function DataRoomPage() {
   return (
     <>
       <PageHeader
-        title="Smart Data Room"
-        subtitle="Upload the documents you have — PDFs and text files are read and classified automatically; scanned copies are accepted too (you can fill in key details manually). Every document becomes evidence that your draft can cite."
+        title="Upload & Data Room"
+        subtitle="Upload any IPO-related documents you currently have. IPO Saathi will classify them, extract facts, generate available sections, and show what is missing. Nothing is mandatory — start with what you have."
       />
       <DataRoom docs={docs} />
     </>

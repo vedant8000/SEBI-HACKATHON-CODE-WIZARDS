@@ -10,6 +10,18 @@ const statusTone: Record<string, "green" | "yellow" | "red" | "blue"> = {
   ACCEPTED: "green", NEEDS_REVIEW: "yellow", REJECTED: "red", PROMOTER_EDITED: "blue",
 };
 
+/** Render-time humanizer so facts stored before this fix also display cleanly. */
+function pretty(label: string): string {
+  if (!label) return label;
+  if (/\s/.test(label) && !/[a-z][A-Z]/.test(label)) return label;
+  let t = label.replace(/Cr$/, "").replace(/[_-]+/g, " ")
+    .replace(/([a-z\d])([A-Z])/g, "$1 $2")
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2").trim();
+  t = t.charAt(0).toUpperCase() + t.slice(1);
+  t = t.replace(/\b(cin|gst|gstin|pan|din|ipo|rpt|ebitda|pat|cfo|fy|moa|aoa|kyc)\b/gi, (m) => m.toUpperCase());
+  return /Cr$/.test(label) ? `${t} (₹ Cr)` : t;
+}
+
 export default function FactsTable({
   facts, conflicts, chunkStats,
 }: { facts: ExtractedFact[]; conflicts: FactConflict[]; chunkStats: { total: number; processed: number; failed: number } }) {
@@ -127,7 +139,7 @@ export default function FactsTable({
               <tbody>
                 {shown.map((f) => (
                   <tr key={f.id} className={`border-t border-slate-100 ${f.status === "REJECTED" ? "opacity-40" : ""}`}>
-                    <td className="px-4 py-2 font-medium text-slate-700">{f.factLabel}<div className="text-[10px] text-slate-400 font-mono">{f.factKey}</div></td>
+                    <td className="px-4 py-2 font-medium text-slate-700">{pretty(f.factLabel)}<div className="text-[10px] text-slate-400 font-mono">{f.factKey}</div></td>
                     <td className="px-2 py-2">
                       {editId === f.id ? (
                         <span className="flex gap-1">
