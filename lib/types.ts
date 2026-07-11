@@ -1,4 +1,4 @@
-// ── IPO Saathi shared domain types ──────────────────────────────────────────
+// ── SIIM shared domain types ──────────────────────────────────────────
 
 export type Role = "PROMOTER" | "MERCHANT_BANKER" | "LEGAL_REVIEWER" | "ADMIN";
 

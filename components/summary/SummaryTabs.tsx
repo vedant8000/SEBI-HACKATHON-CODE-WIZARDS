@@ -60,7 +60,7 @@ export default function SummaryTabs({ summaries }: { summaries: Record<string, s
       </div>
 
       <Card className="p-5 flex flex-col h-fit lg:sticky lg:top-20">
-        <h3 className="text-sm font-semibold text-slate-800">Ask IPO Saathi</h3>
+        <h3 className="text-sm font-semibold text-slate-800">Ask SIIM</h3>
         <p className="text-xs text-slate-400 mb-3">Answers are grounded in your company&apos;s own analysis — final judgement always rests with your merchant banker.</p>
         <div className="flex flex-wrap gap-1.5 mb-3">
           {SUGGESTED.map((s) => (

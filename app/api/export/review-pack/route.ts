@@ -35,7 +35,7 @@ export async function GET() {
   .body table.md-table th.num,.body table.md-table td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
   @media print {.noprint{display:none}}
 </style></head><body>
-<div class="banner"><b>MERCHANT BANKER REVIEW PACK — AI-ASSISTED DRAFT.</b> Prepared by IPO Saathi for review by SEBI-registered
+<div class="banner"><b>MERCHANT BANKER REVIEW PACK — AI-ASSISTED DRAFT.</b> Prepared by SIIM for review by SEBI-registered
 intermediaries. Not a filing; not legal, investment, accounting or regulatory advice. Facts carry source references to
 the issuer's uploaded documents; placeholders mark data awaiting promoter confirmation.</div>
 <h1>Merchant Banker Review Pack<br><span style="font-size:17px">${esc(name)}</span></h1>
@@ -55,7 +55,7 @@ ${s.sources.length ? `<div class="src"><b>Source evidence:</b> ${s.sources.map((
 ${s.missingData.length ? `<div class="warn"><b>Missing data:</b> ${s.missingData.map(esc).join(" · ")}</div>` : ""}
 ${s.comments.map((c) => `<div class="cmt"><b>${esc(c.author)}</b> (${esc(c.role.replaceAll("_", " ").toLowerCase())}, ${new Date(c.createdAt).toLocaleString("en-IN")}): ${esc(c.comment)}</div>`).join("")}
 `).join("")}
-<hr><p class="meta">© IPO Saathi — AI-assisted preparation. Final responsibility rests with the issuer and its authorised intermediaries.</p>
+<hr><p class="meta">© SIIM — AI-assisted preparation. Final responsibility rests with the issuer and its authorised intermediaries.</p>
 </body></html>`;
   return new NextResponse(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });
 }

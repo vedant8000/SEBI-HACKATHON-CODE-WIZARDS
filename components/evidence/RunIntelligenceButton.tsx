@@ -17,7 +17,7 @@ export default function RunIntelligenceButton() {
   };
   return (
     <button onClick={run} disabled={busy}
-      className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50">
+      className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-blue-600 to-sky-500 text-white text-sm font-medium rounded-lg shadow-sm shadow-blue-600/30 hover:shadow-md transition-shadow disabled:opacity-50">
       {busy ? <Loader2 size={14} className="animate-spin" /> : <BrainCircuit size={14} />}
       {busy ? "Running…" : "Run IPO Intelligence"}
     </button>

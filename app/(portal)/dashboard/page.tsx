@@ -14,7 +14,7 @@ export default function Dashboard() {
       <>
         <PageHeader title="Dashboard" subtitle="Your IPO preparation cockpit." />
         <EmptyState
-          title="Welcome to IPO Saathi"
+          title="Welcome to SIIM"
           message="Create your company profile and upload your documents to get a readiness score, gap report and a source-linked draft offer document. Or load the demo company to see the full journey."
         />
       </>

@@ -305,7 +305,7 @@ export async function answerPromoterQuestion(
   const draftCtx = draft.slice(0, 30).map((d) => `${d.sectionName}: ${d.status}, confidence ${d.confidence}%`).join("\n");
 
   const answer = await callAI(
-    `You are IPO Saathi's assistant for an Indian SME promoter preparing an IPO draft. Answer simply and practically (use simple Hindi/Hinglish if the user asks in Hindi). Answer ONLY from the context below. If the answer is not in the context, reply exactly: "I could not find this information in uploaded documents. Please upload supporting evidence or enter it manually." Never give definitive regulatory conclusions — defer final judgement to the merchant banker and legal counsel.
+    `You are SIIM's assistant for an Indian SME promoter preparing an IPO draft. Answer simply and practically (use simple Hindi/Hinglish if the user asks in Hindi). Answer ONLY from the context below. If the answer is not in the context, reply exactly: "I could not find this information in uploaded documents. Please upload supporting evidence or enter it manually." Never give definitive regulatory conclusions — defer final judgement to the merchant banker and legal counsel.
 
 COMPANY: ${company.name} (${company.industry}); readiness ${analysis?.scores.overall ?? "n/a"}/100; RPT risk ${analysis?.scores.rptScore ?? "n/a"}/100.
 EXTRACTED FACTS:\n${factsCtx || "(none)"}

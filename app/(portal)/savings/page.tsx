@@ -23,7 +23,7 @@ export default function SavingsPage() {
       />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
         <StatCard label="Traditional First Draft" value={s.traditionalDays} sub="Typical SME timeline with scattered records" />
-        <StatCard label="With IPO Saathi" value={s.aiAssistedDays} sub="To a promoter-ready, review-ready draft" tone="good" />
+        <StatCard label="With SIIM" value={s.aiAssistedDays} sub="To a promoter-ready, review-ready draft" tone="good" />
         <StatCard label="Estimated Days Saved" value={s.daysSaved} tone="good" />
         <StatCard label="Est. Cost Saved" value={s.estimatedCostSaved} sub="Early-stage professional fees avoided" tone="good" />
       </div>

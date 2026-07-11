@@ -50,7 +50,7 @@ export default function DraftViewer({
           Generation takes a minute or two (one AI call per section).
         </p>
         <button onClick={generateAll} disabled={!!busy || !aiReady}
-          className="mt-5 px-6 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 inline-flex items-center gap-2">
+          className="mt-5 px-6 py-2.5 bg-gradient-to-r from-blue-600 to-sky-500 text-white text-sm font-medium rounded-lg shadow-sm shadow-blue-600/30 hover:shadow-md transition-shadow disabled:opacity-50 inline-flex items-center gap-2">
           {busy === "all" ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
           {busy === "all" ? "Generating…" : "Generate Draft"}
         </button>

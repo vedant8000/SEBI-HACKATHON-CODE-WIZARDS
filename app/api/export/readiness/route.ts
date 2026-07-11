@@ -39,7 +39,7 @@ ${(analysis?.checks ?? []).map((c) => `<tr><td>${esc(c.category)}</td><td>${esc(
 <h2>Open Gaps (${(analysis?.gaps ?? []).length})</h2>
 <table><tr><th>Severity</th><th>Gap</th><th>Section</th><th>Owner</th><th>Suggested Fix</th></tr>
 ${(analysis?.gaps ?? []).map((g) => `<tr><td>${esc(g.severity)}</td><td>${esc(g.title)}</td><td>${esc(g.affectedSection)}</td><td>${esc(g.owner)}</td><td>${esc(g.suggestedFix)}</td></tr>`).join("")}</table>
-<p style="color:#666;font-size:12px;margin-top:30px">© IPO Saathi. Estimates and checks are illustrative; this platform does not replace SEBI-registered intermediaries.</p>
+<p style="color:#666;font-size:12px;margin-top:30px">© SIIM. Estimates and checks are illustrative; this platform does not replace SEBI-registered intermediaries.</p>
 </body></html>`;
   return new NextResponse(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });
 }

@@ -138,7 +138,7 @@ export default function ObjectsForm({
       </Card>
 
       <div className="flex items-center gap-3">
-        <button onClick={save} disabled={saving} className="px-6 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50">
+        <button onClick={save} disabled={saving} className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-sky-500 text-white text-sm font-medium rounded-lg shadow-sm shadow-blue-600/30 hover:shadow-md transition-shadow disabled:opacity-50">
           {saving ? "Saving…" : "Save Objects & Re-analyse"}
         </button>
         {savedMsg && <span className="text-sm text-emerald-600 font-medium">{savedMsg}</span>}

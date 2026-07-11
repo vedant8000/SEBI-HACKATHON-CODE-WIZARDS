@@ -25,7 +25,7 @@ const write = (name, title, lines) =>
     for (const line of lines) { doc.text(line); doc.moveDown(0.4); }
     doc.moveDown();
     doc.fontSize(8).fillColor("#666")
-      .text("TEST FIXTURE for IPO Saathi demo. Identifiers other than public disclosures are fictional. Not an original company record.");
+      .text("TEST FIXTURE for SIIM demo. Identifiers other than public disclosures are fictional. Not an original company record.");
     doc.end();
     stream.on("finish", resolve);
   });
