@@ -1,5 +1,5 @@
 /**
- * FULL-SITE FUNCTIONAL TEST — exercises the complete 6-step IPO Saathi journey:
+ * FULL-SITE FUNCTIONAL TEST — exercises the complete 6-step SIIM journey:
  *
  *   pages → reset → Company Setup (+ duplicate guard) → Upload & extraction
  *   → Evidence review (accept/edit/manual) → IPO Intelligence rules
@@ -202,7 +202,7 @@ async function main() {
   // ── 9. AI Assistant (dedicated tab + grounded answers) ────────────────────
   console.log("9 · AI Assistant:");
   const assistantHtml = await (await fetch(BASE + "/assistant")).text();
-  ok(assistantHtml.includes("IPO Saathi Assistant") && assistantHtml.includes("What I can see"),
+  ok(assistantHtml.includes("SIIM Assistant") && assistantHtml.includes("What I can see"),
     "assistant tab renders chat + grounding panel");
   const qa = await post("/api/qa", { question: "What should I fix first?" });
   const answer = qa.data.answer ?? "";

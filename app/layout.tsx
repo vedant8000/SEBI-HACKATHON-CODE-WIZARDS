@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "IPO Saathi — AI Disclosure Intelligence for SME IPOs",
+  title: "SIIM — SME IPO Intelligence Mitra",
   description:
     "Convert scattered SME records into an evidence-backed, disclosure-ready SME IPO draft with AI-led readiness checks, gap detection and merchant banker review workflow.",
 };

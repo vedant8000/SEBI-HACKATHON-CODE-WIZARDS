@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --background: #f6f4ee;
+  --foreground: #1c1917;
   --navy: #1e3a5f;
 }
 
@@ -41,3 +41,21 @@ body {
 .prose-draft table.md-table th, .prose-draft table.md-table td { border: 1px solid #e2e8f0; padding: 5px 9px; }
 .prose-draft table.md-table tr:nth-child(even) td { background: #f8fafc; }
 .prose-draft table.md-table th.num, .prose-draft table.md-table td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* SIIM hero intro: letters land one by one, each word lights up in its colour */
+@keyframes siim-letter {
+  0% { opacity: 0; transform: translateY(26px) scale(0.7); filter: blur(6px); }
+  60% { filter: blur(0); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes siim-word {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes siim-rest {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.siim-letter { opacity: 0; display: inline-block; animation: siim-letter 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+.siim-word { opacity: 0; display: inline-flex; align-items: center; gap: 6px; animation: siim-word 0.45s ease-out forwards; }
+.siim-rest { opacity: 0; animation: siim-rest 0.8s ease-out forwards; animation-delay: 0.3s; }

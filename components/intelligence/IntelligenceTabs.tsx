@@ -85,7 +85,7 @@ export default function IntelligenceTabs({
       <div className="flex flex-wrap items-center gap-1.5 mb-5 border-b border-slate-200 pb-3">
         {TABS.map((t) => (
           <button key={t} onClick={() => setTab(t)}
-            className={`px-3.5 py-1.5 text-[13px] font-medium rounded-lg ${tab === t ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-100"}`}>
+            className={`px-3.5 py-1.5 text-[13px] font-medium rounded-full transition-all ${tab === t ? "bg-gradient-to-r from-blue-600 to-sky-500 text-white shadow-sm shadow-blue-600/30" : "text-slate-600 hover:bg-slate-100"}`}>
             {t}
             {t === "Missing Data" && gaps.length > 0 && <span className="ml-1.5 text-[10px] bg-white/20 px-1.5 rounded-full">{gaps.length}</span>}
             {t === "Inconsistencies" && (finIssues.length + openConflicts.length) > 0 && <span className="ml-1.5 text-[10px] bg-white/20 px-1.5 rounded-full">{finIssues.length + openConflicts.length}</span>}

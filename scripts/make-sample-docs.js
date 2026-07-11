@@ -19,7 +19,7 @@ function write(name, title, lines) {
     doc.moveDown(0.4);
   }
   doc.moveDown();
-  doc.fontSize(8).fillColor("#666").text("Sample document generated for IPO Saathi demo/testing. Not a real company record.");
+  doc.fontSize(8).fillColor("#666").text("Sample document generated for SIIM demo/testing. Not a real company record.");
   doc.end();
 }
 

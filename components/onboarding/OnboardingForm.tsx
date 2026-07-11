@@ -210,7 +210,7 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
         <button
           onClick={submit}
           disabled={saving || !f.name}
-          className="px-6 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50"
+          className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-sky-500 text-white text-sm font-medium rounded-lg shadow-sm shadow-blue-600/30 hover:shadow-md transition-shadow disabled:opacity-50"
         >
           {saving ? "Saving & analysing…" : existing ? "Save & Re-analyse" : "Create Company & Analyse"}
         </button>

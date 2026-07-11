@@ -64,7 +64,7 @@ export default function AssistantChat({
         <div className="px-5 py-3 border-b border-slate-100 bg-slate-50 flex items-center gap-2.5">
           <span className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center"><Bot size={16} className="text-white" /></span>
           <div>
-            <div className="text-sm font-semibold text-slate-800">IPO Saathi Assistant</div>
+            <div className="text-sm font-semibold text-slate-800">SIIM Assistant</div>
             <div className="text-[11px] text-slate-400">Grounded in {companyName}&apos;s documents · not legal or regulatory advice</div>
           </div>
         </div>
@@ -120,7 +120,7 @@ export default function AssistantChat({
               onKeyDown={(e) => e.key === "Enter" && ask(q)}
             />
             <button onClick={() => ask(q)} disabled={asking || !q.trim()}
-              className="px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-40"><Send size={16} /></button>
+              className="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-sky-500 text-white rounded-xl shadow-sm shadow-blue-600/30 hover:shadow-md transition-shadow disabled:opacity-40"><Send size={16} /></button>
           </div>
         </div>
       </Card>

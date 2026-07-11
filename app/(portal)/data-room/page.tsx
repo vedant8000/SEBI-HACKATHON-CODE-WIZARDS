@@ -18,7 +18,7 @@ export default function DataRoomPage() {
     <>
       <PageHeader
         title="Upload & Data Room"
-        subtitle="Upload any IPO-related documents you currently have. IPO Saathi will classify them, extract facts, generate available sections, and show what is missing. Nothing is mandatory — start with what you have."
+        subtitle="Upload any IPO-related documents you currently have. SIIM will classify them, extract facts, generate available sections, and show what is missing. Nothing is mandatory — start with what you have."
       />
       <DataRoom docs={docs} />
     </>

@@ -23,7 +23,7 @@ export default function Topbar({
   };
 
   return (
-    <header className="bg-white border-b border-slate-200 px-6 py-3 no-print sticky top-0 z-10">
+    <header className="bg-[#fdfcf9] border-b border-stone-200 px-6 py-3 no-print sticky top-0 z-10">
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
           {companyName ? (
@@ -53,7 +53,7 @@ export default function Topbar({
             onClick={() => act("draft", () => fetch("/api/draft", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }))}
             disabled={!companyName || !!busy || !aiReady}
             title={aiReady ? "Generate the blueprint-driven draft from your extracted facts" : "Configure an AI API key in .env.local to enable generation"}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium bg-gradient-to-r from-blue-600 to-sky-500 text-white rounded-lg shadow-sm shadow-blue-600/30 hover:shadow-md hover:shadow-blue-500/30 transition-shadow disabled:opacity-50"
           >
             <Sparkles size={13} />
             {busy === "draft" ? "Generating…" : "Generate Draft"}

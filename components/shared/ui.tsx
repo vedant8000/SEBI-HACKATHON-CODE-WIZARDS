@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`bg-white border border-slate-200 rounded-xl shadow-sm ${className}`}>
+    <div className={`bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-shadow ${className}`}>
       {children}
     </div>
   );
@@ -29,8 +29,10 @@ export function StatCard({
   label, value, sub, tone = "default",
 }: { label: string; value: ReactNode; sub?: string; tone?: "default" | "good" | "warn" | "bad" }) {
   const toneCls = { default: "text-slate-900", good: "text-emerald-700", warn: "text-amber-700", bad: "text-red-700" }[tone];
+  const barCls = { default: "bg-gradient-to-r from-blue-500 to-sky-400", good: "bg-gradient-to-r from-emerald-500 to-teal-400", warn: "bg-gradient-to-r from-amber-500 to-yellow-400", bad: "bg-gradient-to-r from-red-500 to-rose-400" }[tone];
   return (
-    <Card className="p-4">
+    <Card className="p-4 relative overflow-hidden">
+      <span className={`absolute inset-x-0 top-0 h-0.5 ${barCls}`} />
       <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">{label}</div>
       <div className={`text-2xl font-semibold mt-1 ${toneCls}`}>{value}</div>
       {sub && <div className="text-xs text-slate-500 mt-1">{sub}</div>}
@@ -154,7 +156,7 @@ export function EmptyState({
 export function DisclaimerBar() {
   return (
     <p className="text-[11px] leading-relaxed text-slate-400 border-t border-slate-200 pt-3 mt-10">
-      <strong>Disclaimer:</strong> IPO Saathi is an AI-assisted draft preparation tool. It does not constitute legal,
+      <strong>Disclaimer:</strong> SIIM is an AI-assisted draft preparation tool. It does not constitute legal,
       investment, accounting or regulatory advice, and does not replace SEBI-registered merchant bankers, legal counsel,
       auditors or regulatory filing processes. All generated content requires professional review. Estimates are
       illustrative, not guarantees. Nothing here means &ldquo;ready to file with SEBI&rdquo; — at best it means

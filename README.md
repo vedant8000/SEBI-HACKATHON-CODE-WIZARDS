@@ -1,13 +1,13 @@
-# IPO Saathi — AI Disclosure Intelligence Platform for SME IPOs
+# SIIM — AI Disclosure Intelligence Platform for SME IPOs
 
 **SEBI Hackathon · Problem Statement 4: Simplifying IPO Offer Document Preparation for SMEs**
 
-IPO Saathi lets an SME promoter upload whatever IPO-related documents they currently have and generates a
+SIIM lets an SME promoter upload whatever IPO-related documents they currently have and generates a
 substantially complete, **SEBI/SME-framework-aligned draft offer document** — while dynamically identifying missing
 information, cross-document inconsistencies, financial/legal/governance risks, and every item that needs merchant
 banker / legal / auditor review.
 
-> **Important:** IPO Saathi is an AI-assisted draft preparation tool. It does not produce SEBI-approved or
+> **Important:** SIIM is an AI-assisted draft preparation tool. It does not produce SEBI-approved or
 > guaranteed-compliant documents and never claims "ready to file". Its ceiling is **"ready for merchant banker
 > review"**. It does not replace SEBI-registered intermediaries, legal counsel or auditors.
 
