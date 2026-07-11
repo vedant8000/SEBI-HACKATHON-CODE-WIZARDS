@@ -76,8 +76,8 @@ never fabricates AI output.
 ## Demo flow
 
 1. **Company Setup** → enter company + 3-year financial snapshot.
-2. **Upload & Data Room** → drop your PDFs (sample PDFs in `public/demo-assets/` if you need test files —
-   regenerate with `node scripts/make-sample-docs.js`).
+2. **Upload & Data Room** → drop your PDFs (test fixtures live in `../test-documents/`; regenerate with
+   `node scripts/make-shivalic-docs.mjs`).
 3. Watch **Extraction & Evidence** fill with sourced facts (accept/correct as needed).
 4. Check **Coverage Matrix → Readiness → Heatmap → Gap Report → RPT Risk → Financial Consistency**.
 5. **Objects of Issue** → build the fund utilisation plan (warnings compute live).
