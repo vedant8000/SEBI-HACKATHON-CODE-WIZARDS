@@ -13,7 +13,7 @@ const esc = (s: string) =>
  * omitted from the document (they remain tracked in the Coverage Matrix).
  */
 export async function GET() {
-  const { company, draft } = getContext();
+  const { company, draft } = await getContext();
   const name = company?.name ?? "Company";
   const byName = new Map(draft.map((s) => [s.sectionName, s]));
   const included = SME_PROSPECTUS_BLUEPRINT.filter(

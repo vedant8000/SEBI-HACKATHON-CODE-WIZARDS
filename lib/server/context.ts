@@ -21,8 +21,8 @@ export interface AppContext {
 }
 
 /** One-stop context for server components & routes. Always fresh from disk. */
-export function getContext(): AppContext {
-  const db = loadDb();
+export async function getContext(): Promise<AppContext> {
+  const db = await loadDb();
   const company = getActiveCompany(db);
   if (!company)
     return { db, company: null, docs: [], objects: [], draft: [], analysis: null, facts: [], conflicts: [], coverage: [] };

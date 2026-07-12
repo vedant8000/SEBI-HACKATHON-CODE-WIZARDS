@@ -10,7 +10,7 @@
  *
  * Usage:
  *   1. npm run dev   (or npm run build && npm start)
- *   2. npm run test:site        [BASE_URL=http://localhost:3000 by default]
+ *   2. npm run test:site        [BASE_URL=https://sebi-hackathon-code-wizards-zeta.vercel.app by default]
  *
  * AI-dependent steps degrade to WARN (not FAIL) if the provider is
  * rate-limited, so infrastructure failures are separated from quota noise.
@@ -20,7 +20,7 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 
-const BASE = process.env.BASE_URL ?? "http://localhost:3000";
+const BASE = process.env.BASE_URL ?? "https://sebi-hackathon-code-wizards-zeta.vercel.app";
 
 let pass = 0, fail = 0, warn = 0;
 const ok = (cond, label, detail = "") => {
@@ -192,8 +192,8 @@ async function main() {
   // ── 8. Exports ────────────────────────────────────────────────────────────
   console.log("8 · Exports:");
   const draftHtml = await (await fetch(BASE + "/api/export/draft")).text();
-  ok(draftHtml.includes("Table of Contents") && draftHtml.includes("To be prepared"),
-    "draft export = full blueprint skeleton (TOC + to-be-prepared blocks)");
+  ok(draftHtml.includes("Table of Contents") && draftHtml.includes("drafted sections (blueprint order)"),
+    "draft export renders (TOC + drafted sections only)");
   const pack = await fetch(BASE + "/api/export/review-pack");
   ok(pack.status === 200 && (await pack.text()).includes("Review Pack"), "review pack export works");
   const csv = await fetch(BASE + "/api/export/gap-report");

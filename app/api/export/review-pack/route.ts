@@ -11,7 +11,7 @@ const esc = (s: string) =>
  * unresolved gaps and the standard disclaimer.
  */
 export async function GET() {
-  const { company, draft, analysis } = getContext();
+  const { company, draft, analysis } = await getContext();
   const gaps = (analysis?.gaps ?? []).filter((g) => g.status !== "Resolved");
   const name = company?.name ?? "Company";
   const html = `<!doctype html><html><head><meta charset="utf-8">
