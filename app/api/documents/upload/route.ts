@@ -31,7 +31,7 @@ const MAX_FILE_MB = 40;
  *  6. conflict detection  7. deterministic rule engine re-run
  */
 export async function POST(req: NextRequest) {
-  const db = loadDb();
+  const db = await loadDb();
   const company = getActiveCompany(db);
   if (!company) return NextResponse.json({ error: "Create a company profile first." }, { status: 400 });
 
@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
       uploadedBy,
       lastUpdated: new Date().toISOString().slice(0, 10),
       confidence,
-      extractedText: text.slice(0, 20000),
+      extractedText: text.slice(0, 6000),
       extractedSummary: summarize(file.name, text, category, fields),
       keyEntities: (fields.rptEntityNames as string[] | undefined)?.slice(0, 5) ?? [],
       keyNumbers: keyNumberBadges(fields),
@@ -133,7 +133,7 @@ export async function POST(req: NextRequest) {
 
   // deterministic rule engine
   db.analysis[company.id] = runAnalysis(company, companyDocuments(db, company.id), companyObjects(db, company.id));
-  saveDb(db);
+  await saveDb(db);
 
   return NextResponse.json({
     documents: created,

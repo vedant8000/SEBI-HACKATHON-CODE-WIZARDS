@@ -11,7 +11,7 @@ export const maxDuration = 120;
 /** POST { sectionName } → (re)generate one blueprint section. PATCH → edit. */
 export async function POST(req: NextRequest) {
   const { sectionName } = await req.json();
-  const db = loadDb();
+  const db = await loadDb();
   const company = getActiveCompany(db);
   if (!company) return NextResponse.json({ error: "No company" }, { status: 400 });
   if (!aiAvailable()) return NextResponse.json({ error: AI_SETUP_MESSAGE }, { status: 400 });
@@ -31,13 +31,13 @@ export async function POST(req: NextRequest) {
     db.draftSections[idx] = section;
   } else db.draftSections.push(section);
   logAudit(db, company.id, "System", `Section regenerated: ${sectionName}`);
-  saveDb(db);
+  await saveDb(db);
   return NextResponse.json({ section });
 }
 
 export async function PATCH(req: NextRequest) {
   const body = await req.json();
-  const db = loadDb();
+  const db = await loadDb();
   const section = db.draftSections.find((s) => s.id === body.id);
   if (!section) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const oldStatus = section.status;
@@ -47,6 +47,6 @@ export async function PATCH(req: NextRequest) {
   logAudit(db, section.companyId, body.user ?? "Promoter",
     body.status ? `Section status: ${section.sectionName}` : `Section edited: ${section.sectionName}`,
     oldStatus, body.status ?? "content edited");
-  saveDb(db);
+  await saveDb(db);
   return NextResponse.json({ section });
 }

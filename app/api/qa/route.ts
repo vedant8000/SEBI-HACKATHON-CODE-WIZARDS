@@ -6,7 +6,7 @@ export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   const { question } = await req.json();
-  const db = loadDb();
+  const db = await loadDb();
   const company = getActiveCompany(db);
   if (!company) return NextResponse.json({ answer: "Create or select a company first — then I can answer questions grounded in your own documents." });
   const answer = await answerPromoterQuestion(

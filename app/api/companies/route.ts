@@ -3,17 +3,17 @@ import { loadDb, saveDb, uid, logAudit } from "@/lib/store";
 import type { Company } from "@/lib/types";
 
 export async function GET() {
-  const db = loadDb();
+  const db = await loadDb();
   return NextResponse.json({ companies: db.companies, activeCompanyId: db.activeCompanyId });
 }
 
 // create a company (onboarding)
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const db = loadDb();
+  const db = await loadDb();
   if (body.action === "activate") {
     db.activeCompanyId = body.id;
-    saveDb(db);
+    await saveDb(db);
     return NextResponse.json({ ok: true });
   }
   // Guard against duplicates: re-submitting the same company name updates the
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     });
     db.activeCompanyId = existing.id;
     logAudit(db, existing.id, existing.promoterName || "Promoter", "Company profile updated (deduplicated)", "", existing.name);
-    saveDb(db);
+    await saveDb(db);
     return NextResponse.json({ company: existing });
   }
   const company: Company = {
@@ -70,19 +70,19 @@ export async function POST(req: NextRequest) {
   db.companies.push(company);
   db.activeCompanyId = company.id;
   logAudit(db, company.id, body.promoterName || "Promoter", "Company profile created", "", company.name);
-  saveDb(db);
+  await saveDb(db);
   return NextResponse.json({ company });
 }
 
 // update active company profile
 export async function PATCH(req: NextRequest) {
   const body = await req.json();
-  const db = loadDb();
+  const db = await loadDb();
   const company = db.companies.find((c) => c.id === (body.id ?? db.activeCompanyId));
   if (!company) return NextResponse.json({ error: "No company" }, { status: 404 });
   const before = JSON.stringify({ name: company.name, issueSizeCr: company.issueSizeCr });
   Object.assign(company, body.updates ?? {});
   logAudit(db, company.id, company.promoterName || "Promoter", "Company profile updated", before, JSON.stringify(body.updates ?? {}));
-  saveDb(db);
+  await saveDb(db);
   return NextResponse.json({ company });
 }

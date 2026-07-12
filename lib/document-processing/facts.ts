@@ -71,7 +71,7 @@ export function buildChunks(doc: DocumentRecord, pages: string[]): DocumentChunk
       companyId: doc.companyId,
       pageStart: start + 1,
       pageEnd: end + 1,
-      text: text.slice(0, 24000),
+      text: text.slice(0, 12000),
       detectedHeadings: headings,
       tokenEstimate: estTokens(text),
       processingStatus: "pending",
