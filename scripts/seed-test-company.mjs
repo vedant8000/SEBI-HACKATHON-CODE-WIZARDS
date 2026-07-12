@@ -10,7 +10,7 @@
  * Usage:
  *   1. Start the app:  npm run dev   (or npm run build && npm start)
  *   2. Run:            node scripts/seed-test-company.mjs [--no-docs]
- *   BASE_URL=https://sebi-hackathon-code-wizards-zeta.vercel.app by default (override via env).
+ *   BASE_URL=http://localhost:3000 by default (override via env).
  *
  * Figures sourced from public IPO trackers (Chittorgarh/Bigul/Screener),
  * rounded — test fixture only, not audited values.
@@ -21,7 +21,7 @@ import path from "path";
 import os from "os";
 import { fileURLToPath } from "url";
 
-const BASE = process.env.BASE_URL ?? "https://sebi-hackathon-code-wizards-zeta.vercel.app";
+const BASE = process.env.BASE_URL ?? "http://localhost:3000";
 const WITH_DOCS = !process.argv.includes("--no-docs");
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
