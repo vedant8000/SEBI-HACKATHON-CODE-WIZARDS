@@ -64,8 +64,10 @@ function ensureDirs() {
 }
 
 // ── Upstash Redis backend (serverless-safe shared store) ───────────────────
-const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL;
-const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
+// Accepts both naming schemes: UPSTASH_REDIS_REST_* (direct Upstash) and
+// KV_REST_API_* (Vercel Marketplace "Upstash for Redis" integration).
+const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL;
+const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN;
 const REDIS_KEY = "siim:db";
 const usingRedis = () => !!(REDIS_URL && REDIS_TOKEN);
 
