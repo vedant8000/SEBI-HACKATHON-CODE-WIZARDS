@@ -2,7 +2,7 @@ import { getContext } from "@/lib/server/context";
 import { Card, EmptyState, PageHeader } from "@/components/shared/ui";
 import DraftViewer, { type SectionMeta } from "@/components/draft/DraftViewer";
 import DraftQa from "@/components/chat/DraftQa";
-import { aiAvailable, AI_SETUP_MESSAGE } from "@/lib/ai/provider";
+import { aiAvailable } from "@/lib/ai/provider";
 import { SME_PROSPECTUS_BLUEPRINT } from "@/lib/ipo-blueprint/sme-prospectus-blueprint";
 
 export const dynamic = "force-dynamic";
@@ -38,12 +38,17 @@ export default async function DraftPage() {
     <>
       <PageHeader
         title="Draft Offer Document"
-        subtitle={`16 real SME offer-document sections, generated only from your extracted facts and evidence (${generatable} of ${coverage.length} blueprint sections currently have enough data). Missing information appears as explicit placeholders — never invented content. Every section requires authorised intermediary review.`}
+        subtitle={`The complete SME offer-document blueprint (${coverage.length} sections), generated only from your extracted facts and evidence — AI drafts the company-specific sections, the rule engine composes the standard ones (${generatable} sections currently have enough data). Missing information is omitted or flagged — never invented. Every section requires authorised intermediary review.`}
         actions={<a href="/api/export/draft" target="_blank" className="px-3 py-1.5 text-xs font-medium bg-slate-800 text-white rounded-lg hover:bg-slate-700">Export Draft Offer Document</a>}
       />
       {!aiAvailable() && (
-        <Card className="p-4 mb-5 border-amber-300 bg-amber-50">
-          <p className="text-sm text-amber-800">{AI_SETUP_MESSAGE}</p>
+        <Card className="p-4 mb-5 border-sky-300 bg-sky-50">
+          <p className="text-sm text-sky-800">
+            No AI provider is configured, so the draft is composed by the built-in <strong>rule-based generator</strong> — the
+            same blueprint sections, tables and source-linking, built deterministically from your extracted facts. Configure an
+            AI key (GEMINI/ANTHROPIC/OPENAI) for richer prose; the rule-based draft is always available as a fallback, including
+            when AI keys are rate-limited.
+          </p>
         </Card>
       )}
       <DraftViewer sections={draft} aiReady={aiAvailable()} meta={meta} />

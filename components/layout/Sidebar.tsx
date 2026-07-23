@@ -4,19 +4,18 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
-  Building2, FolderOpen, FileSearch, BrainCircuit, FileText, UserCheck, Bot,
+  Building2, FileSearch, BrainCircuit, FileText, UserCheck, Bot,
   UserRound, HelpCircle, Settings, LogOut,
 } from "lucide-react";
 
-// The focused demo flow: setup → upload → evidence → intelligence → draft → review (+ assistant)
+// The focused demo flow: setup (with upload) → evidence → intelligence → draft → review (+ assistant)
 const nav = [
-  { href: "/onboarding", label: "Company Setup", icon: Building2, step: 1, tile: "bg-blue-50 text-blue-700 border-blue-100" },
-  { href: "/data-room", label: "Upload Documents / Data Room", icon: FolderOpen, step: 2, tile: "bg-sky-50 text-sky-600 border-sky-100" },
-  { href: "/evidence", label: "Evidence & Extraction", icon: FileSearch, step: 3, tile: "bg-cyan-50 text-cyan-700 border-cyan-100" },
-  { href: "/intelligence", label: "IPO Intelligence", icon: BrainCircuit, step: 4, tile: "bg-indigo-50 text-indigo-600 border-indigo-100" },
-  { href: "/draft", label: "Draft Offer Document", icon: FileText, step: 5, tile: "bg-violet-50 text-violet-600 border-violet-100" },
-  { href: "/merchant-review", label: "Merchant Banker Review", icon: UserCheck, step: 6, tile: "bg-slate-100 text-[#1e3a5f] border-slate-200" },
-  { href: "/assistant", label: "AI Assistant", icon: Bot, step: 7, tile: "bg-teal-50 text-teal-700 border-teal-100" },
+  { href: "/onboarding", label: "Company Setup & Upload", icon: Building2, step: 1, tile: "bg-blue-50 text-blue-700 border-blue-100" },
+  { href: "/evidence", label: "Evidence & Extraction", icon: FileSearch, step: 2, tile: "bg-cyan-50 text-cyan-700 border-cyan-100" },
+  { href: "/intelligence", label: "IPO Intelligence", icon: BrainCircuit, step: 3, tile: "bg-indigo-50 text-indigo-600 border-indigo-100" },
+  { href: "/draft", label: "Draft Offer Document", icon: FileText, step: 4, tile: "bg-violet-50 text-violet-600 border-violet-100" },
+  { href: "/merchant-review", label: "Merchant Banker Review", icon: UserCheck, step: 5, tile: "bg-slate-100 text-[#1e3a5f] border-slate-200" },
+  { href: "/assistant", label: "AI Assistant", icon: Bot, step: 6, tile: "bg-teal-50 text-teal-700 border-teal-100" },
 ];
 
 /**

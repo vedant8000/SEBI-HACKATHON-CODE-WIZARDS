@@ -283,20 +283,21 @@ export async function answerPromoterQuestion(
   facts: ExtractedFact[]
 ): Promise<string> {
   const gaps = analysis?.gaps.filter((g) => g.status !== "Resolved") ?? [];
-  const suffix = "\n\nNote: answers come only from your uploaded documents and computed analysis — final judgement rests with your merchant banker and legal counsel.";
+  // No per-answer disclaimer suffix: the chat UI already states permanently that
+  // answers are grounded in the user's documents and are not regulatory advice.
 
   if (!aiAvailable()) {
     // deterministic grounded answers (no fabricated AI output)
     const q = question.toLowerCase();
     if (/missing|upload|document/.test(q)) {
       const missing = [...new Set(gaps.filter((g) => g.requiredDocument && g.requiredDocument !== "—").map((g) => `• ${g.requiredDocument} (${g.affectedSection})`))];
-      return missing.length ? `Missing documents/data:\n${missing.join("\n")}${suffix}` : `Nothing critical missing in the current uploads.${suffix}`;
+      return missing.length ? `Missing documents/data:\n${missing.join("\n")}` : `Nothing critical missing in the current uploads.`;
     }
     if (/fix|first|priorit/.test(q)) {
       const ordered = gaps.filter((g) => g.severity === "Critical" || g.severity === "High").slice(0, 5);
-      return ordered.length ? `Fix in this order:\n${ordered.map((g, i) => `${i + 1}. [${g.severity}] ${g.title} — ${g.suggestedFix}`).join("\n")}${suffix}` : `No open critical/high gaps.${suffix}`;
+      return ordered.length ? `Fix in this order:\n${ordered.map((g, i) => `${i + 1}. [${g.severity}] ${g.title} — ${g.suggestedFix}`).join("\n")}` : `No open critical/high gaps.`;
     }
-    return `AI Q&A requires an API key (${AI_SETUP_MESSAGE}) — but I can still answer "what is missing?" and "what should I fix first?" from the rule engine.${suffix}`;
+    return `AI Q&A requires an API key (${AI_SETUP_MESSAGE}) — but I can still answer "what is missing?" and "what should I fix first?" from the rule engine.`;
   }
 
   const factsCtx = facts.filter((f) => f.status !== "REJECTED").slice(0, 80)
@@ -305,7 +306,9 @@ export async function answerPromoterQuestion(
   const draftCtx = draft.slice(0, 30).map((d) => `${d.sectionName}: ${d.status}, confidence ${d.confidence}%`).join("\n");
 
   const answer = await callAI(
-    `You are SIIM's assistant for an Indian SME promoter preparing an IPO draft. Answer simply and practically (use simple Hindi/Hinglish if the user asks in Hindi). Answer ONLY from the context below. If the answer is not in the context, reply exactly: "I could not find this information in uploaded documents. Please upload supporting evidence or enter it manually." Never give definitive regulatory conclusions — defer final judgement to the merchant banker and legal counsel.
+    `You are SIIM's assistant for an Indian SME promoter preparing an IPO draft. Answer simply and practically (use simple Hindi/Hinglish if the user asks in Hindi). Answer ONLY from the context below. If the answer is not in the context, reply exactly: "I could not find this information in uploaded documents. Please upload supporting evidence or enter it manually." Never state definitive regulatory conclusions (approved / compliant / eligible) as fact.
+
+FORMAT RULES (strict): Write short, polished conversational sentences in plain paragraphs, like a helpful advisor speaking — not a report. Never use markdown symbols: no asterisks, no dashes as bullets, no # headings, no tables, no "**bold**". When you need a list, write short numbered lines ("1. …", "2. …"). Keep the whole answer under about 150 words. Do NOT append disclaimers, notes, or "consult your merchant banker / legal counsel" reminders — the app already displays that permanently next to this chat. Mention professional review only if the user's question is specifically about approval, filing or sign-off. End on the substance, not a caveat.
 
 COMPANY: ${company.name} (${company.industry}); readiness ${analysis?.scores.overall ?? "n/a"}/100; RPT risk ${analysis?.scores.rptScore ?? "n/a"}/100.
 EXTRACTED FACTS:\n${factsCtx || "(none)"}
@@ -315,5 +318,5 @@ DRAFT SECTIONS:\n${draftCtx || "(none generated)"}
 QUESTION: ${question}`,
     { maxTokens: 700 }
   );
-  return (answer ?? "The AI provider did not respond (possibly rate-limited). Please try again in a moment.") + suffix;
+  return answer ?? "The AI provider did not respond (possibly rate-limited). Please try again in a moment.";
 }

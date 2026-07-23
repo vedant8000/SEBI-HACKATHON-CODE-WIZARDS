@@ -183,6 +183,9 @@ export interface DraftSection {
   missingData: string[];
   comments: ReviewComment[];
   updatedAt: string;
+  /** Which engine produced the text — AI when available, else the deterministic
+   *  rule-based generator (fallback when no key / rate-limited). */
+  generatedBy?: "ai" | "rule-based";
 }
 
 export interface AuditLogEntry {
