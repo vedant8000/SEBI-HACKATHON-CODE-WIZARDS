@@ -20,7 +20,7 @@ export default async function PortalLayout({ children }: { children: React.React
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 bg-[#d7e2f0]">
         <Topbar
           companyName={company?.name ?? null}
           statusLine={analysis ? `Readiness ${analysis.scores.overall}/100 · ${analysis.scores.statusLine}` : company ? "Analysis not run yet" : null}

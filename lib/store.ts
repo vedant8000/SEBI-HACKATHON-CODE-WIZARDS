@@ -1,4 +1,5 @@
 import fs from "fs";
+import os from "os";
 import path from "path";
 import type {
   AnalysisResult,
@@ -35,12 +36,14 @@ export interface Db {
   auditLog: AuditLogEntry[];
 }
 
-// On serverless hosts (Vercel/Lambda) the project directory is read-only and
-// only /tmp is writable — data there is ephemeral (fine for demos; use a real
-// DB for production persistence). Locally we keep the durable ./data folder.
-const IS_SERVERLESS = !!process.env.VERCEL || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
-const DATA_DIR = process.env.DATA_DIR
-  ?? (IS_SERVERLESS ? path.join("/tmp", "siim-data") : path.join(process.cwd(), "data"));
+/**
+ * Vercel's serverless filesystem is read-only outside /tmp, so on Vercel we
+ * write there instead. /tmp doesn't persist across cold starts or multiple
+ * instances — fine for a live demo, not a substitute for a real database.
+ */
+const DATA_DIR = process.env.VERCEL
+  ? path.join(os.tmpdir(), "ipo-saathi-data")
+  : path.join(process.cwd(), "data");
 const DB_FILE = path.join(DATA_DIR, "db.json");
 export const UPLOADS_DIR = path.join(DATA_DIR, "uploads");
 
