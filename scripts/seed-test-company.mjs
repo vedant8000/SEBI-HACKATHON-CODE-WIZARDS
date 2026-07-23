@@ -69,6 +69,28 @@ const post = async (url, body) => {
   return { status: res.status, data: await res.json().catch(() => ({})) };
 };
 
+// ── auth: APIs are session-protected; log in (or register) the demo promoter
+const DEMO_USER = { name: "Demo Promoter", email: "promoter@siim.demo", password: "Demo@123", role: "PROMOTER" };
+let SESSION_COOKIE = "";
+const rawFetch = globalThis.fetch;
+globalThis.fetch = (url, init = {}) =>
+  rawFetch(url, SESSION_COOKIE ? { ...init, headers: { ...(init.headers ?? {}), cookie: SESSION_COOKIE } } : init);
+
+async function authenticate() {
+  for (const p of ["/api/auth/login", "/api/auth/register"]) {
+    const res = await rawFetch(BASE + p, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(DEMO_USER),
+    }).catch(() => null);
+    if (res?.ok) {
+      SESSION_COOKIE = (res.headers.get("set-cookie") ?? "").split(";")[0];
+      return true;
+    }
+  }
+  return false;
+}
+
 // ── test-fixture PDFs consistent with the profile ───────────────────────────
 async function makeFixturePdfs(dir) {
   const { default: PDFDocument } = await import("pdfkit");
@@ -129,7 +151,12 @@ async function makeFixturePdfs(dir) {
 async function main() {
   console.log(`\nE2E: Company Setup auto-fill → upload → analysis   (server: ${BASE})\n`);
 
-  // Step 0: server reachable
+  // Step 0: server reachable + session
+  const authed = await authenticate();
+  if (!authed) {
+    console.error(`❌ Could not log in at ${BASE}. Is the server running (npm run dev) and seeded (npm run seed:mongo)?`);
+    process.exit(1);
+  }
   const up = await fetch(BASE + "/api/companies").catch(() => null);
   if (!up) {
     console.error(`❌ Server not reachable at ${BASE}. Start it first: npm run dev`);
