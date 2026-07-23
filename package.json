@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "npm run test:site",
     "test:e2e": "node scripts/seed-test-company.mjs",
     "test:site": "node scripts/full-site-test.mjs"
   },

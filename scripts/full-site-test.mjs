@@ -10,7 +10,7 @@
  *
  * Usage:
  *   1. npm run dev   (or npm run build && npm start)
- *   2. npm run test:site        [BASE_URL=http://localhost:3000 by default]
+ *   2. npm run test:site        [BASE_URL=https://sebi-hackathon-code-wizards-zeta.vercel.app by default]
  *
  * AI-dependent steps degrade to WARN (not FAIL) if the provider is
  * rate-limited, so infrastructure failures are separated from quota noise.
@@ -20,7 +20,7 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 
-const BASE = process.env.BASE_URL ?? "http://localhost:3000";
+const BASE = process.env.BASE_URL ?? "https://sebi-hackathon-code-wizards-zeta.vercel.app";
 
 let pass = 0, fail = 0, warn = 0;
 const ok = (cond, label, detail = "") => {
