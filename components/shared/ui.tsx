@@ -142,10 +142,7 @@ export function EmptyState({
       {showOnboardCta && (
         <div className="flex justify-center gap-3 mt-5">
           <Link href="/onboarding" className="px-4 py-2 bg-slate-800 text-white text-sm rounded-lg hover:bg-slate-700">
-            Start Company Setup
-          </Link>
-          <Link href="/data-room" className="px-4 py-2 border border-slate-300 text-sm rounded-lg hover:bg-slate-50">
-            Upload Documents
+            Start Company Setup &amp; Upload
           </Link>
         </div>
       )}
@@ -165,10 +162,13 @@ export function DisclaimerBar() {
   );
 }
 
-export function AiNote({ confidence }: { confidence?: number }) {
+export function AiNote({ confidence, generatedBy }: { confidence?: number; generatedBy?: "ai" | "rule-based" }) {
+  const ruleBased = generatedBy === "rule-based";
   return (
     <span className="inline-flex items-center gap-1.5 text-[11px] text-slate-500">
-      <span className="px-1.5 py-0.5 rounded bg-violet-50 text-violet-700 border border-violet-200 font-medium">AI-generated</span>
+      <span className={`px-1.5 py-0.5 rounded border font-medium ${ruleBased ? "bg-sky-50 text-sky-700 border-sky-200" : "bg-violet-50 text-violet-700 border-violet-200"}`}>
+        {ruleBased ? "Rule-based draft" : "AI-generated"}
+      </span>
       <span className="px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 font-medium">Needs professional review</span>
       {confidence !== undefined && <span>Source confidence: {confidence}%</span>}
     </span>

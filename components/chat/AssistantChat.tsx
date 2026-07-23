@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Bot, FileText, FolderOpen, Gauge, Loader2, Send, Sparkles, User } from "lucide-react";
 import { Card, SeverityBadge } from "@/components/shared/ui";
+import ChatMarkdown from "@/components/chat/ChatMarkdown";
 
 const SUGGESTED: { label: string; q: string }[] = [
   { label: "What should I fix first?", q: "What should I fix first?" },
@@ -85,8 +86,8 @@ export default function AssistantChat({
                 {m.role === "user" ? <User size={13} className="text-slate-600" /> : <Bot size={13} className="text-white" />}
               </span>
               <div className={`max-w-[78%] ${m.role === "user" ? "text-right" : ""}`}>
-                <div className={`inline-block text-left text-[13px] px-3.5 py-2.5 rounded-2xl whitespace-pre-wrap leading-relaxed ${m.role === "user" ? "bg-blue-600 text-white rounded-tr-sm" : "bg-slate-100 text-slate-700 rounded-tl-sm"}`}>
-                  {m.text}
+                <div className={`inline-block text-left text-[13px] px-3.5 py-2.5 rounded-2xl leading-relaxed ${m.role === "user" ? "bg-blue-600 text-white rounded-tr-sm whitespace-pre-wrap" : "bg-slate-100 text-slate-700 rounded-tl-sm"}`}>
+                  {m.role === "user" ? m.text : <ChatMarkdown text={m.text} />}
                 </div>
                 <div className="text-[10px] text-slate-300 mt-1 px-1">{m.at}</div>
               </div>

@@ -7,6 +7,7 @@ import {
   SME_PROSPECTUS_BLUEPRINT, PRIORITY_SECTION_IDS, type BlueprintSection,
 } from "../ipo-blueprint/sme-prospectus-blueprint";
 import { buildCoverage } from "./coverage";
+import { generateSectionDeterministic, type DetCtx } from "./draft-template";
 import { aiAvailable, generateSectionAI, paceAI } from "../ai/provider";
 
 /**
@@ -17,11 +18,12 @@ import { aiAvailable, generateSectionAI, paceAI } from "../ai/provider";
  *     blueprint says this section needs,
  *  2. gather open gaps / rule failures affecting the section,
  *  3. send ONLY that context to the AI with strict no-invention rules,
- *  4. insert [Promoter confirmation required] placeholders where data is
- *     missing — never hallucinated text.
+ *  4. omit missing data — never hallucinated text.
  *
- * Requires a configured AI provider. Without one, sections are created as
- * placeholders that list exactly what is needed — no fake AI output.
+ * When no AI provider is configured, or every key is rate-limited (the AI call
+ * returns null), the deterministic rule-based generator (lib/engine/draft-template.ts)
+ * composes the same sections from the extracted facts — so a draft is always
+ * produced. Each section records which engine produced it (generatedBy).
  */
 
 export const DRAFT_SECTION_NAMES = SME_PROSPECTUS_BLUEPRINT.map((s) => s.sectionName);
@@ -76,8 +78,10 @@ export async function generateBlueprintSection(
   docs: DocumentRecord[],
   facts: ExtractedFact[],
   objects: ObjectOfIssue[],
-  analysis: AnalysisResult | null
+  analysis: AnalysisResult | null,
+  opts: { preferAi?: boolean } = {}
 ): Promise<DraftSection> {
+  const preferAi = opts.preferAi ?? true;
   const coverage = buildCoverage(company, docs, facts, objects, analysis?.gaps ?? []);
   const row = coverage.find((c) => c.sectionId === s.sectionId)!;
   const sf = sectionFacts(s, facts);
@@ -98,18 +102,29 @@ export async function generateBlueprintSection(
     updatedAt: new Date().toISOString(),
   };
 
-  if (!aiAvailable()) {
-    base.generatedText =
-      `[Not generated — AI provider not configured.]\n\nThis section (${s.purpose.toLowerCase()}) will be generated from your uploaded documents once an AI API key is set.` +
-      (row.missingFacts.length ? `\n\nData still needed: ${row.missingFacts.join("; ")}.` : "");
-    return base;
-  }
+  const factConf = sf.length ? sf.reduce((x, f) => x + f.confidence, 0) / sf.length : 50;
+  const detCtx: DetCtx = { company, docs, facts, objects, analysis, row };
 
-  if (row.canGenerate === "NO") {
-    base.generatedText =
-      `[Cannot generate yet — insufficient data (coverage ${row.completionPct}%).]\n\nRequired before drafting: ${row.missingFacts.join("; ") || "core inputs"}.\n\nUpload the documents above or enter the facts manually in Extraction & Evidence.`;
+  /** Deterministic rule-based section — the offline / rate-limit fallback. */
+  const composeDeterministic = (): DraftSection => {
+    const text = generateSectionDeterministic(s, detCtx);
+    if (!text) {
+      base.generatedText =
+        `This section (${s.purpose.toLowerCase()}) needs more source data before it can be drafted.` +
+        (row.missingFacts.length ? ` Still needed: ${row.missingFacts.join("; ")}.` : "");
+      base.generatedBy = "rule-based";
+      return base;
+    }
+    base.generatedText = text;
+    base.status = "AI Drafted";
+    base.generatedBy = "rule-based";
+    base.confidence = Math.round(0.35 * factConf + 0.65 * row.completionPct);
     return base;
-  }
+  };
+
+  // Standard-language sections and the no-key case use the deterministic
+  // generator directly — AI calls are reserved for company-specific sections.
+  if (!preferAi || !aiAvailable()) return composeDeterministic();
 
   const text = await generateSectionAI({
     sectionName: s.sectionName,
@@ -121,19 +136,24 @@ export async function generateBlueprintSection(
     riskWarnings: s.riskWarnings,
   });
 
-  if (!text) {
-    base.generatedText = `[Generation failed — the AI provider did not respond (possibly rate-limited). Use "Regenerate section" to retry.]`;
-    return base;
-  }
+  // AI unavailable at call time (rate-limited / quota exhausted) → deterministic fallback.
+  if (!text) return composeDeterministic();
 
   base.generatedText = text.trim();
   base.status = "AI Drafted";
-  const factConf = sf.length ? sf.reduce((x, f) => x + f.confidence, 0) / sf.length : 50;
+  base.generatedBy = "ai";
   base.confidence = Math.round(0.5 * factConf + 0.5 * row.completionPct);
   return base;
 }
 
-/** Generate the priority sections (substantive content) or a named subset. */
+/**
+ * Generate the FULL blueprint (all sections) or a named subset.
+ *
+ * AI calls are spent only on the priority (company-specific) sections; the
+ * standard/boilerplate sections are composed deterministically — so a complete
+ * offer document is produced in both AI and fallback modes, and generation
+ * stays fast and within free-tier limits.
+ */
 export async function generateDraft(
   company: Company,
   docs: DocumentRecord[],
@@ -142,12 +162,14 @@ export async function generateDraft(
   analysis: AnalysisResult | null,
   sectionIds?: string[]
 ): Promise<DraftSection[]> {
-  const ids = sectionIds?.length ? sectionIds : PRIORITY_SECTION_IDS;
-  const sections = SME_PROSPECTUS_BLUEPRINT.filter((s) => ids.includes(s.sectionId));
+  const sections = sectionIds?.length
+    ? SME_PROSPECTUS_BLUEPRINT.filter((s) => sectionIds.includes(s.sectionId))
+    : SME_PROSPECTUS_BLUEPRINT;
   const out: DraftSection[] = [];
   for (const s of sections) {
-    out.push(await generateBlueprintSection(s, company, docs, facts, objects, analysis));
-    await paceAI(); // stay under free-tier per-minute limits
+    const preferAi = PRIORITY_SECTION_IDS.includes(s.sectionId);
+    out.push(await generateBlueprintSection(s, company, docs, facts, objects, analysis, { preferAi }));
+    if (preferAi && aiAvailable()) await paceAI(); // pace only real AI calls
   }
   return out;
 }
