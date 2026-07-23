@@ -14,7 +14,7 @@ const esc = (s: string) =>
  * the complete offer document structure (also tracked in the Coverage Matrix).
  */
 export async function GET() {
-  const { company, draft } = getContext();
+  const { company, draft } = await getContext();
   const name = company?.name ?? "Company";
   const byName = new Map(draft.map((s) => [s.sectionName, s]));
   const drafted = SME_PROSPECTUS_BLUEPRINT.filter(

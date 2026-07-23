@@ -8,7 +8,7 @@ import { runAnalysis } from "@/lib/engine/analysis";
 import type { ExtractedFact } from "@/lib/types";
 
 export async function GET() {
-  const db = loadDb();
+  const db = await loadDb();
   const company = getActiveCompany(db);
   if (!company) return NextResponse.json({ facts: [], conflicts: [] });
   return NextResponse.json({
@@ -24,7 +24,7 @@ export async function GET() {
  */
 export async function PATCH(req: NextRequest) {
   const body = await req.json();
-  const db = loadDb();
+  const db = await loadDb();
   const fact = db.facts.find((f) => f.id === body.id);
   if (!fact) return NextResponse.json({ error: "Fact not found" }, { status: 404 });
   const before = `${fact.status}:${fact.normalizedValue}`;
@@ -49,13 +49,13 @@ export async function PATCH(req: NextRequest) {
     db.analysis[company.id] = runAnalysis(company, companyDocuments(db, company.id), companyObjects(db, company.id));
   }
   logAudit(db, fact.companyId, body.user ?? "Promoter", `Fact ${body.action}: ${fact.factLabel}`, before, `${fact.status}:${fact.normalizedValue}`);
-  saveDb(db);
+  await saveDb(db);
   return NextResponse.json({ fact });
 }
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const db = loadDb();
+  const db = await loadDb();
   const company = getActiveCompany(db);
   if (!company) return NextResponse.json({ error: "No company" }, { status: 400 });
   if (!body.factKey || body.value === undefined)
@@ -86,6 +86,6 @@ export async function POST(req: NextRequest) {
   db.facts.push(fact);
   db.analysis[company.id] = runAnalysis(company, companyDocuments(db, company.id), companyObjects(db, company.id));
   logAudit(db, company.id, body.user ?? "Promoter", `Manual fact entered: ${fact.factLabel}`, "", fact.normalizedValue);
-  saveDb(db);
+  await saveDb(db);
   return NextResponse.json({ fact });
 }
