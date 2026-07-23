@@ -102,7 +102,7 @@ export default function Sidebar() {
       {/* brand */}
       <Link href="/" className="flex items-center gap-2.5 px-4 pt-4 pb-3">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/landing/siim-mark.png" alt="" className="h-11 w-auto drop-shadow-sm" />
+        <img src="/landing/siim-logo.png" alt="" className="h-11 w-11 object-contain drop-shadow-sm" />
         <span>
           <span className="block text-[#1e3a5f] font-bold text-xl leading-tight font-serif tracking-tight">SIIM</span>
           <span className="block text-[9px] font-semibold uppercase tracking-[0.14em] text-blue-700 leading-tight">
