@@ -3,7 +3,7 @@ import { getContext } from "@/lib/server/context";
 
 /** Gap Report as CSV. */
 export async function GET() {
-  const { company, analysis } = getContext();
+  const { company, analysis } = await getContext();
   const gaps = analysis?.gaps ?? [];
   const esc = (s: string) => `"${(s ?? "").replace(/"/g, '""')}"`;
   const rows = [

@@ -4,7 +4,7 @@ import { runAnalysis } from "@/lib/engine/analysis";
 import type { ObjectOfIssue } from "@/lib/types";
 
 export async function GET() {
-  const db = loadDb();
+  const db = await loadDb();
   const company = getActiveCompany(db);
   return NextResponse.json({ objects: company ? companyObjects(db, company.id) : [] });
 }
@@ -12,7 +12,7 @@ export async function GET() {
 /** Save the fund utilisation plan built in Objects Builder. */
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const db = loadDb();
+  const db = await loadDb();
   const company = getActiveCompany(db);
   if (!company) return NextResponse.json({ error: "No company" }, { status: 400 });
 
@@ -37,6 +37,6 @@ export async function POST(req: NextRequest) {
   db.objectsByCompany[company.id] = items;
   db.analysis[company.id] = runAnalysis(company, companyDocuments(db, company.id), items);
   logAudit(db, company.id, "Promoter", "Objects of issue updated", "", `${items.length} objects, total ₹${total} Cr`);
-  saveDb(db);
+  await saveDb(db);
   return NextResponse.json({ objects: items, analysis: db.analysis[company.id] });
 }

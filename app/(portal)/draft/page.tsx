@@ -7,8 +7,8 @@ import { SME_PROSPECTUS_BLUEPRINT } from "@/lib/ipo-blueprint/sme-prospectus-blu
 
 export const dynamic = "force-dynamic";
 
-export default function DraftPage() {
-  const { company, draft, coverage, analysis } = getContext();
+export default async function DraftPage() {
+  const { company, draft, coverage, analysis } = await getContext();
   if (!company) {
     return (
       <>

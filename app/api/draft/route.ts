@@ -9,14 +9,14 @@ import { aiAvailable, AI_SETUP_MESSAGE } from "@/lib/ai/provider";
 export const maxDuration = 300;
 
 export async function GET() {
-  const db = loadDb();
+  const db = await loadDb();
   const company = getActiveCompany(db);
   return NextResponse.json({ draft: company ? companyDraft(db, company.id) : [], aiAvailable: aiAvailable() });
 }
 
 /** Generate the blueprint-driven, source-linked draft (priority sections). */
 export async function POST(req: NextRequest) {
-  const db = loadDb();
+  const db = await loadDb();
   const company = getActiveCompany(db);
   if (!company) return NextResponse.json({ error: "Create a company profile first." }, { status: 400 });
   if (!aiAvailable()) return NextResponse.json({ error: AI_SETUP_MESSAGE }, { status: 400 });
@@ -43,6 +43,6 @@ export async function POST(req: NextRequest) {
     .concat(sections);
 
   logAudit(db, company.id, "System", "Draft generated (blueprint)", "", `${sections.length} sections`);
-  saveDb(db);
+  await saveDb(db);
   return NextResponse.json({ draft: db.draftSections.filter((s) => s.companyId === company.id) });
 }

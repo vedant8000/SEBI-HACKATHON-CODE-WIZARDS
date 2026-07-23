@@ -5,8 +5,8 @@ import RunIntelligenceButton from "@/components/evidence/RunIntelligenceButton";
 
 export const dynamic = "force-dynamic";
 
-export default function EvidencePage() {
-  const { company, facts, conflicts, db } = getContext();
+export default async function EvidencePage() {
+  const { company, facts, conflicts, db } = await getContext();
   if (!company) {
     return (
       <>

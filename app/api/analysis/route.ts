@@ -5,13 +5,13 @@ import { detectConflicts } from "@/lib/document-processing/facts";
 
 /** GET: last stored analysis. POST: re-run readiness/gaps/heatmap/RPT/financial checks/observations. */
 export async function GET() {
-  const db = loadDb();
+  const db = await loadDb();
   const company = getActiveCompany(db);
   return NextResponse.json({ analysis: company ? db.analysis[company.id] ?? null : null });
 }
 
 export async function POST() {
-  const db = loadDb();
+  const db = await loadDb();
   const company = getActiveCompany(db);
   if (!company) return NextResponse.json({ error: "Create a company profile first." }, { status: 400 });
   // conflicts are part of the analysis — recompute with current facts & rules
@@ -20,6 +20,6 @@ export async function POST() {
   const analysis = runAnalysis(company, companyDocuments(db, company.id), companyObjects(db, company.id));
   db.analysis[company.id] = analysis;
   logAudit(db, company.id, "System", "Analysis re-run", "", `Score ${analysis.scores.overall}/100, ${analysis.gaps.length} gaps`);
-  saveDb(db);
+  await saveDb(db);
   return NextResponse.json({ analysis });
 }
