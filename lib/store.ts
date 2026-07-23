@@ -1,4 +1,5 @@
 import fs from "fs";
+import os from "os";
 import path from "path";
 import type {
   AnalysisResult,
@@ -32,7 +33,14 @@ export interface Db {
   auditLog: AuditLogEntry[];
 }
 
-const DATA_DIR = path.join(process.cwd(), "data");
+/**
+ * Vercel's serverless filesystem is read-only outside /tmp, so on Vercel we
+ * write there instead. /tmp doesn't persist across cold starts or multiple
+ * instances — fine for a live demo, not a substitute for a real database.
+ */
+const DATA_DIR = process.env.VERCEL
+  ? path.join(os.tmpdir(), "ipo-saathi-data")
+  : path.join(process.cwd(), "data");
 const DB_FILE = path.join(DATA_DIR, "db.json");
 export const UPLOADS_DIR = path.join(DATA_DIR, "uploads");
 
