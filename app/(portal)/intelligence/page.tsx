@@ -4,8 +4,8 @@ import IntelligenceTabs from "@/components/intelligence/IntelligenceTabs";
 
 export const dynamic = "force-dynamic";
 
-export default function IntelligencePage() {
-  const { company, analysis, coverage, conflicts, objects, docs } = getContext();
+export default async function IntelligencePage() {
+  const { company, analysis, coverage, conflicts, objects, docs } = await getContext();
   if (!company) {
     return (
       <>

@@ -5,8 +5,8 @@ import { activeProvider, aiAvailable, AI_SETUP_MESSAGE, geminiKeys } from "@/lib
 
 export const dynamic = "force-dynamic";
 
-export default function SettingsPage() {
-  const { db, company } = getContext();
+export default async function SettingsPage() {
+  const { db, company } = await getContext();
   const provider = activeProvider();
   return (
     <>

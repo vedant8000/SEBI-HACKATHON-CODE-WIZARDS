@@ -4,8 +4,8 @@ import AssistantChat from "@/components/chat/AssistantChat";
 
 export const dynamic = "force-dynamic";
 
-export default function AssistantPage() {
-  const { company, analysis, facts, draft, docs } = getContext();
+export default async function AssistantPage() {
+  const { company, analysis, facts, draft, docs } = await getContext();
   if (!company) {
     return (
       <>

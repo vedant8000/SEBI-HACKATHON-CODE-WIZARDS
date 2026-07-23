@@ -36,6 +36,28 @@ const post = (url, body) => fetch(BASE + url, { method: "POST", headers: { "Cont
 const patch = (url, body) => fetch(BASE + url, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(j);
 const get = (url) => fetch(BASE + url).then(j);
 
+// ── auth: APIs are session-protected; log in (or register) the demo promoter
+const DEMO_USER = { name: "Demo Promoter", email: "promoter@siim.demo", password: "Demo@123", role: "PROMOTER" };
+let SESSION_COOKIE = "";
+const rawFetch = globalThis.fetch;
+globalThis.fetch = (url, init = {}) =>
+  rawFetch(url, SESSION_COOKIE ? { ...init, headers: { ...(init.headers ?? {}), cookie: SESSION_COOKIE } } : init);
+
+async function authenticate() {
+  for (const p of ["/api/auth/login", "/api/auth/register"]) {
+    const res = await rawFetch(BASE + p, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(DEMO_USER),
+    }).catch(() => null);
+    if (res?.ok) {
+      SESSION_COOKIE = (res.headers.get("set-cookie") ?? "").split(";")[0];
+      return true;
+    }
+  }
+  return false;
+}
+
 const COMPANY = {
   name: "Shivalic Power Control Limited",
   cin: "U31200HR2004PLC035502",
@@ -96,6 +118,7 @@ async function main() {
   console.log("0 · Server & page availability:");
   const upCheck = await fetch(BASE + "/").catch(() => null);
   if (!upCheck) { console.error(`❌ Server not reachable at ${BASE}. Start it first (npm run dev).`); process.exit(1); }
+  ok(await authenticate(), "logged in as demo promoter", DEMO_USER.email);
   for (const p of ["", "onboarding", "data-room", "evidence", "intelligence", "draft", "merchant-review", "assistant", "settings"]) {
     const res = await fetch(`${BASE}/${p}`);
     ok(res.status === 200, `/${p || "(landing)"} renders`, `HTTP ${res.status}`);

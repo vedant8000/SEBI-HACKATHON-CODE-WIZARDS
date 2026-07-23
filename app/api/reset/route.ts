@@ -3,7 +3,7 @@ import { loadDb, saveDb } from "@/lib/store";
 
 /** Reset everything — fresh start. */
 export async function DELETE() {
-  const db = loadDb();
+  const db = await loadDb();
   db.companies = [];
   db.documents = [];
   db.chunks = [];
@@ -14,6 +14,6 @@ export async function DELETE() {
   db.analysis = {};
   db.auditLog = [];
   db.activeCompanyId = null;
-  saveDb(db);
+  await saveDb(db);
   return NextResponse.json({ ok: true });
 }

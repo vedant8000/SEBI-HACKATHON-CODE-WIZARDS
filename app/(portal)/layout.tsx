@@ -7,8 +7,8 @@ import { aiAvailable } from "@/lib/ai/provider";
 
 export const dynamic = "force-dynamic";
 
-export default function PortalLayout({ children }: { children: React.ReactNode }) {
-  const { company, analysis, docs, facts, draft } = getContext();
+export default async function PortalLayout({ children }: { children: React.ReactNode }) {
+  const { company, analysis, docs, facts, draft } = await getContext();
   const steps = [
     { href: "/onboarding", label: "Company Setup", done: !!company },
     { href: "/data-room", label: "Upload Documents", done: docs.length > 0 },
