@@ -1,4 +1,4 @@
-# SIIM — AI Disclosure Intelligence Platform for SME IPOs
+# SIIM(SME IPO Intelligence Mitra) — AI Disclosure Intelligence Platform for SME IPOs
 
 **SEBI Hackathon · Problem Statement 4: Simplifying IPO Offer Document Preparation for SMEs**
 
@@ -13,7 +13,7 @@ banker / legal / auditor review.
 
 ---
 
-## How it works (upload-driven — nothing is hardcoded)
+## How it works (upload driven)
 
 1. **Company Setup** — a guided, plain-language profile (rough numbers welcome; everything is cross-checked later).
 2. **Upload any documents** (PDF, TXT, CSV; scans accepted with manual entry fallback). Files are:
@@ -114,7 +114,8 @@ MCA/GSTN/PAN/DIN integrations · OCR for scanned documents · auditor & legal co
 comparison · XBRL/structured filing support · multi-language assistant · market-maker workflow · post-listing
 compliance automation · secure due-diligence repository with hash-trail document integrity.
 
+## Working Prototype Link-
+[https://sebi-hackathon-code-wizards.vercel.app]
+
 ---
 
-*Disclaimer: This is a hackathon MVP. It does not constitute legal, investment, accounting or regulatory advice.
-All generated content requires review by SEBI-registered intermediaries before any regulatory use.*

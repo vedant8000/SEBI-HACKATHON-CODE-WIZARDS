@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
       uploadedBy,
       lastUpdated: new Date().toISOString().slice(0, 10),
       confidence,
-      extractedText: text.slice(0, 20000),
+      extractedText: text.slice(0, 6000),
       extractedSummary: summarize(file.name, text, category, fields),
       keyEntities: (fields.rptEntityNames as string[] | undefined)?.slice(0, 5) ?? [],
       keyNumbers: keyNumberBadges(fields),
