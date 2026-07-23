@@ -4,8 +4,8 @@ import OnboardingForm from "@/components/onboarding/OnboardingForm";
 
 export const dynamic = "force-dynamic";
 
-export default function OnboardingPage() {
-  const { company } = getContext();
+export default async function OnboardingPage() {
+  const { company } = await getContext();
   return (
     <>
       <div className="flex items-center gap-4 mb-6">

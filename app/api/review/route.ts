@@ -9,7 +9,7 @@ import type { Role, SectionReviewStatus } from "@/lib/types";
  */
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const db = loadDb();
+  const db = await loadDb();
   const section = db.draftSections.find((s) => s.id === body.sectionId);
   if (!section) return NextResponse.json({ error: "Section not found" }, { status: 404 });
 
@@ -37,6 +37,6 @@ export async function POST(req: NextRequest) {
 
   logAudit(db, section.companyId, user,
     `${body.action} on section: ${section.sectionName}`, oldStatus, section.status);
-  saveDb(db);
+  await saveDb(db);
   return NextResponse.json({ section });
 }

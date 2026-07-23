@@ -192,8 +192,8 @@ async function main() {
   // ── 8. Exports ────────────────────────────────────────────────────────────
   console.log("8 · Exports:");
   const draftHtml = await (await fetch(BASE + "/api/export/draft")).text();
-  ok(draftHtml.includes("Table of Contents") && draftHtml.includes("To be prepared"),
-    "draft export = full blueprint skeleton (TOC + to-be-prepared blocks)");
+  ok(draftHtml.includes("Table of Contents") && draftHtml.includes("drafted sections (blueprint order)"),
+    "draft export renders (TOC + drafted sections only)");
   const pack = await fetch(BASE + "/api/export/review-pack");
   ok(pack.status === 200 && (await pack.text()).includes("Review Pack"), "review pack export works");
   const csv = await fetch(BASE + "/api/export/gap-report");

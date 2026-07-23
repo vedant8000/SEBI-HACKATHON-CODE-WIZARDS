@@ -4,8 +4,8 @@ import ReviewRoom from "@/components/review/ReviewRoom";
 
 export const dynamic = "force-dynamic";
 
-export default function MerchantReviewPage() {
-  const { company, draft, analysis, db } = getContext();
+export default async function MerchantReviewPage() {
+  const { company, draft, analysis, db } = await getContext();
   if (!company) {
     return (
       <>

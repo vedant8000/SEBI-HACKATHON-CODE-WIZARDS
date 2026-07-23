@@ -4,8 +4,8 @@ import DataRoom from "@/components/documents/DataRoom";
 
 export const dynamic = "force-dynamic";
 
-export default function DataRoomPage() {
-  const { company, docs } = getContext();
+export default async function DataRoomPage() {
+  const { company, docs } = await getContext();
   if (!company) {
     return (
       <>

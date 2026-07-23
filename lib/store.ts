@@ -14,8 +14,11 @@ import type {
 } from "./types";
 
 /**
- * Lightweight JSON-file datastore. Keeps the MVP runnable with one command
- * (no external DB), while persisting uploads and analysis across restarts.
+ * Datastore with two backends behind one async interface:
+ *  - Upstash Redis (REST) when UPSTASH_REDIS_REST_URL/TOKEN are set — required
+ *    on serverless hosts like Vercel, where each function instance has its own
+ *    isolated /tmp and a file store would split-brain across routes.
+ *  - JSON file locally (zero setup, durable across restarts).
  * Swap for Prisma/Postgres in production without changing callers.
  */
 
@@ -63,7 +66,40 @@ function ensureDirs() {
   if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 }
 
-export function loadDb(): Db {
+// ── Upstash Redis backend (serverless-safe shared store) ───────────────────
+// Accepts both naming schemes: UPSTASH_REDIS_REST_* (direct Upstash) and
+// KV_REST_API_* (Vercel Marketplace "Upstash for Redis" integration).
+const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL;
+const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN;
+const REDIS_KEY = "siim:db";
+const usingRedis = () => !!(REDIS_URL && REDIS_TOKEN);
+
+async function redisLoad(): Promise<Db> {
+  const res = await fetch(`${REDIS_URL}/get/${REDIS_KEY}`, {
+    headers: { Authorization: `Bearer ${REDIS_TOKEN}` },
+    cache: "no-store",
+  });
+  if (!res.ok) return structuredClone(emptyDb);
+  const data = await res.json();
+  if (!data?.result) return structuredClone(emptyDb);
+  try {
+    return { ...structuredClone(emptyDb), ...JSON.parse(data.result) };
+  } catch {
+    return structuredClone(emptyDb);
+  }
+}
+
+async function redisSave(db: Db) {
+  const res = await fetch(REDIS_URL!, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${REDIS_TOKEN}`, "Content-Type": "application/json" },
+    body: JSON.stringify(["SET", REDIS_KEY, JSON.stringify(db)]),
+  });
+  if (!res.ok) console.error(`[store] redis save failed: ${res.status} ${(await res.text()).slice(0, 200)}`);
+}
+
+export async function loadDb(): Promise<Db> {
+  if (usingRedis()) return redisLoad();
   ensureDirs();
   if (!fs.existsSync(DB_FILE)) return structuredClone(emptyDb);
   try {
@@ -74,7 +110,8 @@ export function loadDb(): Db {
   }
 }
 
-export function saveDb(db: Db) {
+export async function saveDb(db: Db) {
+  if (usingRedis()) return redisSave(db);
   ensureDirs();
   fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), "utf-8");
 }
