@@ -1,6 +1,8 @@
 import fs from "fs";
 import os from "os";
 import path from "path";
+import type { Document } from "mongodb";
+import { getMongoDb } from "./mongodb";
 import type {
   AnalysisResult,
   AuditLogEntry,
@@ -14,12 +16,16 @@ import type {
 } from "./types";
 
 /**
- * Datastore with two backends behind one async interface:
- *  - Upstash Redis (REST) when UPSTASH_REDIS_REST_URL/TOKEN are set — required
- *    on serverless hosts like Vercel, where each function instance has its own
- *    isolated /tmp and a file store would split-brain across routes.
- *  - JSON file locally (zero setup, durable across restarts).
- * Swap for Prisma/Postgres in production without changing callers.
+ * MongoDB-backed datastore. Callers keep the simple load → mutate → save
+ * model of the original JSON-file store: `loadDb()` materialises the whole
+ * app state from Mongo collections, and `saveDb()` writes back only the
+ * top-level keys that actually changed since load (diffed via JSON snapshot).
+ *
+ * Collections: one per array key (companies, documents, chunks, facts,
+ * conflicts, draftSections, objects, auditLog — array order preserved via an
+ * internal `_i` field), `objectsByCompany` / `analysis` as one doc per
+ * company, and `meta` for the activeCompanyId singleton. Auth users live in
+ * a separate `users` collection managed by lib/auth.ts.
  */
 
 export interface Db {
@@ -37,15 +43,28 @@ export interface Db {
 }
 
 /**
- * Vercel's serverless filesystem is read-only outside /tmp, so on Vercel we
- * write there instead. /tmp doesn't persist across cold starts or multiple
- * instances — fine for a live demo, not a substitute for a real database.
+ * Uploaded files still live on disk (Vercel: /tmp). Only structured state
+ * moved to MongoDB.
  */
 const DATA_DIR = process.env.VERCEL
   ? path.join(os.tmpdir(), "ipo-saathi-data")
   : path.join(process.cwd(), "data");
-const DB_FILE = path.join(DATA_DIR, "db.json");
 export const UPLOADS_DIR = path.join(DATA_DIR, "uploads");
+
+export function ensureUploadsDir() {
+  if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+}
+
+const ARRAY_KEYS = [
+  "companies",
+  "documents",
+  "chunks",
+  "facts",
+  "conflicts",
+  "draftSections",
+  "objects",
+  "auditLog",
+] as const;
 
 const emptyDb: Db = {
   activeCompanyId: null,
@@ -61,59 +80,113 @@ const emptyDb: Db = {
   auditLog: [],
 };
 
-function ensureDirs() {
-  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-  if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-}
+/** JSON snapshot of each top-level key at load time, used to diff on save. */
+const snapshots = new WeakMap<Db, Record<string, string>>();
 
-// ── Upstash Redis backend (serverless-safe shared store) ───────────────────
-// Accepts both naming schemes: UPSTASH_REDIS_REST_* (direct Upstash) and
-// KV_REST_API_* (Vercel Marketplace "Upstash for Redis" integration).
-const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL;
-const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN;
-const REDIS_KEY = "siim:db";
-const usingRedis = () => !!(REDIS_URL && REDIS_TOKEN);
-
-async function redisLoad(): Promise<Db> {
-  const res = await fetch(`${REDIS_URL}/get/${REDIS_KEY}`, {
-    headers: { Authorization: `Bearer ${REDIS_TOKEN}` },
-    cache: "no-store",
-  });
-  if (!res.ok) return structuredClone(emptyDb);
-  const data = await res.json();
-  if (!data?.result) return structuredClone(emptyDb);
-  try {
-    return { ...structuredClone(emptyDb), ...JSON.parse(data.result) };
-  } catch {
-    return structuredClone(emptyDb);
+function takeSnapshot(db: Db) {
+  const snap: Record<string, string> = {};
+  for (const key of Object.keys(emptyDb) as (keyof Db)[]) {
+    snap[key] = JSON.stringify(db[key]);
   }
-}
-
-async function redisSave(db: Db) {
-  const res = await fetch(REDIS_URL!, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${REDIS_TOKEN}`, "Content-Type": "application/json" },
-    body: JSON.stringify(["SET", REDIS_KEY, JSON.stringify(db)]),
-  });
-  if (!res.ok) console.error(`[store] redis save failed: ${res.status} ${(await res.text()).slice(0, 200)}`);
+  snapshots.set(db, snap);
 }
 
 export async function loadDb(): Promise<Db> {
-  if (usingRedis()) return redisLoad();
-  ensureDirs();
-  if (!fs.existsSync(DB_FILE)) return structuredClone(emptyDb);
-  try {
-    const raw = fs.readFileSync(DB_FILE, "utf-8");
-    return { ...structuredClone(emptyDb), ...JSON.parse(raw) };
-  } catch {
-    return structuredClone(emptyDb);
+  const mongo = await getMongoDb();
+  const db = structuredClone(emptyDb);
+
+  const [meta, byCompany, analysisDocs, ...arrays] = await Promise.all([
+    mongo.collection("meta").findOne({ _id: "app" } as Document),
+    mongo.collection("objectsByCompany").find({}, { projection: { _id: 0 } }).toArray(),
+    mongo.collection("analysis").find({}, { projection: { _id: 0 } }).toArray(),
+    ...ARRAY_KEYS.map((key) =>
+      mongo
+        .collection(key)
+        .find({}, { projection: { _id: 0 } })
+        .sort({ _i: 1 })
+        .toArray()
+    ),
+  ]);
+
+  db.activeCompanyId = (meta?.activeCompanyId as string | null) ?? null;
+  for (const doc of byCompany) {
+    db.objectsByCompany[doc.companyId as string] = doc.items as ObjectOfIssue[];
   }
+  for (const doc of analysisDocs) {
+    db.analysis[doc.companyId as string] = doc.result as AnalysisResult;
+  }
+  ARRAY_KEYS.forEach((key, idx) => {
+    (db[key] as unknown[]) = arrays[idx].map((doc) => {
+      delete (doc as { _i?: number })._i;
+      return doc;
+    });
+  });
+
+  takeSnapshot(db);
+  return db;
 }
 
 export async function saveDb(db: Db) {
-  if (usingRedis()) return redisSave(db);
-  ensureDirs();
-  fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), "utf-8");
+  const mongo = await getMongoDb();
+  const snap = snapshots.get(db) ?? {};
+  const writes: Promise<unknown>[] = [];
+
+  const changed = (key: keyof Db) => JSON.stringify(db[key]) !== snap[key];
+
+  if (changed("activeCompanyId")) {
+    writes.push(
+      mongo
+        .collection("meta")
+        .updateOne(
+          { _id: "app" } as Document,
+          { $set: { activeCompanyId: db.activeCompanyId } },
+          { upsert: true }
+        )
+    );
+  }
+
+  for (const key of ARRAY_KEYS) {
+    if (!changed(key)) continue;
+    const items = db[key].map((item, _i) => ({ ...item, _i }));
+    writes.push(
+      (async () => {
+        const col = mongo.collection(key);
+        await col.deleteMany({});
+        if (items.length) await col.insertMany(items as Document[]);
+      })()
+    );
+  }
+
+  if (changed("objectsByCompany")) {
+    writes.push(
+      (async () => {
+        const col = mongo.collection("objectsByCompany");
+        await col.deleteMany({});
+        const docs = Object.entries(db.objectsByCompany).map(([companyId, items]) => ({
+          companyId,
+          items,
+        }));
+        if (docs.length) await col.insertMany(docs as Document[]);
+      })()
+    );
+  }
+
+  if (changed("analysis")) {
+    writes.push(
+      (async () => {
+        const col = mongo.collection("analysis");
+        await col.deleteMany({});
+        const docs = Object.entries(db.analysis).map(([companyId, result]) => ({
+          companyId,
+          result,
+        }));
+        if (docs.length) await col.insertMany(docs as Document[]);
+      })()
+    );
+  }
+
+  await Promise.all(writes);
+  takeSnapshot(db);
 }
 
 export function uid(prefix = ""): string {
