@@ -14,7 +14,7 @@ type RoleKey = "PROMOTER" | "MERCHANT_BANKER";
 
 const ROLES: { key: RoleKey; route: string; icon: typeof UserCog }[] = [
   { key: "PROMOTER", route: "/onboarding", icon: UserCog },
-  { key: "MERCHANT_BANKER", route: "/merchant-review", icon: Briefcase },
+  { key: "MERCHANT_BANKER", route: "/banker", icon: Briefcase },
 ];
 
 /** All card copy in both languages — the EN | हिन्दी toggle swaps this. */

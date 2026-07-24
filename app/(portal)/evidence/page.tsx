@@ -7,7 +7,7 @@ import Tr from "@/components/i18n/Tr";
 export const dynamic = "force-dynamic";
 
 export default async function EvidencePage() {
-  const { company, facts, conflicts, db } = await getContext();
+  const { company, facts, conflicts, db, flags } = await getContext();
   if (!company) {
     return (
       <>
@@ -28,6 +28,7 @@ export default async function EvidencePage() {
         subtitle={<Tr id="evidence.subtitle" />}
         actions={<RunIntelligenceButton />}
       />
+      <BankerFlagsCard flags={flags.filter((f) => f.targetType === "fact" || f.targetType === "general")} />
       <FactsTable facts={facts} conflicts={conflicts} chunkStats={chunkStats} />
     </>
   );

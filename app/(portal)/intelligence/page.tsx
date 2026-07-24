@@ -6,7 +6,7 @@ import Tr from "@/components/i18n/Tr";
 export const dynamic = "force-dynamic";
 
 export default async function IntelligencePage() {
-  const { company, analysis, coverage, conflicts, objects, docs } = await getContext();
+  const { company, analysis, coverage, conflicts, objects, docs, flags } = await getContext();
   if (!company) {
     return (
       <>
@@ -24,6 +24,7 @@ export default async function IntelligencePage() {
         title={<Tr id="intelligence.title" />}
         subtitle={<Tr id="intelligence.subtitle" />}
       />
+      <BankerFlagsCard flags={flags.filter((f) => f.targetType === "gap")} title="Gaps your merchant banker has flagged" />
       <IntelligenceTabs
         analysis={analysis}
         coverage={coverage}

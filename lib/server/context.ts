@@ -1,10 +1,10 @@
 import {
-  companyConflicts, companyDocuments, companyDraft, companyFacts,
+  companyConflicts, companyDocuments, companyDraft, companyFacts, companyFlags,
   companyObjects, getActiveCompany, loadDb, type Db,
 } from "../store";
 import { buildCoverage } from "../engine/coverage";
 import type {
-  AnalysisResult, Company, CoverageRow, DocumentRecord, DraftSection,
+  AnalysisResult, BankerFlag, Company, CoverageRow, DocumentRecord, DraftSection,
   ExtractedFact, FactConflict, ObjectOfIssue,
 } from "../types";
 
@@ -18,14 +18,16 @@ export interface AppContext {
   facts: ExtractedFact[];
   conflicts: FactConflict[];
   coverage: CoverageRow[];
+  flags: BankerFlag[];
 }
 
-/** One-stop context for server components & routes. Always fresh from MongoDB. */
-export async function getContext(): Promise<AppContext> {
-  const db = await loadDb();
-  const company = getActiveCompany(db);
+/** Everything the app knows about ONE company — shared by promoter & banker views. */
+export function composeCompanyContext(db: Db, company: Company | null): AppContext {
   if (!company)
-    return { db, company: null, docs: [], objects: [], draft: [], analysis: null, facts: [], conflicts: [], coverage: [] };
+    return {
+      db, company: null, docs: [], objects: [], draft: [], analysis: null,
+      facts: [], conflicts: [], coverage: [], flags: [],
+    };
   const docs = companyDocuments(db, company.id);
   const objects = companyObjects(db, company.id);
   const facts = companyFacts(db, company.id);
@@ -40,5 +42,12 @@ export async function getContext(): Promise<AppContext> {
     facts,
     conflicts: companyConflicts(db, company.id),
     coverage: buildCoverage(company, docs, facts, objects, analysis?.gaps ?? []),
+    flags: companyFlags(db, company.id),
   };
+}
+
+/** One-stop context for server components & routes. Always fresh from MongoDB. */
+export async function getContext(): Promise<AppContext> {
+  const db = await loadDb();
+  return composeCompanyContext(db, getActiveCompany(db));
 }
