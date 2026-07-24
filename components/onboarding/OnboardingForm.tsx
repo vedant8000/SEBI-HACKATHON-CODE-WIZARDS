@@ -9,6 +9,7 @@ import {
   Wand2, FileUp, Loader2, CheckCircle2,
   type LucideIcon,
 } from "lucide-react";
+import { HeroBackdrop, HeroIconBadge } from "@/components/shared/ui";
 
 const emptyFy = (fy: string): FinancialYear => ({
   fy, revenueCr: null, patCr: null, ebitdaCr: null, netWorthCr: null,
@@ -42,7 +43,7 @@ function Field({
   );
 }
 
-/** Section card matching the reference mock: icon badge + numbered title. */
+/** Glass section card floating on the hero backdrop: icon badge + numbered title. */
 function SectionCard({
   icon: Icon, title, sub, accent = false, children, className = "",
 }: {
@@ -51,17 +52,15 @@ function SectionCard({
 }) {
   return (
     <section
-      className={`rounded-2xl border border-slate-200 bg-[#f7fafd] shadow-sm p-5 ${
+      className={`rounded-2xl border border-white/70 bg-white/70 backdrop-blur-md shadow-md shadow-blue-900/[0.04] p-5 ${
         accent ? "border-t-4 border-t-blue-500" : ""
       } ${className}`}
     >
       <div className="flex items-center gap-3 mb-4">
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-blue-50 border border-blue-100 text-[#1e3a5f]">
-          <Icon size={17} />
-        </span>
+        <HeroIconBadge icon={Icon} />
         <div>
           <h3 className="text-[15px] font-bold text-[#1e3a5f]">{title}</h3>
-          {sub && <p className="text-xs text-slate-400">{sub}</p>}
+          {sub && <p className="text-xs text-slate-500">{sub}</p>}
         </div>
       </div>
       {children}
@@ -272,13 +271,12 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
       : `${tableInput} w-full min-w-[52px] bg-white border-slate-300`;
 
   return (
-    <div className="space-y-5">
+    <HeroBackdrop className="p-5 md:p-6">
+    <div className="relative space-y-5">
       {/* ── Auto-fill from documents ── */}
-      <section className="rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-sky-50 shadow-sm p-5">
+      <section className="rounded-2xl border border-white/70 bg-white/70 backdrop-blur-md shadow-md shadow-blue-900/[0.04] p-5">
         <div className="flex items-center gap-3 mb-3">
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white border border-blue-200 text-blue-700">
-            <Wand2 size={17} />
-          </span>
+          <HeroIconBadge icon={Wand2} />
           <div>
             <h3 className="text-[15px] font-bold text-[#1e3a5f]">Auto-fill from your documents</h3>
             <p className="text-xs text-slate-500">
@@ -292,7 +290,7 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
           onDragLeave={() => setDragOver(false)}
           onDrop={(e) => { e.preventDefault(); setDragOver(false); autofill(e.dataTransfer.files); }}
           onClick={() => fileRef.current?.click()}
-          className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${dragOver ? "border-blue-500 bg-blue-100/50" : "border-blue-300 bg-white/70 hover:border-blue-400"}`}
+          className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors backdrop-blur-sm ${dragOver ? "border-blue-500 bg-blue-100/60" : "border-blue-300/70 bg-white/60 hover:border-blue-400"}`}
         >
           <input ref={fileRef} type="file" multiple className="hidden"
             accept=".pdf,.txt,.csv,.md"
@@ -306,13 +304,13 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
             <>
               <FileUp size={24} className="mx-auto text-blue-400 mb-1.5" />
               <p className="text-sm font-medium text-slate-700">Drop documents here or click to select (multiple supported)</p>
-              <p className="text-xs text-slate-400 mt-1">Text PDFs, TXT or CSV. We read them to fill the form below, and add them to your company for full analysis when you save.</p>
+              <p className="text-xs text-slate-500 mt-1">Text PDFs, TXT or CSV. We read them to fill the form below, and add them to your company for full analysis when you save.</p>
             </>
           )}
         </div>
         {parseErr && <p className="text-sm text-red-600 mt-2">{parseErr}</p>}
         {parsed && !parsing && (
-          <div className="mt-3 rounded-xl border border-emerald-200 bg-white p-3.5">
+          <div className="mt-3 rounded-xl border border-emerald-200/70 bg-white/80 p-3.5">
             <div className="flex items-center gap-2 text-sm font-semibold text-emerald-700">
               <CheckCircle2 size={16} />
               Filled {filled.size} field{filled.size === 1 ? "" : "s"} from {parsed.documentsParsed.filter((d) => d.readable).length} document{parsed.documentsParsed.filter((d) => d.readable).length === 1 ? "" : "s"}.
@@ -468,5 +466,6 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
         {!f.name && <span className="text-xs text-slate-400">Company name is required to save.</span>}
       </div>
     </div>
+    </HeroBackdrop>
   );
 }
