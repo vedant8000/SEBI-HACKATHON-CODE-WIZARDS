@@ -20,10 +20,7 @@ export default async function AssistantPage() {
   const gaps = (analysis?.gaps ?? []).filter((g) => g.status !== "Resolved");
   return (
     <>
-      <PageHeader
-        title="AI Assistant"
-        subtitle="Ask anything about your IPO preparation — in English or simple Hindi. Answers come only from your uploaded documents, extracted facts, detected gaps and the draft. Final judgement always rests with your merchant banker and legal counsel."
-      />
+      <PageHeader title="AI Assistant" subtitle="Grounded in your own documents, facts, gaps and draft." />
       <AssistantChat
         companyName={company.name}
         context={{

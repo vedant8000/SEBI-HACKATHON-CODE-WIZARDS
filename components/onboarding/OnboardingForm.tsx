@@ -7,6 +7,7 @@ import {
   Building2, Target, BarChart3, ShieldCheck, Save, ArrowRight,
   type LucideIcon,
 } from "lucide-react";
+import { HeroBackdrop, HeroIconBadge } from "@/components/shared/ui";
 
 const emptyFy = (fy: string): FinancialYear => ({
   fy, revenueCr: null, patCr: null, ebitdaCr: null, netWorthCr: null,
@@ -30,7 +31,7 @@ function Field({
   );
 }
 
-/** Section card matching the reference mock: icon badge + numbered title. */
+/** Glass section card floating on the hero backdrop: icon badge + numbered title. */
 function SectionCard({
   icon: Icon, title, sub, accent = false, children, className = "",
 }: {
@@ -39,17 +40,15 @@ function SectionCard({
 }) {
   return (
     <section
-      className={`rounded-2xl border border-slate-200 bg-[#f7fafd] shadow-sm p-5 ${
+      className={`rounded-2xl border border-white/70 bg-white/70 backdrop-blur-md shadow-md shadow-blue-900/[0.04] p-5 ${
         accent ? "border-t-4 border-t-blue-500" : ""
       } ${className}`}
     >
       <div className="flex items-center gap-3 mb-4">
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-blue-50 border border-blue-100 text-[#1e3a5f]">
-          <Icon size={17} />
-        </span>
+        <HeroIconBadge icon={Icon} />
         <div>
           <h3 className="text-[15px] font-bold text-[#1e3a5f]">{title}</h3>
-          {sub && <p className="text-xs text-slate-400">{sub}</p>}
+          {sub && <p className="text-xs text-slate-500">{sub}</p>}
         </div>
       </div>
       {children}
@@ -165,7 +164,8 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
       : `${tableInput} w-full min-w-[52px] bg-white border-slate-300`;
 
   return (
-    <div className="space-y-5">
+    <HeroBackdrop className="p-5 md:p-6">
+    <div className="relative space-y-5">
       <div className="grid gap-5 xl:grid-cols-[1fr_1.08fr] items-start">
         {/* ── Left column: basic details ── */}
         <SectionCard icon={Building2} title="1 · Basic details">
@@ -287,5 +287,6 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
         {!f.name && <span className="text-xs text-slate-400">Company name is required to save.</span>}
       </div>
     </div>
+    </HeroBackdrop>
   );
 }
