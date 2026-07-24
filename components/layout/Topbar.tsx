@@ -12,15 +12,24 @@ export default function Topbar({
   role?: "PROMOTER" | "MERCHANT_BANKER";
 }) {
   const router = useRouter();
+  const t = useT();
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+
+  // "Readiness 72/100 · <detail>" once analysis has run; otherwise a prompt.
+  const statusLine =
+    readiness !== null
+      ? `${t("topbar.readiness")} ${readiness}/100${statusDetail ? ` · ${statusDetail}` : ""}`
+      : companyName
+        ? t("topbar.analysisNotRun")
+        : null;
 
   const act = async (key: string, fn: () => Promise<Response>) => {
     setBusy(key);
     setErr(null);
     try {
       const res = await fn();
-      if (!res.ok) setErr((await res.json()).error ?? "Action failed");
+      if (!res.ok) setErr((await res.json()).error ?? t("topbar.actionFailed"));
       router.refresh();
     } finally { setBusy(null); }
   };
@@ -37,13 +46,13 @@ export default function Topbar({
           ) : role === "MERCHANT_BANKER" ? (
             <div className="text-sm text-slate-500">{statusLine ?? "No company linked yet — enter the promoter's company code"}</div>
           ) : (
-            <div className="text-sm text-slate-500">No company yet — start with Company Setup, then upload your documents</div>
+            <div className="text-sm text-slate-500">{t("topbar.noCompany")}</div>
           )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {!aiReady && (
             <span className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium bg-amber-50 text-amber-800 border border-amber-200 rounded-lg">
-              <AlertTriangle size={12} /> AI provider not configured — extraction &amp; generation limited
+              <AlertTriangle size={12} /> {t("topbar.aiWarn")}
             </span>
           )}
           {role === "MERCHANT_BANKER" ? (
