@@ -41,6 +41,10 @@ export interface Company {
   auditCommitteeConstituted: boolean | null;
   pendingLitigationNote: string; // promoter's own declaration text
   createdAt: string;
+  /** Share code the merchant banker enters to link to this company (e.g. "SIIM-7K2M4X"). */
+  companyCode?: string;
+  /** Emails of merchant bankers who linked via the company code (lower-case). */
+  bankerEmails?: string[];
 }
 
 export type DocStatus =
@@ -331,6 +335,29 @@ export interface FactConflict {
   severity: Severity;
   explanation: string;
   status: "OPEN" | "RESOLVED";
+}
+
+// ── Banker → promoter correction flags ──────────────────────────────────────
+
+export type FlagTargetType = "document" | "fact" | "gap" | "section" | "general";
+
+/**
+ * A correction the merchant banker pinpoints on the promoter's filing —
+ * anchored to a document, extracted fact, gap or draft section. The promoter
+ * sees open flags on the matching page and marks them addressed.
+ */
+export interface BankerFlag {
+  id: string;
+  companyId: string;
+  targetType: FlagTargetType;
+  targetId: string | null;   // id of the doc/fact/gap/section (null for general)
+  targetLabel: string;       // human anchor, e.g. file name / fact label / section name
+  message: string;           // what to correct and how
+  severity: Severity;
+  status: "OPEN" | "ADDRESSED";
+  author: string;            // banker name or email
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface CoverageRow {

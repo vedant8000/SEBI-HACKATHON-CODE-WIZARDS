@@ -2,11 +2,12 @@ import { getContext } from "@/lib/server/context";
 import { EmptyState, PageHeader } from "@/components/shared/ui";
 import FactsTable from "@/components/evidence/FactsTable";
 import RunIntelligenceButton from "@/components/evidence/RunIntelligenceButton";
+import BankerFlagsCard from "@/components/shared/BankerFlagsCard";
 
 export const dynamic = "force-dynamic";
 
 export default async function EvidencePage() {
-  const { company, facts, conflicts, db } = await getContext();
+  const { company, facts, conflicts, db, flags } = await getContext();
   if (!company) {
     return (
       <>
@@ -27,6 +28,7 @@ export default async function EvidencePage() {
         subtitle="Every fact the platform uses, with its source document, page reference, extraction method and confidence. Accept, reject or correct anything — edits are flagged for merchant banker verification, and all downstream analysis updates instantly."
         actions={<RunIntelligenceButton />}
       />
+      <BankerFlagsCard flags={flags.filter((f) => f.targetType === "fact" || f.targetType === "general")} />
       <FactsTable facts={facts} conflicts={conflicts} chunkStats={chunkStats} />
     </>
   );

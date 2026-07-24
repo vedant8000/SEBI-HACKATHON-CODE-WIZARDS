@@ -1,9 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
-import { loadDb, saveDb, uid, logAudit } from "@/lib/store";
+import { genCompanyCode, loadDb, saveDb, uid, logAudit, type Db } from "@/lib/store";
 import type { Company } from "@/lib/types";
+
+/** Backfill share codes for companies created before code-based banker linking. */
+function ensureCompanyCodes(db: Db): boolean {
+  const taken = new Set(db.companies.map((c) => c.companyCode).filter(Boolean) as string[]);
+  let changed = false;
+  for (const c of db.companies) {
+    if (!c.companyCode) {
+      c.companyCode = genCompanyCode(taken);
+      taken.add(c.companyCode);
+      changed = true;
+    }
+    if (!c.bankerEmails) { c.bankerEmails = []; changed = true; }
+  }
+  return changed;
+}
 
 export async function GET() {
   const db = await loadDb();
+  if (ensureCompanyCodes(db)) await saveDb(db);
   return NextResponse.json({ companies: db.companies, activeCompanyId: db.activeCompanyId });
 }
 
@@ -11,6 +27,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const body = await req.json();
   const db = await loadDb();
+  ensureCompanyCodes(db);
   if (body.action === "activate") {
     db.activeCompanyId = body.id;
     await saveDb(db);
@@ -66,6 +83,8 @@ export async function POST(req: NextRequest) {
     auditCommitteeConstituted: body.auditCommitteeConstituted ?? null,
     pendingLitigationNote: body.pendingLitigationNote ?? "",
     createdAt: new Date().toISOString(),
+    companyCode: genCompanyCode(new Set(db.companies.map((c) => c.companyCode).filter(Boolean) as string[])),
+    bankerEmails: [],
   };
   db.companies.push(company);
   db.activeCompanyId = company.id;
@@ -78,10 +97,13 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   const body = await req.json();
   const db = await loadDb();
+  ensureCompanyCodes(db);
   const company = db.companies.find((c) => c.id === (body.id ?? db.activeCompanyId));
   if (!company) return NextResponse.json({ error: "No company" }, { status: 404 });
   const before = JSON.stringify({ name: company.name, issueSizeCr: company.issueSizeCr });
-  Object.assign(company, body.updates ?? {});
+  // companyCode & bankerEmails are managed by the platform, never by profile edits
+  const { companyCode: _cc, bankerEmails: _be, ...updates } = (body.updates ?? {}) as Record<string, unknown>;
+  Object.assign(company, updates);
   logAudit(db, company.id, company.promoterName || "Promoter", "Company profile updated", before, JSON.stringify(body.updates ?? {}));
   await saveDb(db);
   return NextResponse.json({ company });
