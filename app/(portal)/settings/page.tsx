@@ -1,7 +1,6 @@
 import { getContext } from "@/lib/server/context";
 import { Card, PageHeader } from "@/components/shared/ui";
 import SettingsPanel from "@/components/settings/SettingsPanel";
-import Tr from "@/components/i18n/Tr";
 import { activeProvider, aiAvailable, AI_SETUP_MESSAGE, geminiKeys } from "@/lib/ai/provider";
 
 export const dynamic = "force-dynamic";
@@ -11,7 +10,7 @@ export default async function SettingsPage() {
   const provider = activeProvider();
   return (
     <>
-      <PageHeader title={<Tr id="settings.title" />} subtitle={<Tr id="settings.subtitle" />} />
+      <PageHeader title="Settings" subtitle="Companies, data management and AI provider status." />
       <div className="space-y-5 max-w-3xl">
         {company?.companyCode && (
           <Card className="p-5 border-blue-200">
@@ -30,16 +29,16 @@ export default async function SettingsPage() {
           </Card>
         )}
         <Card className={`p-5 ${aiAvailable() ? "border-emerald-300" : "border-amber-300 bg-amber-50"}`}>
-          <h3 className="text-sm font-semibold text-slate-800 mb-2"><Tr id="settings.aiProvider" /></h3>
+          <h3 className="text-sm font-semibold text-slate-800 mb-2">AI Provider</h3>
           {aiAvailable() ? (
             <p className="text-sm text-slate-600">
-              <Tr id="settings.activeProvider" /> <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded text-xs">{provider}</span>
+              Active provider: <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded text-xs">{provider}</span>
               {provider === "gemini" && <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded text-xs ml-1">{process.env.GEMINI_MODEL ?? "gemini-flash-lite-latest"}</span>}
-              {provider === "gemini" && <span className="text-xs text-slate-500 ml-1">· {geminiKeys().length} <Tr id="settings.keysInRotation" /></span>}
-              <Tr id="settings.providerEnabled" />
+              {provider === "gemini" && <span className="text-xs text-slate-500 ml-1">· {geminiKeys().length} key(s) in rotation</span>}
+              {" "}— document classification, chunk-wise fact extraction, draft generation and the assistant are enabled.
               {provider === "gemini" && geminiKeys().length < 2 && (
                 <span className="block text-xs text-amber-700 mt-1">
-                  <Tr id="settings.rotationTip" />
+                  Tip: add GEMINI_API_KEY_2 / GEMINI_API_KEY_3 in .env.local — calls rotate across keys automatically when one hits its free-tier rate limit.
                 </span>
               )}
             </p>
@@ -47,7 +46,9 @@ export default async function SettingsPage() {
             <p className="text-sm text-amber-800">{AI_SETUP_MESSAGE}</p>
           )}
           <p className="text-xs text-slate-400 mt-2">
-            <Tr id="settings.aiNote" />
+            The AI extracts facts and drafts language only. Scores, gaps and red flags always come from the
+            deterministic rule engine over your extracted facts — the AI never decides compliance outcomes,
+            and generated drafts always require authorised intermediary review.
           </p>
         </Card>
         <SettingsPanel

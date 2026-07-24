@@ -1,7 +1,6 @@
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
-import Tr from "@/components/i18n/Tr";
 
 // ── Cards & layout ──────────────────────────────────────────────────────────
 
@@ -106,7 +105,7 @@ export function HeroIconBadge({
 
 export function PageHeader({
   title, subtitle, actions,
-}: { title: ReactNode; subtitle?: ReactNode; actions?: ReactNode }) {
+}: { title: string; subtitle?: string; actions?: ReactNode }) {
   return (
     <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
       <div>
@@ -227,7 +226,7 @@ export function ScoreDonut({ score, size = 120, label }: { score: number; size?:
 
 export function EmptyState({
   title, message, showOnboardCta = true,
-}: { title: ReactNode; message: ReactNode; showOnboardCta?: boolean }) {
+}: { title: string; message: string; showOnboardCta?: boolean }) {
   return (
     <Card className="p-10 text-center">
       <div className="text-4xl mb-3">📄</div>
@@ -236,7 +235,7 @@ export function EmptyState({
       {showOnboardCta && (
         <div className="flex justify-center gap-3 mt-5">
           <Link href="/onboarding" className="px-4 py-2 bg-slate-800 text-white text-sm rounded-lg hover:bg-slate-700">
-            <Tr id="common.startSetup" />
+            Start Company Setup &amp; Upload
           </Link>
         </div>
       )}
@@ -247,7 +246,11 @@ export function EmptyState({
 export function DisclaimerBar() {
   return (
     <p className="text-[11px] leading-relaxed text-slate-400 border-t border-slate-200 pt-3 mt-10">
-      <strong><Tr id="disclaimer.label" /></strong><Tr id="disclaimer.body" />
+      <strong>Disclaimer:</strong> SIIM is an AI-assisted draft preparation tool. It does not constitute legal,
+      investment, accounting or regulatory advice, and does not replace SEBI-registered merchant bankers, legal counsel,
+      auditors or regulatory filing processes. All generated content requires professional review. Estimates are
+      illustrative, not guarantees. Nothing here means &ldquo;ready to file with SEBI&rdquo; — at best it means
+      &ldquo;ready for merchant banker review&rdquo;.
     </p>
   );
 }

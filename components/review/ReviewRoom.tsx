@@ -5,7 +5,6 @@ import { useState } from "react";
 import { CheckCircle2, Loader2, Scale, Undo2, XCircle } from "lucide-react";
 import type { AuditLogEntry, DraftSection } from "@/lib/types";
 import { Card, ReviewStatusBadge, StatCard } from "@/components/shared/ui";
-import { useT } from "@/components/i18n/LanguageProvider";
 
 export default function ReviewRoom({
   company, sections, criticalOpen, highRiskOpen, draftCompletion, auditLog,
@@ -18,7 +17,6 @@ export default function ReviewRoom({
   auditLog: AuditLogEntry[];
 }) {
   const router = useRouter();
-  const t = useT();
   const [busy, setBusy] = useState<string | null>(null);
   const [comment, setComment] = useState<Record<string, string>>({});
   const [reviewer, setReviewer] = useState("Merchant Banker Reviewer");
@@ -43,40 +41,40 @@ export default function ReviewRoom({
   return (
     <div className="space-y-5">
       <Card className="p-3 flex flex-wrap items-center gap-3">
-        <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">{t("rr.reviewingAs")}</span>
-        <span className="px-2 py-0.5 text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 rounded-full">{t("rr.merchantBanker")}</span>
+        <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">Reviewing as</span>
+        <span className="px-2 py-0.5 text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 rounded-full">Merchant Banker</span>
         <input
           className="px-3 py-1.5 text-sm border border-slate-300 rounded-lg w-64"
           value={reviewer}
           onChange={(e) => setReviewer(e.target.value)}
-          placeholder={t("rr.reviewerPh")}
+          placeholder="Reviewer name (shown in comments & audit trail)"
         />
       </Card>
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <StatCard label={t("rr.draftCompletion")} value={`${draftCompletion}%`} />
-        <StatCard label={t("rr.awaitingReview")} value={pending} tone={pending ? "warn" : "default"} />
-        <StatCard label={t("rr.approved")} value={`${approved}/${sections.length}`} tone={approved === sections.length && sections.length > 0 ? "good" : "default"} />
-        <StatCard label={t("rr.changesRequested")} value={changesReq} tone={changesReq ? "warn" : "default"} />
-        <StatCard label={t("rr.criticalGapsOpen")} value={criticalOpen} tone={criticalOpen ? "bad" : "good"} />
+        <StatCard label="Draft Completion" value={`${draftCompletion}%`} />
+        <StatCard label="Awaiting Review" value={pending} tone={pending ? "warn" : "default"} />
+        <StatCard label="Approved" value={`${approved}/${sections.length}`} tone={approved === sections.length && sections.length > 0 ? "good" : "default"} />
+        <StatCard label="Changes Requested" value={changesReq} tone={changesReq ? "warn" : "default"} />
+        <StatCard label="Critical Gaps Open" value={criticalOpen} tone={criticalOpen ? "bad" : "good"} />
       </div>
 
       <Card className={`p-4 ${finalBlocked ? "border-amber-300 bg-amber-50" : "border-emerald-300 bg-emerald-50"}`}>
         <p className="text-sm font-medium text-slate-800">
           {finalBlocked
-            ? t("rr.blocked", { crit: criticalOpen, high: highRiskOpen, notApproved: sections.length - approved })
-            : t("rr.notBlocked")}
+            ? `Final Draft Ready is BLOCKED: ${criticalOpen} critical + ${highRiskOpen} high-risk gaps open, ${sections.length - approved} section(s) not yet approved. High-risk items must be resolved or expressly waived before the draft can be marked final.`
+            : "All sections approved and no high-risk gaps open — the draft can be marked Final Draft Ready."}
         </p>
       </Card>
 
       {sections.length === 0 ? (
-        <Card className="p-8 text-center text-sm text-slate-400">{t("rr.noSections")}</Card>
+        <Card className="p-8 text-center text-sm text-slate-400">No draft sections yet — the promoter must generate the draft first.</Card>
       ) : (
         sections.map((s) => (
           <Card key={s.id} className="p-5">
             <div className="flex flex-wrap items-center gap-2 mb-2">
               <h3 className="text-sm font-semibold text-slate-800">{s.sectionName}</h3>
               <ReviewStatusBadge status={s.status} />
-              <span className="text-xs text-slate-400">{t("rr.confidenceLine", { conf: s.confidence, sources: s.sources.length, missing: s.missingData.length })}</span>
+              <span className="text-xs text-slate-400">Confidence {s.confidence}% · {s.sources.length} source(s) · {s.missingData.length} missing item(s)</span>
             </div>
             <p className="text-[13px] text-slate-600 line-clamp-3 whitespace-pre-wrap">{s.generatedText}</p>
             {s.sources.length > 0 && (
@@ -89,29 +87,29 @@ export default function ReviewRoom({
             <div className="flex flex-wrap items-center gap-2 mt-3">
               <button onClick={() => act(s.id, "approve")} disabled={!!busy}
                 className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50">
-                {busy === s.id + "approve" ? <Loader2 size={13} className="animate-spin" /> : <CheckCircle2 size={13} />} {t("rr.approve")}
+                {busy === s.id + "approve" ? <Loader2 size={13} className="animate-spin" /> : <CheckCircle2 size={13} />} Approve
               </button>
               <button onClick={() => act(s.id, "request-changes", comment[s.id])} disabled={!!busy}
                 className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-red-300 text-red-700 rounded-lg hover:bg-red-50 disabled:opacity-50">
-                <XCircle size={13} /> {t("rr.requestChanges")}
+                <XCircle size={13} /> Request Changes
               </button>
-              <button onClick={() => act(s.id, "assign-back", comment[s.id] || t("rr.assignBackDefault"))} disabled={!!busy}
+              <button onClick={() => act(s.id, "assign-back", comment[s.id] || "Assigned back to promoter for inputs.")} disabled={!!busy}
                 className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 disabled:opacity-50">
-                <Undo2 size={13} /> {t("rr.assignPromoter")}
+                <Undo2 size={13} /> Assign to Promoter
               </button>
               <button onClick={() => act(s.id, "needs-legal")} disabled={!!busy}
                 className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-violet-300 text-violet-700 rounded-lg hover:bg-violet-50 disabled:opacity-50">
-                <Scale size={13} /> {t("rr.needsLegal")}
+                <Scale size={13} /> Needs Legal Review
               </button>
               <input
                 className="flex-1 min-w-[200px] px-3 py-1.5 text-xs border border-slate-300 rounded-lg"
-                placeholder={t("rr.commentPh")}
+                placeholder="Review comment (attached to the action)…"
                 value={comment[s.id] ?? ""}
                 onChange={(e) => setComment({ ...comment, [s.id]: e.target.value })}
               />
               {comment[s.id] && (
                 <button onClick={() => { act(s.id, "comment", comment[s.id]); setComment({ ...comment, [s.id]: "" }); }}
-                  className="px-3 py-1.5 text-xs bg-slate-800 text-white rounded-lg">{t("rr.postComment")}</button>
+                  className="px-3 py-1.5 text-xs bg-slate-800 text-white rounded-lg">Post comment</button>
               )}
             </div>
             {s.comments.length > 0 && (
@@ -129,18 +127,18 @@ export default function ReviewRoom({
 
       <Card className="overflow-hidden">
         <div className="px-5 py-3 border-b border-slate-100">
-          <h3 className="text-sm font-semibold text-slate-800">{t("rr.auditTrail")}</h3>
-          <p className="text-xs text-slate-400">{t("rr.auditSub")}</p>
+          <h3 className="text-sm font-semibold text-slate-800">Audit Trail</h3>
+          <p className="text-xs text-slate-400">Who changed what, when — visible to all roles.</p>
         </div>
         {auditLog.length === 0 ? (
-          <p className="p-6 text-sm text-slate-400 text-center">{t("rr.noActivity")}</p>
+          <p className="p-6 text-sm text-slate-400 text-center">No activity yet.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-[12px] min-w-[640px]">
               <thead>
                 <tr className="text-left text-slate-500 bg-slate-50">
-                  <th className="px-4 py-2">{t("rr.thTime")}</th><th className="px-2 py-2">{t("rr.thUser")}</th>
-                  <th className="px-2 py-2">{t("rr.thAction")}</th><th className="px-2 py-2">{t("rr.thBefore")}</th><th className="px-2 py-2">{t("rr.thAfter")}</th>
+                  <th className="px-4 py-2">Time</th><th className="px-2 py-2">User</th>
+                  <th className="px-2 py-2">Action</th><th className="px-2 py-2">Before</th><th className="px-2 py-2">After</th>
                 </tr>
               </thead>
               <tbody>

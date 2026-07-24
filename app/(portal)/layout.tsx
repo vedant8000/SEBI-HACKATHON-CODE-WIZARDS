@@ -44,11 +44,11 @@ export default async function PortalLayout({ children }: { children: React.React
   // ── Promoter shell: preparation journey ──
   const { company, analysis, docs, facts, draft } = await getContext();
   const steps = [
-    { href: "/onboarding", labelKey: "step.onboarding", done: !!company && docs.length > 0 },
-    { href: "/evidence", labelKey: "step.evidence", done: facts.length > 0 },
-    { href: "/intelligence", labelKey: "step.intelligence", done: !!analysis },
-    { href: "/draft", labelKey: "step.draft", done: draft.some((d) => d.status !== "Not Started") },
-    { href: "/merchant-review", labelKey: "step.review", done: draft.some((d) => d.status === "Approved") },
+    { href: "/onboarding", label: "Company Setup & Upload", done: !!company && docs.length > 0 },
+    { href: "/evidence", label: "Review Evidence", done: facts.length > 0 },
+    { href: "/intelligence", label: "IPO Intelligence", done: !!analysis },
+    { href: "/draft", label: "Draft Generated", done: draft.some((d) => d.status !== "Not Started") },
+    { href: "/draft", label: "Sent for MB Review", done: draft.some((d) => d.status === "MB Review Pending" || d.status === "Approved") },
   ];
   return (
     <div className="flex min-h-screen">
@@ -57,8 +57,7 @@ export default async function PortalLayout({ children }: { children: React.React
         <Topbar
           role={role}
           companyName={company?.name ?? null}
-          readiness={analysis?.scores.overall ?? null}
-          statusDetail={analysis?.scores.statusLine ?? null}
+          statusLine={analysis ? `Readiness ${analysis.scores.overall}/100 · ${analysis.scores.statusLine}` : company ? "Analysis not run yet" : null}
           aiReady={aiAvailable()}
         />
         <JourneyStepper steps={steps} />
