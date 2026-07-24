@@ -2,6 +2,7 @@ import { getContext } from "@/lib/server/context";
 import { EmptyState, PageHeader } from "@/components/shared/ui";
 import FactsTable from "@/components/evidence/FactsTable";
 import RunIntelligenceButton from "@/components/evidence/RunIntelligenceButton";
+import Tr from "@/components/i18n/Tr";
 
 export const dynamic = "force-dynamic";
 
@@ -10,8 +11,8 @@ export default async function EvidencePage() {
   if (!company) {
     return (
       <>
-        <PageHeader title="Extraction & Evidence" />
-        <EmptyState title="No company yet" message="Create your company and upload documents — every extracted fact appears here with its source document, page and confidence." />
+        <PageHeader title={<Tr id="evidence.titleEmpty" />} />
+        <EmptyState title={<Tr id="common.noCompany" />} message={<Tr id="evidence.emptyMsg" />} />
       </>
     );
   }
@@ -23,8 +24,8 @@ export default async function EvidencePage() {
   return (
     <>
       <PageHeader
-        title="Evidence & Extraction"
-        subtitle="Every fact the platform uses, with its source document, page reference, extraction method and confidence. Accept, reject or correct anything — edits are flagged for merchant banker verification, and all downstream analysis updates instantly."
+        title={<Tr id="evidence.title" />}
+        subtitle={<Tr id="evidence.subtitle" />}
         actions={<RunIntelligenceButton />}
       />
       <FactsTable facts={facts} conflicts={conflicts} chunkStats={chunkStats} />

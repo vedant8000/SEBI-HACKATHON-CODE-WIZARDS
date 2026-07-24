@@ -1,6 +1,7 @@
 import { getContext } from "@/lib/server/context";
 import { Building2 } from "lucide-react";
 import OnboardingForm from "@/components/onboarding/OnboardingForm";
+import Tr from "@/components/i18n/Tr";
 
 export const dynamic = "force-dynamic";
 
@@ -13,9 +14,9 @@ export default async function OnboardingPage() {
           <Building2 size={24} strokeWidth={1.8} className="text-white" />
         </span>
         <div>
-          <h1 className="text-3xl font-bold font-serif tracking-tight text-[#1e3a5f]">Company Profile</h1>
+          <h1 className="text-3xl font-bold font-serif tracking-tight text-[#1e3a5f]"><Tr id="onboarding.title" /></h1>
           <p className="text-sm text-slate-500 mt-0.5 max-w-3xl">
-            Tell us about your company in key fields. We&rsquo;ll use this to build a strong, compliant draft.
+            <Tr id="onboarding.subtitle" />
           </p>
         </div>
       </div>

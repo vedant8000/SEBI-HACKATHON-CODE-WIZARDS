@@ -6,14 +6,17 @@ import {
 } from "lucide-react";
 import { GlassPanel, HeroBackdrop, ProgressBar, SeverityBadge } from "@/components/shared/ui";
 import ChatMarkdown from "@/components/chat/ChatMarkdown";
+import { useT } from "@/components/i18n/LanguageProvider";
 
-const STARTER_PROMPTS: { label: string; q: string; primary?: boolean }[] = [
-  { label: "What should I fix first?", q: "What should I fix first?", primary: true },
-  { label: "Is my RPT risky?", q: "Why is the related-party transaction flagged as risky and what should I disclose?", primary: true },
-  { label: "Explain in Hindi", q: "Mere sabse bade risk factor ko simple Hindi mein samjhao", primary: true },
-  { label: "What's missing?", q: "Which documents or facts are still missing before my draft is review-ready?" },
-  { label: "Explain my score", q: "Explain my IPO readiness score and how to improve it" },
-  { label: "MB will ask…", q: "What will the merchant banker likely ask about my draft?" },
+// Starter chips: labelKey is translated for display; q is the actual query sent
+// to the assistant (it answers in whichever language the user writes).
+const STARTER_PROMPTS: { labelKey: string; q: string; primary?: boolean }[] = [
+  { labelKey: "ac.sp1", q: "What should I fix first?", primary: true },
+  { labelKey: "ac.sp2", q: "Why is the related-party transaction flagged as risky and what should I disclose?", primary: true },
+  { labelKey: "ac.sp3", q: "Mere sabse bade risk factor ko simple Hindi mein samjhao", primary: true },
+  { labelKey: "ac.sp4", q: "Which documents or facts are still missing before my draft is review-ready?" },
+  { labelKey: "ac.sp5", q: "Explain my IPO readiness score and how to improve it" },
+  { labelKey: "ac.sp6", q: "What will the merchant banker likely ask about my draft?" },
 ];
 
 interface Msg { role: "user" | "assistant"; text: string; at: string }
@@ -44,6 +47,7 @@ export default function AssistantChat({
     topGaps: { title: string; severity: string }[];
   };
 }) {
+  const t = useT();
   const [chat, setChat] = useState<Msg[]>([]);
   const [q, setQ] = useState("");
   const [asking, setAsking] = useState(false);
@@ -67,9 +71,9 @@ export default function AssistantChat({
         body: JSON.stringify({ question }),
       });
       const data = await res.json();
-      setChat((c) => [...c, { role: "assistant", text: data.answer ?? "No response — please try again.", at: now() }]);
+      setChat((c) => [...c, { role: "assistant", text: data.answer ?? t("ac.noResponse"), at: now() }]);
     } catch {
-      setChat((c) => [...c, { role: "assistant", text: "I could not respond (network or rate limit). Please try again in a moment.", at: now() }]);
+      setChat((c) => [...c, { role: "assistant", text: t("ac.errorResp"), at: now() }]);
     } finally {
       setAsking(false);
     }
@@ -83,8 +87,8 @@ export default function AssistantChat({
           <div className="px-5 py-3.5 border-b border-white/60 bg-white/40 flex items-center gap-2.5">
             <span className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-sky-500 flex items-center justify-center shadow-md shadow-blue-500/30"><Bot size={17} className="text-white" /></span>
             <div>
-              <div className="text-sm font-semibold text-[#1e3a5f]">SIIM Assistant</div>
-              <div className="text-[11px] text-slate-500">Grounded in {companyName}&apos;s documents · not legal or regulatory advice</div>
+              <div className="text-sm font-semibold text-[#1e3a5f]">{t("ac.assistantName")}</div>
+              <div className="text-[11px] text-slate-500">{t("ac.groundedIn", { company: companyName })}</div>
             </div>
           </div>
 
@@ -95,15 +99,15 @@ export default function AssistantChat({
                   <Sparkles size={28} className="text-white" />
                 </div>
                 <h2 className="font-serif text-2xl text-[#1e3a5f] font-semibold tracking-tight">
-                  Namaste! Ask me anything about your IPO preparation.
+                  {t("ac.greeting")}
                 </h2>
                 <p className="text-[13px] text-slate-500 mt-2 max-w-md">
-                  I answer only from your uploaded documents, extracted facts, gaps and draft — if I can&apos;t find it there, I&apos;ll say so.
+                  {t("ac.greetingSub")}
                 </p>
                 <div className="flex flex-wrap justify-center gap-2 mt-6 max-w-lg">
                   {STARTER_PROMPTS.map((s) => (
                     <button
-                      key={s.label}
+                      key={s.labelKey}
                       onClick={() => ask(s.q)}
                       disabled={asking}
                       className={`px-4 py-2 text-[12px] font-medium rounded-full transition-all disabled:opacity-50 ${
@@ -112,7 +116,7 @@ export default function AssistantChat({
                           : "bg-white/70 border border-white/80 text-slate-600 hover:bg-blue-50 hover:text-blue-700"
                       }`}
                     >
-                      {s.label}
+                      {t(s.labelKey)}
                     </button>
                   ))}
                 </div>
@@ -135,7 +139,7 @@ export default function AssistantChat({
               <div className="flex gap-2.5">
                 <span className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-sky-500 flex items-center justify-center shrink-0"><Bot size={14} className="text-white" /></span>
                 <div className="bg-white/80 border border-white/70 rounded-2xl rounded-tl-sm px-4 py-3 text-xs text-slate-400 flex items-center gap-1.5 shadow-sm">
-                  <Loader2 size={12} className="animate-spin" /> Reading your documents…
+                  <Loader2 size={12} className="animate-spin" /> {t("ac.reading")}
                 </div>
               </div>
             )}
@@ -143,12 +147,12 @@ export default function AssistantChat({
 
           <div className="px-5 pb-5 pt-3">
             <p className="text-[11px] text-slate-500 text-center mb-2">
-              Ask in English or Hindi. Answers come only from your uploaded documents, facts, gaps and draft — final judgement rests with your merchant banker.
+              {t("ac.footerNote")}
             </p>
             <div className="flex items-center gap-2 bg-white/80 backdrop-blur-md border border-white/80 rounded-full shadow-md shadow-blue-900/[0.06] pl-5 pr-2 py-2 focus-within:ring-2 focus-within:ring-blue-400/50">
               <input
                 className="flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400 min-w-0"
-                placeholder="Type your question in English or Hindi…"
+                placeholder={t("ac.inputPh")}
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && ask(q)}
@@ -163,9 +167,9 @@ export default function AssistantChat({
 
         {/* ── Grounding panel ────────────────────────────────────────────── */}
         <div className="space-y-3">
-          <Collapsible title="What I can see">
+          <Collapsible title={t("ac.whatICanSee")}>
             <div className="flex items-center justify-between text-[13px] text-slate-700 mb-1">
-              <span className="flex items-center gap-1.5"><Gauge size={14} className="text-blue-500 shrink-0" /> Readiness</span>
+              <span className="flex items-center gap-1.5"><Gauge size={14} className="text-blue-500 shrink-0" /> {t("ac.readiness")}</span>
               <strong>{context.score ?? "—"}/100</strong>
             </div>
             <ProgressBar value={context.score ?? 0} />
@@ -174,20 +178,20 @@ export default function AssistantChat({
             <div className="h-px bg-white/70 my-3" />
 
             <div className="space-y-2 text-[13px] text-slate-700">
-              <div className="flex items-center gap-2"><FolderOpen size={14} className="text-blue-500 shrink-0" /> {context.docs} documents · {context.facts} extracted facts</div>
-              <div className="flex items-center gap-2"><FileText size={14} className="text-blue-500 shrink-0" /> {context.draftSections} draft sections · {context.gaps} open gaps ({context.criticalGaps} critical)</div>
+              <div className="flex items-center gap-2"><FolderOpen size={14} className="text-blue-500 shrink-0" /> {t("ac.docsFacts", { docs: context.docs, facts: context.facts })}</div>
+              <div className="flex items-center gap-2"><FileText size={14} className="text-blue-500 shrink-0" /> {t("ac.draftGaps", { sections: context.draftSections, gaps: context.gaps, crit: context.criticalGaps })}</div>
             </div>
           </Collapsible>
 
           {context.topGaps.length > 0 && (
-            <Collapsible title="Worth asking about">
+            <Collapsible title={t("ac.worthAsking")}>
               <div className="space-y-2">
                 {context.topGaps.map((g) => {
                   const critical = g.severity === "Critical";
                   return (
                     <button
                       key={g.title}
-                      onClick={() => ask(`Tell me more about "${g.title}" — why it matters and how I should fix it.`)}
+                      onClick={() => ask(t("ac.tellMore", { title: g.title }))}
                       disabled={asking}
                       className={`w-full text-left text-[12px] rounded-lg px-2.5 py-2 border transition-colors disabled:opacity-50 ${
                         critical
@@ -205,8 +209,7 @@ export default function AssistantChat({
           )}
 
           <p className="text-[11px] text-slate-500 leading-relaxed px-1">
-            The assistant cannot approve, clear or file anything. It prepares and explains — your merchant banker and
-            legal counsel decide.
+            {t("ac.disclaimer")}
           </p>
         </div>
       </div>

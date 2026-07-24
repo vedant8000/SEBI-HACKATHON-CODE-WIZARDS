@@ -2,7 +2,7 @@
 
 import AuthCard from "./AuthCard";
 import HeroBackdrop from "./HeroBackdrop";
-import LanguageProvider, { useLanguage, type Lang } from "./LanguageProvider";
+import { useLanguage, type Lang } from "./LanguageProvider";
 
 /** Hero copy in both languages — switched by the toggle inside AuthCard. */
 const T: Record<Lang, {
@@ -89,23 +89,21 @@ function Hero() {
 
 export default function LandingContent() {
   return (
-    <LanguageProvider>
-      <div className="min-h-screen bg-[#f6f4ee] text-slate-800">
-        {/* ── Hero fold (reference-style split) ── */}
-        <section className="relative isolate min-h-screen flex flex-col px-6 md:px-10 py-6">
-          <HeroBackdrop />
+    <div className="min-h-screen bg-[#f6f4ee] text-slate-800">
+      {/* ── Hero fold (reference-style split) ── */}
+      <section className="relative isolate min-h-screen flex flex-col px-6 md:px-10 py-6">
+        <HeroBackdrop />
 
-          <div className="mx-auto w-full max-w-7xl grid flex-1 items-start pt-4 gap-10 lg:grid-cols-2">
-            {/* Left: brand + pitch */}
-            <Hero />
+        <div className="mx-auto w-full max-w-7xl grid flex-1 items-start pt-4 gap-10 lg:grid-cols-2">
+          {/* Left: brand + pitch */}
+          <Hero />
 
-            {/* Right: auth card */}
-            <div className="flex justify-center lg:justify-end">
-              <AuthCard />
-            </div>
+          {/* Right: auth card */}
+          <div className="flex justify-center lg:justify-end">
+            <AuthCard />
           </div>
-        </section>
-      </div>
-    </LanguageProvider>
+        </div>
+      </section>
+    </div>
   );
 }

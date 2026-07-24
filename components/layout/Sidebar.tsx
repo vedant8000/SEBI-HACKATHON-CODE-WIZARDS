@@ -7,15 +7,17 @@ import {
   Building2, FileSearch, BrainCircuit, FileText, UserCheck, Bot,
   UserRound, HelpCircle, Settings, LogOut,
 } from "lucide-react";
+import { useT } from "@/components/i18n/LanguageProvider";
+import LangToggle from "@/components/i18n/LangToggle";
 
 // The focused demo flow: setup (with upload) → evidence → intelligence → draft → review (+ assistant)
 const nav = [
-  { href: "/onboarding", label: "Company Setup & Upload", icon: Building2, step: 1, tile: "bg-blue-50 text-blue-700 border-blue-100" },
-  { href: "/evidence", label: "Evidence & Extraction", icon: FileSearch, step: 2, tile: "bg-cyan-50 text-cyan-700 border-cyan-100" },
-  { href: "/intelligence", label: "IPO Intelligence", icon: BrainCircuit, step: 3, tile: "bg-indigo-50 text-indigo-600 border-indigo-100" },
-  { href: "/draft", label: "Draft Offer Document", icon: FileText, step: 4, tile: "bg-violet-50 text-violet-600 border-violet-100" },
-  { href: "/merchant-review", label: "Merchant Banker Review", icon: UserCheck, step: 5, tile: "bg-slate-100 text-[#1e3a5f] border-slate-200" },
-  { href: "/assistant", label: "AI Assistant", icon: Bot, step: 6, tile: "bg-teal-50 text-teal-700 border-teal-100" },
+  { href: "/onboarding", labelKey: "nav.onboarding", icon: Building2, step: 1, tile: "bg-blue-50 text-blue-700 border-blue-100" },
+  { href: "/evidence", labelKey: "nav.evidence", icon: FileSearch, step: 2, tile: "bg-cyan-50 text-cyan-700 border-cyan-100" },
+  { href: "/intelligence", labelKey: "nav.intelligence", icon: BrainCircuit, step: 3, tile: "bg-indigo-50 text-indigo-600 border-indigo-100" },
+  { href: "/draft", labelKey: "nav.draft", icon: FileText, step: 4, tile: "bg-violet-50 text-violet-600 border-violet-100" },
+  { href: "/merchant-review", labelKey: "nav.review", icon: UserCheck, step: 5, tile: "bg-slate-100 text-[#1e3a5f] border-slate-200" },
+  { href: "/assistant", labelKey: "nav.assistant", icon: Bot, step: 6, tile: "bg-teal-50 text-teal-700 border-teal-100" },
 ];
 
 /**
@@ -75,26 +77,33 @@ function SidebarScene() {
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const [who, setWho] = useState({ name: "SIIM User", role: "SME Promoter" });
+  const t = useT();
+  const [who, setWho] = useState<{ name: string | null; role: string | null }>({ name: null, role: null });
 
   useEffect(() => {
     try {
       setWho({
-        name: localStorage.getItem("siim.userName") || "SIIM User",
-        role: localStorage.getItem("siim.roleLabel") || "SME Promoter",
+        name: localStorage.getItem("siim.userName") || null,
+        role: localStorage.getItem("siim.roleLabel") || null,
       });
     } catch {
       /* localStorage unavailable — keep defaults */
     }
   }, []);
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {
+      /* ignore — still clear local state below */
+    }
     try {
       ["siim.role", "siim.roleLabel", "siim.userName"].forEach((k) => localStorage.removeItem(k));
     } catch {
       /* ignore */
     }
     router.push("/");
+    router.refresh();
   };
 
   return (
@@ -106,7 +115,7 @@ export default function Sidebar() {
         <span>
           <span className="block text-white font-bold text-xl leading-tight font-serif tracking-tight">SIIM</span>
           <span className="block text-[9px] font-semibold uppercase tracking-[0.14em] text-sky-300/80 leading-tight">
-            SME IPO Intelligence Mitra
+            {t("brand.tagline")}
           </span>
         </span>
       </Link>
@@ -117,14 +126,14 @@ export default function Sidebar() {
           <UserRound size={17} />
         </span>
         <span className="min-w-0 leading-tight">
-          <span className="block truncate text-[13px] font-bold text-white">{who.name}</span>
-          <span className="block truncate text-[11px] text-sky-200/70">{who.role}</span>
+          <span className="block truncate text-[13px] font-bold text-white">{who.name ?? t("sidebar.defaultName")}</span>
+          <span className="block truncate text-[11px] text-sky-200/70">{who.role ?? t("sidebar.defaultRole")}</span>
         </span>
       </div>
 
       {/* journey nav */}
       <nav className="px-3 space-y-1.5">
-        {nav.map(({ href, label, icon: Icon, step, tile }) => {
+        {nav.map(({ href, labelKey, icon: Icon, step, tile }) => {
           const active = pathname === href;
           return (
             <Link
@@ -139,7 +148,7 @@ export default function Sidebar() {
               <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg border transition-colors ${tile}`}>
                 <Icon size={15} />
               </span>
-              <span className="flex-1 leading-snug">{label}</span>
+              <span className="flex-1 leading-snug">{t(labelKey)}</span>
               <span
                 className={`grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full text-[9px] font-bold ${
                   active ? "bg-blue-100 text-blue-700" : "bg-white/10 text-sky-200/70"
@@ -159,14 +168,16 @@ export default function Sidebar() {
 
       {/* utilities */}
       <div className="border-t border-white/10 bg-black/10 px-3 py-2.5 space-y-0.5">
+        {/* language switch — converts the whole site (English ⇄ हिन्दी) */}
+        <LangToggle />
         <Link href="/" className="flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[12px] text-sky-100/75 hover:bg-white/10 hover:text-white">
-          <HelpCircle size={14} className="text-sky-300" /> Learn about SIIM
+          <HelpCircle size={14} className="text-sky-300" /> {t("sidebar.learn")}
         </Link>
         <Link href="/settings" className="flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[12px] text-sky-100/75 hover:bg-white/10 hover:text-white">
-          <Settings size={14} className="text-sky-300/60" /> Settings
+          <Settings size={14} className="text-sky-300/60" /> {t("sidebar.settings")}
         </Link>
         <button onClick={logout} className="w-full flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[12px] text-sky-100/75 hover:bg-red-500/15 hover:text-red-200 text-left">
-          <LogOut size={14} className="text-red-300/80" /> Log out
+          <LogOut size={14} className="text-red-300/80" /> {t("sidebar.logout")}
         </button>
       </div>
     </aside>
