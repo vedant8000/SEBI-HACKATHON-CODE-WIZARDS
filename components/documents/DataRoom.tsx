@@ -5,24 +5,34 @@ import { useRef, useState } from "react";
 import { ChevronDown, ChevronRight, FileUp, Loader2, Trash2 } from "lucide-react";
 import type { DocumentRecord } from "@/lib/types";
 import { DocStatusBadge, GlassPanel, HeroBackdrop } from "@/components/shared/ui";
+import { useT } from "@/components/i18n/LanguageProvider";
 
-const CHECKLIST: { label: string; why: string }[] = [
-  { label: "Audited financial statements (3 years)", why: "Your track record — the core of the offer document" },
-  { label: "Restated financials (peer-reviewed auditor)", why: "Mandatory format for the offer document" },
-  { label: "GST returns / annual summary", why: "We cross-check turnover against your books" },
-  { label: "Certificate of Incorporation, MOA/AOA", why: "Proves corporate history and authorised capital" },
-  { label: "Board & shareholder resolutions for the IPO", why: "Authorises the issue" },
-  { label: "Promoter & director KYC (PAN/DIN)", why: "Identity and no-debarment verification" },
-  { label: "Litigation declaration", why: "Even a NIL declaration is required — and must match reality" },
-  { label: "Related-party transaction register", why: "Reviewers scrutinise promoter-group dealings first" },
-  { label: "Quotations / invoices for planned capex", why: "Evidence for your Objects of the Issue" },
-  { label: "Working capital assessment", why: "Basis for any working-capital object" },
-  { label: "Material contracts & lease deeds", why: "The agreements your business runs on" },
-  { label: "Licenses & government approvals", why: "Factory license, pollution consents, Udyam etc." },
+// Checklist items are translated by key; the English label doubles as the
+// "have we got this?" filename match, so it stays as a stable lookup key.
+const CHECKLIST: { label: string; whyKey: string }[] = [
+  { label: "Audited financial statements (3 years)", whyKey: "dr.ck1" },
+  { label: "Restated financials (peer-reviewed auditor)", whyKey: "dr.ck2" },
+  { label: "GST returns / annual summary", whyKey: "dr.ck3" },
+  { label: "Certificate of Incorporation, MOA/AOA", whyKey: "dr.ck4" },
+  { label: "Board & shareholder resolutions for the IPO", whyKey: "dr.ck5" },
+  { label: "Promoter & director KYC (PAN/DIN)", whyKey: "dr.ck6" },
+  { label: "Litigation declaration", whyKey: "dr.ck7" },
+  { label: "Related-party transaction register", whyKey: "dr.ck8" },
+  { label: "Quotations / invoices for planned capex", whyKey: "dr.ck9" },
+  { label: "Working capital assessment", whyKey: "dr.ck10" },
+  { label: "Material contracts & lease deeds", whyKey: "dr.ck11" },
+  { label: "Licenses & government approvals", whyKey: "dr.ck12" },
+];
+
+/** Translation keys for the checklist item labels, in CHECKLIST order. */
+const CHECKLIST_LABEL_KEYS = [
+  "dr.ckl1", "dr.ckl2", "dr.ckl3", "dr.ckl4", "dr.ckl5", "dr.ckl6",
+  "dr.ckl7", "dr.ckl8", "dr.ckl9", "dr.ckl10", "dr.ckl11", "dr.ckl12",
 ];
 
 export default function DataRoom({ docs }: { docs: DocumentRecord[] }) {
   const router = useRouter();
+  const t = useT();
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
@@ -37,10 +47,10 @@ export default function DataRoom({ docs }: { docs: DocumentRecord[] }) {
       const fd = new FormData();
       [...files].forEach((f) => fd.append("files", f));
       const res = await fetch("/api/documents/upload", { method: "POST", body: fd });
-      if (!res.ok) setError((await res.json()).error ?? "Upload failed");
+      if (!res.ok) setError((await res.json()).error ?? t("dr.uploadFailed"));
       router.refresh();
     } catch {
-      setError("Upload failed — please try again.");
+      setError(t("dr.uploadFailedRetry"));
     } finally {
       setUploading(false);
     }
@@ -70,15 +80,14 @@ export default function DataRoom({ docs }: { docs: DocumentRecord[] }) {
         {uploading ? (
           <div className="flex flex-col items-center gap-2 text-blue-600">
             <Loader2 className="animate-spin" size={26} />
-            <span className="text-sm font-medium">Reading, classifying and analysing your documents…</span>
+            <span className="text-sm font-medium">{t("dr.reading")}</span>
           </div>
         ) : (
           <>
             <FileUp size={26} className="mx-auto text-slate-400 mb-2" />
-            <p className="text-sm font-medium text-slate-700">Drop files here or click to upload (multiple files supported)</p>
+            <p className="text-sm font-medium text-slate-700">{t("dr.dropHere")}</p>
             <p className="text-xs text-slate-500 mt-1">
-              Best results with text PDFs. Scans and spreadsheets are stored and classified by filename — you can then
-              enter key figures manually. Nothing leaves your machine unless you configure an AI provider.
+              {t("dr.dropHint")}
             </p>
           </>
         )}
@@ -87,18 +96,18 @@ export default function DataRoom({ docs }: { docs: DocumentRecord[] }) {
 
       {/* Checklist */}
       <GlassPanel className="p-5">
-        <h3 className="text-sm font-semibold text-[#1e3a5f] mb-1">Helpful documents you may upload</h3>
-        <p className="text-xs text-slate-500 mb-3">A guide, not a gate — the platform works with whatever you have and tells you what each missing item would unlock.</p>
+        <h3 className="text-sm font-semibold text-[#1e3a5f] mb-1">{t("dr.checklistTitle")}</h3>
+        <p className="text-xs text-slate-500 mb-3">{t("dr.checklistSub")}</p>
         <div className="grid md:grid-cols-2 gap-x-8 gap-y-1.5">
-          {CHECKLIST.map((c) => {
+          {CHECKLIST.map((c, i) => {
             const done = docs.some((d) => d.fileName.toLowerCase().includes(c.label.split(" ")[0].toLowerCase())) ||
               uploadedCategories.size >= 10;
             return (
               <div key={c.label} className="flex items-start gap-2 text-[13px] py-1">
                 <span className={`mt-0.5 w-4 h-4 rounded-full border flex items-center justify-center text-[10px] shrink-0 ${done ? "bg-emerald-500 border-emerald-500 text-white" : "border-slate-300 text-transparent"}`}>✓</span>
                 <span>
-                  <span className="text-slate-700 font-medium">{c.label}</span>
-                  <span className="text-slate-400"> — {c.why}</span>
+                  <span className="text-slate-700 font-medium">{t(CHECKLIST_LABEL_KEYS[i])}</span>
+                  <span className="text-slate-400"> — {t(c.whyKey)}</span>
                 </span>
               </div>
             );
@@ -109,24 +118,24 @@ export default function DataRoom({ docs }: { docs: DocumentRecord[] }) {
       {/* Documents table */}
       <GlassPanel className="overflow-hidden">
         <div className="px-5 py-3 border-b border-white/60 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-[#1e3a5f]">Documents ({docs.length})</h3>
-          <span className="text-xs text-slate-500">Click a row to see extracted data & correct it</span>
+          <h3 className="text-sm font-semibold text-[#1e3a5f]">{t("dr.documents")} ({docs.length})</h3>
+          <span className="text-xs text-slate-500">{t("dr.clickRow")}</span>
         </div>
         {docs.length === 0 ? (
-          <p className="text-sm text-slate-400 p-8 text-center">No documents yet — upload above to begin.</p>
+          <p className="text-sm text-slate-400 p-8 text-center">{t("dr.noDocs")}</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[860px]">
               <thead>
                 <tr className="text-left text-xs text-slate-500 bg-white/50">
                   <th className="px-4 py-2.5 w-6"></th>
-                  <th className="px-2 py-2.5">Document</th>
-                  <th className="px-2 py-2.5">Category</th>
-                  <th className="px-2 py-2.5">Linked IPO Section</th>
-                  <th className="px-2 py-2.5">Status</th>
-                  <th className="px-2 py-2.5">Issues</th>
-                  <th className="px-2 py-2.5">Confidence</th>
-                  <th className="px-2 py-2.5">Updated</th>
+                  <th className="px-2 py-2.5">{t("dr.thDocument")}</th>
+                  <th className="px-2 py-2.5">{t("dr.thCategory")}</th>
+                  <th className="px-2 py-2.5">{t("dr.thLinkedSection")}</th>
+                  <th className="px-2 py-2.5">{t("dr.thStatus")}</th>
+                  <th className="px-2 py-2.5">{t("dr.thIssues")}</th>
+                  <th className="px-2 py-2.5">{t("dr.thConfidence")}</th>
+                  <th className="px-2 py-2.5">{t("dr.thUpdated")}</th>
                   <th className="px-2 py-2.5"></th>
                 </tr>
               </thead>
@@ -147,6 +156,7 @@ export default function DataRoom({ docs }: { docs: DocumentRecord[] }) {
 }
 
 function Row({ d, open, onToggle, onDelete }: { d: DocumentRecord; open: boolean; onToggle: () => void; onDelete: () => void }) {
+  const t = useT();
   return (
     <>
       <tr className="border-t border-white/60 bg-white/40 hover:bg-white/70 cursor-pointer" onClick={onToggle}>
@@ -159,7 +169,7 @@ function Row({ d, open, onToggle, onDelete }: { d: DocumentRecord; open: boolean
         <td className="px-2 py-2.5 text-slate-600">{d.confidence}%</td>
         <td className="px-2 py-2.5 text-slate-500 text-xs">{d.lastUpdated}</td>
         <td className="px-2 py-2.5">
-          <button onClick={(e) => { e.stopPropagation(); onDelete(); }} className="text-slate-300 hover:text-red-500" title="Delete document">
+          <button onClick={(e) => { e.stopPropagation(); onDelete(); }} className="text-slate-300 hover:text-red-500" title={t("dr.deleteDoc")}>
             <Trash2 size={14} />
           </button>
         </td>
@@ -177,6 +187,7 @@ function Row({ d, open, onToggle, onDelete }: { d: DocumentRecord; open: boolean
 
 function DetailPanel({ d }: { d: DocumentRecord }) {
   const router = useRouter();
+  const t = useT();
   const [fields, setFields] = useState<Record<string, string>>(
     Object.fromEntries(Object.entries(d.fields).filter(([, v]) => typeof v !== "object").map(([k, v]) => [k, String(v)]))
   );
@@ -204,14 +215,14 @@ function DetailPanel({ d }: { d: DocumentRecord }) {
   return (
     <div className="grid lg:grid-cols-2 gap-5 text-[13px]">
       <div>
-        <p className="text-slate-700"><span className="font-semibold">AI summary:</span> {d.extractedSummary}</p>
+        <p className="text-slate-700"><span className="font-semibold">{t("dr.aiSummary")}</span> {d.extractedSummary}</p>
         {d.keyNumbers.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mt-2">
             {d.keyNumbers.map((n) => <span key={n} className="px-2 py-0.5 bg-blue-50 border border-blue-100 text-blue-700 rounded text-xs">{n}</span>)}
           </div>
         )}
         {d.keyEntities.length > 0 && (
-          <p className="text-slate-500 mt-2"><span className="font-medium">Entities:</span> {d.keyEntities.join(", ")}</p>
+          <p className="text-slate-500 mt-2"><span className="font-medium">{t("dr.entities")}</span> {d.keyEntities.join(", ")}</p>
         )}
         {d.issuesFound.length > 0 && (
           <ul className="mt-2 space-y-1">
@@ -220,7 +231,7 @@ function DetailPanel({ d }: { d: DocumentRecord }) {
         )}
       </div>
       <div>
-        <p className="font-semibold text-slate-700 mb-1">Extracted values — correct anything we misread <span className="font-normal text-slate-400">(all in ₹ crore)</span></p>
+        <p className="font-semibold text-slate-700 mb-1">{t("dr.extractedValues")} <span className="font-normal text-slate-400">{t("dr.allInCr")}</span></p>
         <div className="grid grid-cols-3 gap-2">
           {shown.slice(0, 9).map((k) => (
             <label key={k} className="text-[11px] text-slate-500">
@@ -235,9 +246,9 @@ function DetailPanel({ d }: { d: DocumentRecord }) {
         </div>
         <button onClick={save} disabled={saving}
           className="mt-3 px-3 py-1.5 bg-slate-800 text-white text-xs rounded-lg hover:bg-slate-700 disabled:opacity-50">
-          {saving ? "Saving & re-analysing…" : "Save corrections & re-analyse"}
+          {saving ? t("dr.saving") : t("dr.saveCorrections")}
         </button>
-        {d.manualOverride && <span className="ml-2 text-xs text-emerald-600">Manually corrected ✓</span>}
+        {d.manualOverride && <span className="ml-2 text-xs text-emerald-600">{t("dr.manuallyCorrected")}</span>}
       </div>
     </div>
   );

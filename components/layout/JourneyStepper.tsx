@@ -1,9 +1,13 @@
+"use client";
+
 import Link from "next/link";
 import { Check } from "lucide-react";
+import { useT } from "@/components/i18n/LanguageProvider";
 
 export interface JourneyState {
   href: string;
-  label: string;
+  /** Translation key for the step label (see lib/i18n/dictionary). */
+  labelKey: string;
   done: boolean;
 }
 
@@ -13,6 +17,7 @@ export interface JourneyState {
  * datastore, so it doubles as a demo narrative device.
  */
 export default function JourneyStepper({ steps }: { steps: JourneyState[] }) {
+  const t = useT();
   const doneCount = steps.filter((s) => s.done).length;
   return (
     <div className="bg-[#f6f9fc] border-b border-slate-200 px-6 py-2 no-print overflow-x-auto">
@@ -28,7 +33,7 @@ export default function JourneyStepper({ steps }: { steps: JourneyState[] }) {
                 {s.done ? <Check size={10} strokeWidth={3} /> : i + 1}
               </span>
               <span className={`text-[11px] truncate transition-colors ${s.done ? "text-slate-700 font-medium" : "text-slate-400 group-hover:text-slate-600"}`}>
-                {s.label}
+                {t(s.labelKey)}
               </span>
             </Link>
             {i < steps.length - 1 && (
@@ -36,7 +41,7 @@ export default function JourneyStepper({ steps }: { steps: JourneyState[] }) {
             )}
           </div>
         ))}
-        <span className="text-[10px] text-slate-400 shrink-0 pl-2">{doneCount}/{steps.length} done</span>
+        <span className="text-[10px] text-slate-400 shrink-0 pl-2">{doneCount}/{steps.length} {t("stepper.done")}</span>
       </div>
     </div>
   );
