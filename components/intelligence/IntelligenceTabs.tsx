@@ -7,7 +7,7 @@ import type {
   AnalysisResult, CoverageRow, FactConflict, FinancialYear, ObjectOfIssue,
 } from "@/lib/types";
 import {
-  Badge, Card, CheckStatusBadge, ProgressBar, ScoreDonut, SeverityBadge, StatCard,
+  Badge, CheckStatusBadge, GlassPanel, GlassStat, HeroBackdrop, ProgressBar, ScoreDonut, SeverityBadge,
 } from "@/components/shared/ui";
 import { CategoryScoreChart } from "@/components/charts/charts";
 import ObjectsForm from "@/components/objects/ObjectsForm";
@@ -23,6 +23,13 @@ const riskTone: Record<string, string> = {
   "Needs Clarification": "bg-amber-100 border-amber-300",
   "Critical Issue": "bg-red-100 border-red-300",
   "Missing Data": "bg-slate-200 border-slate-300",
+};
+
+const riskExplain: Record<string, string> = {
+  Ready: "Enough sourced facts are available to generate this section in full.",
+  "Needs Clarification": "Some facts are missing or low-confidence — review before drafting.",
+  "Critical Issue": "Key facts are missing or conflicting, blocking a reliable draft here.",
+  "Missing Data": "No extracted facts yet — upload supporting documents for this section.",
 };
 
 export default function IntelligenceTabs({
@@ -70,22 +77,25 @@ export default function IntelligenceTabs({
 
   if (!analysis) {
     return (
-      <Card className="p-8 text-center">
-        <p className="text-sm text-slate-500">The rule engine hasn&apos;t run yet.</p>
-        <button onClick={rerun} disabled={running}
-          className="mt-4 px-5 py-2 bg-blue-600 text-white text-sm rounded-lg disabled:opacity-50 inline-flex items-center gap-2">
-          <RefreshCw size={14} className={running ? "animate-spin" : ""} /> Run IPO Intelligence
-        </button>
-      </Card>
+      <HeroBackdrop className="p-5 md:p-6">
+        <GlassPanel className="p-8 text-center">
+          <p className="text-sm text-slate-500">The rule engine hasn&apos;t run yet.</p>
+          <button onClick={rerun} disabled={running}
+            className="mt-4 px-5 py-2 bg-blue-600 text-white text-sm rounded-lg disabled:opacity-50 inline-flex items-center gap-2">
+            <RefreshCw size={14} className={running ? "animate-spin" : ""} /> Run IPO Intelligence
+          </button>
+        </GlassPanel>
+      </HeroBackdrop>
     );
   }
 
   return (
-    <div>
-      <div className="flex flex-wrap items-center gap-1.5 mb-5 border-b border-slate-200 pb-3">
+    <HeroBackdrop className="p-5 md:p-6">
+    <div className="relative">
+      <div className="flex flex-wrap items-center gap-1.5 mb-5 border-b border-white/60 pb-3">
         {TABS.map((t) => (
           <button key={t} onClick={() => setTab(t)}
-            className={`px-3.5 py-1.5 text-[13px] font-medium rounded-full transition-all ${tab === t ? "bg-gradient-to-r from-blue-600 to-sky-500 text-white shadow-sm shadow-blue-600/30" : "text-slate-600 hover:bg-slate-100"}`}>
+            className={`px-3.5 py-1.5 text-[13px] font-medium rounded-full transition-all ${tab === t ? "bg-gradient-to-r from-blue-600 to-sky-500 text-white shadow-sm shadow-blue-600/30" : "text-slate-600 hover:bg-white/60"}`}>
             {t}
             {t === "Missing Data" && gaps.length > 0 && <span className="ml-1.5 text-[10px] bg-white/20 px-1.5 rounded-full">{gaps.length}</span>}
             {t === "Inconsistencies" && (finIssues.length + openConflicts.length) > 0 && <span className="ml-1.5 text-[10px] bg-white/20 px-1.5 rounded-full">{finIssues.length + openConflicts.length}</span>}
@@ -102,34 +112,34 @@ export default function IntelligenceTabs({
       {tab === "Overview" && (
         <div className="space-y-5">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <Card className="p-4 flex items-center gap-4 col-span-2">
+            <GlassPanel className="p-4 flex items-center gap-4 col-span-2">
               <ScoreDonut score={s?.overall ?? 0} />
               <div>
                 <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">IPO Readiness Score</div>
                 <div className="text-sm text-slate-700 mt-1 max-w-[240px]">{s?.statusLine}</div>
               </div>
-            </Card>
-            <StatCard label="Draft Coverage" value={`${avgCoverage}%`} sub={`${coverage.filter((c) => c.canGenerate === "YES").length} of ${coverage.length} sections fully generatable`} />
-            <StatCard label="Critical Gaps" value={gaps.filter((g) => g.severity === "Critical").length} tone={gaps.some((g) => g.severity === "Critical") ? "bad" : "good"} sub={`${gaps.filter((g) => g.severity === "High").length} high-priority items`} />
-            <StatCard label="Fact Conflicts" value={openConflicts.length} tone={openConflicts.length ? "bad" : "good"} sub="Same fact, different values across documents" />
-            <StatCard label="RPT Risk" value={`${s?.rptScore ?? 0}/100`} tone={s && s.rptScore > 60 ? "bad" : s && s.rptScore > 30 ? "warn" : "good"} sub={`${rptBand(s?.rptScore ?? 0)} band`} />
-            <StatCard label="Financial Consistency" value={`${s?.finConsistencyScore ?? 0}/100`} tone={s && s.finConsistencyScore < 60 ? "bad" : s && s.finConsistencyScore < 85 ? "warn" : "good"} sub={`${finChecks.length} cross-checks run`} />
-            <StatCard label="Reviewer Questions" value={observations.length} sub="Simulated exchange/MB queries" />
+            </GlassPanel>
+            <GlassStat label="Draft Coverage" value={`${avgCoverage}%`} sub={`${coverage.filter((c) => c.canGenerate === "YES").length} of ${coverage.length} sections fully generatable`} />
+            <GlassStat label="Critical Gaps" value={gaps.filter((g) => g.severity === "Critical").length} tone={gaps.some((g) => g.severity === "Critical") ? "bad" : "good"} sub={`${gaps.filter((g) => g.severity === "High").length} high-priority items`} />
+            <GlassStat label="Fact Conflicts" value={openConflicts.length} tone={openConflicts.length ? "bad" : "good"} sub="Same fact, different values across documents" />
+            <GlassStat label="RPT Risk" value={`${s?.rptScore ?? 0}/100`} tone={s && s.rptScore > 60 ? "bad" : s && s.rptScore > 30 ? "warn" : "good"} sub={`${rptBand(s?.rptScore ?? 0)} band`} />
+            <GlassStat label="Financial Consistency" value={`${s?.finConsistencyScore ?? 0}/100`} tone={s && s.finConsistencyScore < 60 ? "bad" : s && s.finConsistencyScore < 85 ? "warn" : "good"} sub={`${finChecks.length} cross-checks run`} />
+            <GlassStat label="Reviewer Questions" value={observations.length} sub="Simulated exchange/MB queries" />
           </div>
 
           <div className="grid lg:grid-cols-2 gap-4">
-            <Card className="p-5">
+            <GlassPanel className="p-5">
               <h3 className="text-sm font-semibold text-slate-800 mb-1">Readiness by Category</h3>
               <p className="text-xs text-slate-500 mb-2">Eligibility 30% · Disclosure 25% · Financial 20% · Governance 15% · Documents 10%</p>
               <CategoryScoreChart data={Object.entries(s?.byCategory ?? {}).map(([category, score]) => ({ category, score }))} />
-            </Card>
-            <Card className="p-5">
+            </GlassPanel>
+            <GlassPanel className="p-5">
               <h3 className="text-sm font-semibold text-slate-800 mb-1">Section Coverage Heatmap</h3>
               <p className="text-xs text-slate-500 mb-3">All {coverage.length} prospectus sections — hover for names</p>
               <div className="flex flex-wrap gap-1.5">
                 {coverage.map((c) => (
-                  <div key={c.sectionId} title={`${c.sectionName} — ${c.completionPct}% (${c.riskLevel})`}
-                    className={`w-9 h-9 rounded border flex items-center justify-center text-[9px] font-semibold text-slate-700 ${riskTone[c.riskLevel]}`}>
+                  <div key={c.sectionId} title={`${c.sectionName} — ${c.completionPct}% (${c.riskLevel})\n${riskExplain[c.riskLevel]}`}
+                    className={`w-9 h-9 rounded border flex items-center justify-center text-[9px] font-semibold text-slate-700 transition-transform hover:scale-110 hover:shadow-md cursor-default ${riskTone[c.riskLevel]}`}>
                     {c.completionPct}
                   </div>
                 ))}
@@ -140,10 +150,10 @@ export default function IntelligenceTabs({
                 <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-red-100 border border-red-300" />Critical</span>
                 <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-slate-200 border border-slate-300" />Missing data</span>
               </div>
-            </Card>
+            </GlassPanel>
           </div>
 
-          <Card className="p-5">
+          <GlassPanel className="p-5">
             <h3 className="text-sm font-semibold text-slate-800 mb-3">Top 5 Blockers</h3>
             {sortedGaps.length === 0 ? (
               <p className="text-sm text-slate-400">No open blockers.</p>
@@ -160,16 +170,16 @@ export default function IntelligenceTabs({
                 ))}
               </ul>
             )}
-          </Card>
+          </GlassPanel>
         </div>
       )}
 
       {/* ── Tab 2: Missing Data ─────────────────────────────────────────── */}
       {tab === "Missing Data" && (
         <div className="space-y-3">
-          {sortedGaps.length === 0 && <Card className="p-8 text-center text-sm text-slate-400">No missing data or open gaps.</Card>}
+          {sortedGaps.length === 0 && <GlassPanel className="p-8 text-center text-sm text-slate-400">No missing data or open gaps.</GlassPanel>}
           {sortedGaps.map((g) => (
-            <Card key={g.id} className="p-5">
+            <GlassPanel key={g.id} className="p-5">
               <div className="flex flex-wrap items-center gap-2 mb-2">
                 <SeverityBadge severity={g.severity} />
                 <h3 className="text-sm font-semibold text-slate-800">{g.title}</h3>
@@ -184,7 +194,7 @@ export default function IntelligenceTabs({
                 <div className="bg-slate-50 rounded-lg px-3 py-2"><span className="font-medium text-slate-700">Missing fact/document:</span> <span className="text-slate-600">{g.requiredDocument}</span></div>
                 <div className="bg-blue-50 rounded-lg px-3 py-2"><span className="font-medium text-blue-800">Suggested fix:</span> <span className="text-blue-900">{g.suggestedFix}</span></div>
               </div>
-            </Card>
+            </GlassPanel>
           ))}
         </div>
       )}
@@ -193,22 +203,22 @@ export default function IntelligenceTabs({
       {tab === "Inconsistencies" && (
         <div className="space-y-3">
           {openConflicts.length > 0 && (
-            <Card className="p-4 border-red-200 bg-red-50">
+            <GlassPanel className="p-4 !border-red-300/80 !bg-red-100/80">
               <h3 className="text-sm font-semibold text-red-800 mb-2">Fact conflicts across documents</h3>
               <ul className="space-y-1.5 text-[13px] text-red-900">
                 {openConflicts.map((c) => (
                   <li key={c.id}>⚠ <strong>{c.factKey}</strong>: {c.valueA} ({c.sourceA}) vs {c.valueB} ({c.sourceB})</li>
                 ))}
               </ul>
-            </Card>
+            </GlassPanel>
           )}
           {finChecks.length === 0 && openConflicts.length === 0 && (
-            <Card className="p-8 text-center text-sm text-slate-400">
+            <GlassPanel className="p-8 text-center text-sm text-slate-400">
               No cross-document inconsistencies detected. Upload audited financials AND GST returns (plus the RPT register and quotations) so numbers can be compared across sources.
-            </Card>
+            </GlassPanel>
           )}
           {finChecks.map((c) => (
-            <Card key={c.id} className="p-5">
+            <GlassPanel key={c.id} className="p-5">
               <div className="flex flex-wrap items-center gap-2 mb-2">
                 <SeverityBadge severity={c.severity} />
                 <h3 className="text-sm font-semibold text-slate-800">{c.checkName}</h3>
@@ -220,7 +230,7 @@ export default function IntelligenceTabs({
               </div>
               <p className="text-sm text-slate-600">{c.explanation}</p>
               {c.suggestedFix !== "—" && <p className="text-[13px] text-blue-800 bg-blue-50 rounded-lg px-3 py-2 mt-2"><span className="font-medium">Suggested fix:</span> {c.suggestedFix}</p>}
-            </Card>
+            </GlassPanel>
           ))}
         </div>
       )}
@@ -228,7 +238,7 @@ export default function IntelligenceTabs({
       {/* ── Tab 4: RPT & Fund Use Risk ──────────────────────────────────── */}
       {tab === "RPT & Fund Use Risk" && (
         <div className="space-y-4">
-          <Card className="p-5 flex flex-wrap items-center gap-6">
+          <GlassPanel className="p-5 flex flex-wrap items-center gap-6">
             <ScoreDonut score={s?.rptScore ?? 0} label="RPT RISK" />
             <div>
               <div className="text-sm font-semibold text-slate-800">
@@ -240,10 +250,10 @@ export default function IntelligenceTabs({
                   : "No related-party signals detected in current uploads. If your business transacts with promoter-connected entities, upload the RPT register — non-detection is not clearance."}
               </p>
             </div>
-          </Card>
+          </GlassPanel>
 
           {rpt.map((r) => (
-            <Card key={r.id} className="p-5">
+            <GlassPanel key={r.id} className="p-5">
               <div className="flex flex-wrap items-center gap-2 mb-2">
                 <SeverityBadge severity={r.severity} />
                 <h3 className="text-sm font-semibold text-slate-800">{r.entityName}</h3>
@@ -258,10 +268,10 @@ export default function IntelligenceTabs({
                 <div className="bg-blue-50 rounded-lg px-3 py-2"><span className="font-medium text-blue-800">Suggested disclosure:</span> <span className="text-blue-900">{r.suggestedDisclosure}</span></div>
                 <div className="bg-amber-50 rounded-lg px-3 py-2"><span className="font-medium text-amber-800">Required evidence:</span> <span className="text-amber-900">{r.requiredEvidence}</span></div>
               </div>
-            </Card>
+            </GlassPanel>
           ))}
 
-          <Card className="p-5">
+          <GlassPanel className="p-5">
             <h3 className="text-sm font-semibold text-slate-800 mb-2">Fund-use warnings (from your Objects plan)</h3>
             {objects.length === 0 ? (
               <p className="text-sm text-slate-400">No objects plan yet — build it in the &ldquo;Objects of Issue&rdquo; tab.</p>
@@ -272,7 +282,7 @@ export default function IntelligenceTabs({
                 {fundUseWarnings.map((w, i) => <li key={i} className="bg-amber-50 border border-amber-200 rounded px-3 py-1.5">⚠ {w}</li>)}
               </ul>
             )}
-          </Card>
+          </GlassPanel>
         </div>
       )}
 
@@ -288,9 +298,9 @@ export default function IntelligenceTabs({
             Your gaps, RPT flags and inconsistencies, reframed as the questions a merchant banker or exchange reviewer
             would ask. Answering these now is dramatically cheaper than answering them after filing.
           </p>
-          {observations.length === 0 && <Card className="p-8 text-center text-sm text-slate-400">No likely questions derived yet — upload more documents and re-run.</Card>}
+          {observations.length === 0 && <GlassPanel className="p-8 text-center text-sm text-slate-400">No likely questions derived yet — upload more documents and re-run.</GlassPanel>}
           {observations.map((o, i) => (
-            <Card key={o.id} className="p-5">
+            <GlassPanel key={o.id} className="p-5">
               <div className="flex flex-wrap items-center gap-2 mb-2">
                 <span className="w-6 h-6 rounded-full bg-slate-800 text-white text-xs flex items-center justify-center font-semibold shrink-0">{i + 1}</span>
                 <h3 className="text-sm font-semibold text-slate-800">{o.observation}</h3>
@@ -302,7 +312,7 @@ export default function IntelligenceTabs({
                 <div className="bg-blue-50 rounded-lg px-3 py-2"><div className="text-xs font-medium text-blue-700 mb-0.5">Suggested response</div>{o.suggestedResponse}</div>
                 <div className="bg-amber-50 rounded-lg px-3 py-2"><div className="text-xs font-medium text-amber-700 mb-0.5">Required evidence</div>{o.requiredEvidence}</div>
               </div>
-            </Card>
+            </GlassPanel>
           ))}
         </div>
       )}
@@ -311,7 +321,7 @@ export default function IntelligenceTabs({
       {tab === "Overview" && (
         <details className="mt-5">
           <summary className="text-xs text-slate-500 cursor-pointer hover:text-slate-700">Show rule-by-rule readiness results ({analysis.checks.length} rules)</summary>
-          <Card className="mt-3 overflow-hidden">
+          <GlassPanel className="mt-3 overflow-hidden">
             <table className="w-full text-[13px]">
               <tbody>
                 {analysis.checks.map((c) => (
@@ -324,7 +334,7 @@ export default function IntelligenceTabs({
                 ))}
               </tbody>
             </table>
-          </Card>
+          </GlassPanel>
         </details>
       )}
 
@@ -334,5 +344,6 @@ export default function IntelligenceTabs({
       </div>
       <div className="mt-2"><ProgressBar value={avgCoverage} tone="blue" /></div>
     </div>
+    </HeroBackdrop>
   );
 }

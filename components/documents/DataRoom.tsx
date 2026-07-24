@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { ChevronDown, ChevronRight, FileUp, Loader2, Trash2 } from "lucide-react";
 import type { DocumentRecord } from "@/lib/types";
-import { Card, DocStatusBadge } from "@/components/shared/ui";
+import { DocStatusBadge, GlassPanel, HeroBackdrop } from "@/components/shared/ui";
 
 const CHECKLIST: { label: string; why: string }[] = [
   { label: "Audited financial statements (3 years)", why: "Your track record — the core of the offer document" },
@@ -54,14 +54,15 @@ export default function DataRoom({ docs }: { docs: DocumentRecord[] }) {
   const uploadedCategories = new Set(docs.map((d) => d.category));
 
   return (
-    <div className="space-y-5">
+    <HeroBackdrop className="p-5 md:p-6">
+    <div className="relative space-y-5">
       {/* Upload zone */}
       <div
         onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
         onDrop={(e) => { e.preventDefault(); setDragOver(false); upload(e.dataTransfer.files); }}
         onClick={() => inputRef.current?.click()}
-        className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${dragOver ? "border-blue-500 bg-blue-50" : "border-slate-300 bg-white hover:border-blue-400"}`}
+        className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-colors backdrop-blur-md ${dragOver ? "border-blue-500 bg-blue-50/80" : "border-white/70 bg-white/60 hover:border-blue-300 hover:bg-white/75"}`}
       >
         <input ref={inputRef} type="file" multiple className="hidden"
           accept=".pdf,.txt,.csv,.md,.xlsx,.xls,.docx,.zip,.jpg,.png"
@@ -75,7 +76,7 @@ export default function DataRoom({ docs }: { docs: DocumentRecord[] }) {
           <>
             <FileUp size={26} className="mx-auto text-slate-400 mb-2" />
             <p className="text-sm font-medium text-slate-700">Drop files here or click to upload (multiple files supported)</p>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-slate-500 mt-1">
               Best results with text PDFs. Scans and spreadsheets are stored and classified by filename — you can then
               enter key figures manually. Nothing leaves your machine unless you configure an AI provider.
             </p>
@@ -85,9 +86,9 @@ export default function DataRoom({ docs }: { docs: DocumentRecord[] }) {
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       {/* Checklist */}
-      <Card className="p-5">
-        <h3 className="text-sm font-semibold text-slate-800 mb-1">Helpful documents you may upload</h3>
-        <p className="text-xs text-slate-400 mb-3">A guide, not a gate — the platform works with whatever you have and tells you what each missing item would unlock.</p>
+      <GlassPanel className="p-5">
+        <h3 className="text-sm font-semibold text-[#1e3a5f] mb-1">Helpful documents you may upload</h3>
+        <p className="text-xs text-slate-500 mb-3">A guide, not a gate — the platform works with whatever you have and tells you what each missing item would unlock.</p>
         <div className="grid md:grid-cols-2 gap-x-8 gap-y-1.5">
           {CHECKLIST.map((c) => {
             const done = docs.some((d) => d.fileName.toLowerCase().includes(c.label.split(" ")[0].toLowerCase())) ||
@@ -103,13 +104,13 @@ export default function DataRoom({ docs }: { docs: DocumentRecord[] }) {
             );
           })}
         </div>
-      </Card>
+      </GlassPanel>
 
       {/* Documents table */}
-      <Card className="overflow-hidden">
-        <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-slate-800">Documents ({docs.length})</h3>
-          <span className="text-xs text-slate-400">Click a row to see extracted data & correct it</span>
+      <GlassPanel className="overflow-hidden">
+        <div className="px-5 py-3 border-b border-white/60 flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-[#1e3a5f]">Documents ({docs.length})</h3>
+          <span className="text-xs text-slate-500">Click a row to see extracted data & correct it</span>
         </div>
         {docs.length === 0 ? (
           <p className="text-sm text-slate-400 p-8 text-center">No documents yet — upload above to begin.</p>
@@ -117,7 +118,7 @@ export default function DataRoom({ docs }: { docs: DocumentRecord[] }) {
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[860px]">
               <thead>
-                <tr className="text-left text-xs text-slate-500 bg-slate-50">
+                <tr className="text-left text-xs text-slate-500 bg-white/50">
                   <th className="px-4 py-2.5 w-6"></th>
                   <th className="px-2 py-2.5">Document</th>
                   <th className="px-2 py-2.5">Category</th>
@@ -139,15 +140,16 @@ export default function DataRoom({ docs }: { docs: DocumentRecord[] }) {
             </table>
           </div>
         )}
-      </Card>
+      </GlassPanel>
     </div>
+    </HeroBackdrop>
   );
 }
 
 function Row({ d, open, onToggle, onDelete }: { d: DocumentRecord; open: boolean; onToggle: () => void; onDelete: () => void }) {
   return (
     <>
-      <tr className="border-t border-slate-100 hover:bg-slate-50 cursor-pointer" onClick={onToggle}>
+      <tr className="border-t border-white/60 bg-white/40 hover:bg-white/70 cursor-pointer" onClick={onToggle}>
         <td className="px-4 py-2.5 text-slate-400">{open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}</td>
         <td className="px-2 py-2.5 font-medium text-slate-800">{d.fileName}</td>
         <td className="px-2 py-2.5 text-slate-600">{d.category}</td>
@@ -163,7 +165,7 @@ function Row({ d, open, onToggle, onDelete }: { d: DocumentRecord; open: boolean
         </td>
       </tr>
       {open && (
-        <tr className="border-t border-slate-100 bg-slate-50/60">
+        <tr className="border-t border-white/60 bg-white/50">
           <td colSpan={9} className="px-6 py-4">
             <DetailPanel d={d} />
           </td>
