@@ -10,8 +10,7 @@ export const dynamic = "force-dynamic";
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
   const { company, analysis, docs, facts, draft } = await getContext();
   const steps = [
-    { href: "/onboarding", label: "Company Setup", done: !!company },
-    { href: "/data-room", label: "Upload Documents", done: docs.length > 0 },
+    { href: "/onboarding", label: "Company Setup & Upload", done: !!company && docs.length > 0 },
     { href: "/evidence", label: "Review Evidence", done: facts.length > 0 },
     { href: "/intelligence", label: "IPO Intelligence", done: !!analysis },
     { href: "/draft", label: "Draft Generated", done: draft.some((d) => d.status !== "Not Started") },

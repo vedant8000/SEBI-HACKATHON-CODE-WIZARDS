@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Bot, Loader2, Send } from "lucide-react";
 import { Card } from "@/components/shared/ui";
+import ChatMarkdown from "@/components/chat/ChatMarkdown";
 
 const SUGGESTED = [
   "What is still missing before my draft is review-ready?",
@@ -60,8 +61,8 @@ export default function DraftQa() {
       {chat.length > 0 && (
         <div className="space-y-2.5 max-h-[420px] overflow-y-auto mb-3 pr-1">
           {chat.map((m, i) => (
-            <div key={i} className={`text-[13px] px-3 py-2 rounded-lg whitespace-pre-wrap leading-relaxed ${m.role === "user" ? "bg-blue-600 text-white ml-16" : "bg-slate-100 text-slate-700 mr-8"}`}>
-              {m.text}
+            <div key={i} className={`text-[13px] px-3 py-2 rounded-lg leading-relaxed ${m.role === "user" ? "bg-blue-600 text-white ml-16 whitespace-pre-wrap" : "bg-slate-100 text-slate-700 mr-8"}`}>
+              {m.role === "user" ? m.text : <ChatMarkdown text={m.text} />}
             </div>
           ))}
           {asking && <div className="text-slate-400 text-xs flex items-center gap-1.5"><Loader2 size={12} className="animate-spin" /> Thinking…</div>}
