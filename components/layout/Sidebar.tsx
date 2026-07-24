@@ -7,8 +7,6 @@ import {
   Building2, FileSearch, BrainCircuit, FileText, UserCheck, Bot,
   UserRound, HelpCircle, Settings, LogOut, LayoutDashboard, Flag,
 } from "lucide-react";
-import { useT } from "@/components/i18n/LanguageProvider";
-import LangToggle from "@/components/i18n/LangToggle";
 
 // Promoter flow: setup (with upload) → evidence → intelligence → draft (+ assistant).
 // The merchant banker review moved to the banker's own workspace (/banker/*).
@@ -102,11 +100,6 @@ export default function Sidebar({ role = "PROMOTER" }: { role?: "PROMOTER" | "ME
 
   const logout = async () => {
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
-    } catch {
-      /* ignore — still clear local state below */
-    }
-    try {
       ["siim.role", "siim.roleLabel", "siim.userName"].forEach((k) => localStorage.removeItem(k));
     } catch {
       /* ignore */
@@ -114,7 +107,6 @@ export default function Sidebar({ role = "PROMOTER" }: { role?: "PROMOTER" | "ME
     // clear the session cookie too — role gating depends on it
     try { await fetch("/api/auth/logout", { method: "POST" }); } catch { /* ignore */ }
     router.push("/");
-    router.refresh();
   };
 
   return (
@@ -126,7 +118,7 @@ export default function Sidebar({ role = "PROMOTER" }: { role?: "PROMOTER" | "ME
         <span>
           <span className="block text-white font-bold text-xl leading-tight font-serif tracking-tight">SIIM</span>
           <span className="block text-[9px] font-semibold uppercase tracking-[0.14em] text-sky-300/80 leading-tight">
-            {t("brand.tagline")}
+            SME IPO Intelligence Mitra
           </span>
         </span>
       </Link>
@@ -137,8 +129,8 @@ export default function Sidebar({ role = "PROMOTER" }: { role?: "PROMOTER" | "ME
           <UserRound size={17} />
         </span>
         <span className="min-w-0 leading-tight">
-          <span className="block truncate text-[13px] font-bold text-white">{who.name ?? t("sidebar.defaultName")}</span>
-          <span className="block truncate text-[11px] text-sky-200/70">{who.role ?? t("sidebar.defaultRole")}</span>
+          <span className="block truncate text-[13px] font-bold text-white">{who.name}</span>
+          <span className="block truncate text-[11px] text-sky-200/70">{who.role}</span>
         </span>
       </div>
 
@@ -159,7 +151,7 @@ export default function Sidebar({ role = "PROMOTER" }: { role?: "PROMOTER" | "ME
               <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg border transition-colors ${tile}`}>
                 <Icon size={15} />
               </span>
-              <span className="flex-1 leading-snug">{t(labelKey)}</span>
+              <span className="flex-1 leading-snug">{label}</span>
               <span
                 className={`grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full text-[9px] font-bold ${
                   active ? "bg-blue-100 text-blue-700" : "bg-white/10 text-sky-200/70"
@@ -179,16 +171,14 @@ export default function Sidebar({ role = "PROMOTER" }: { role?: "PROMOTER" | "ME
 
       {/* utilities */}
       <div className="border-t border-white/10 bg-black/10 px-3 py-2.5 space-y-0.5">
-        {/* language switch — converts the whole site (English ⇄ हिन्दी) */}
-        <LangToggle />
         <Link href="/" className="flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[12px] text-sky-100/75 hover:bg-white/10 hover:text-white">
-          <HelpCircle size={14} className="text-sky-300" /> {t("sidebar.learn")}
+          <HelpCircle size={14} className="text-sky-300" /> Learn about SIIM
         </Link>
         <Link href="/settings" className="flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[12px] text-sky-100/75 hover:bg-white/10 hover:text-white">
-          <Settings size={14} className="text-sky-300/60" /> {t("sidebar.settings")}
+          <Settings size={14} className="text-sky-300/60" /> Settings
         </Link>
         <button onClick={logout} className="w-full flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[12px] text-sky-100/75 hover:bg-red-500/15 hover:text-red-200 text-left">
-          <LogOut size={14} className="text-red-300/80" /> {t("sidebar.logout")}
+          <LogOut size={14} className="text-red-300/80" /> Log out
         </button>
       </div>
     </aside>

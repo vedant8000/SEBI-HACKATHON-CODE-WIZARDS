@@ -10,7 +10,6 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { HeroBackdrop, HeroIconBadge } from "@/components/shared/ui";
-import { useT } from "@/components/i18n/LanguageProvider";
 
 const emptyFy = (fy: string): FinancialYear => ({
   fy, revenueCr: null, patCr: null, ebitdaCr: null, netWorthCr: null,
@@ -20,15 +19,15 @@ const emptyFy = (fy: string): FinancialYear => ({
 const currentFy = new Date().getFullYear() + (new Date().getMonth() >= 3 ? 0 : -1);
 const defaultYears = [currentFy - 2, currentFy - 1, currentFy].map((y) => emptyFy(`FY${y}`));
 
-// Provenance-chip field labels → translation keys (see lib/i18n/dictionary).
-const KEY_LABEL_KEYS: Record<string, string> = {
-  name: "obp.name", cin: "obp.cin", industry: "obp.industry", city: "obp.city", state: "obp.state",
-  yearOfIncorporation: "obp.yearOfIncorporation", promoterName: "obp.promoterName",
-  promoterExperienceYears: "obp.promoterExperienceYears", issueSizeCr: "obp.issueSizeCr",
-  freshIssueCr: "obp.freshIssueCr", ofsCr: "obp.ofsCr", proposedListingExchange: "obp.proposedListingExchange",
-  top3CustomerPct: "obp.top3CustomerPct", independentDirectorsAppointed: "obp.independentDirectorsAppointed",
-  auditCommitteeConstituted: "obp.auditCommitteeConstituted", pendingLitigationNote: "obp.pendingLitigationNote",
+const KEY_LABELS: Record<string, string> = {
+  name: "Company name", cin: "CIN", industry: "Industry", city: "City", state: "State",
+  yearOfIncorporation: "Year of incorporation", promoterName: "Promoter name",
+  promoterExperienceYears: "Promoter experience", issueSizeCr: "Issue size",
+  freshIssueCr: "Fresh issue", ofsCr: "Offer for sale", proposedListingExchange: "Exchange",
+  top3CustomerPct: "Top-3 customers %", independentDirectorsAppointed: "Independent directors",
+  auditCommitteeConstituted: "Audit committee", pendingLitigationNote: "Litigation note",
 };
+const prettyKey = (k: string) => (k.startsWith("fy:") ? `${k.slice(3)} financials` : KEY_LABELS[k] ?? k);
 
 function Field({
   label, help, children,
@@ -74,9 +73,6 @@ const inputCls =
 
 export default function OnboardingForm({ existing }: { existing: Company | null }) {
   const router = useRouter();
-  const t = useT();
-  const prettyKey = (k: string) =>
-    k.startsWith("fy:") ? `${k.slice(3)} ${t("obp.financials")}` : KEY_LABEL_KEYS[k] ? t(KEY_LABEL_KEYS[k]) : k;
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [f, setF] = useState({
@@ -124,7 +120,7 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
       [...files].forEach((file) => fd.append("files", file));
       const res = await fetch("/api/companies/parse", { method: "POST", body: fd });
       const data = await res.json();
-      if (!res.ok) { setParseErr(data.error ?? t("ob.couldNotRead")); return; }
+      if (!res.ok) { setParseErr(data.error ?? "Could not read those documents."); return; }
       applyParsed(data as ParsedProfile);
       // retain the files (dedupe by name+size) to upload on save
       setPendingFiles((prev) => {
@@ -132,7 +128,7 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
         return [...prev, ...[...files].filter((f) => !seen.has(`${f.name}:${f.size}`))];
       });
     } catch {
-      setParseErr(t("ob.parseFailed"));
+      setParseErr("Parsing failed — please try again.");
     } finally {
       setParsing(false);
     }
@@ -243,7 +239,7 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
 
   const triState = (val: boolean | null | undefined, set: (v: boolean | null) => void) => (
     <div className="mt-1.5 flex gap-2 flex-wrap">
-      {[[t("ob.yes"), true], [t("ob.no"), false], [t("ob.notSure"), null]].map(([label, v]) => (
+      {[["Yes", true], ["No", false], ["Not sure yet", null]].map(([label, v]) => (
         <button
           key={String(label)}
           type="button"
@@ -282,9 +278,10 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
         <div className="flex items-center gap-3 mb-3">
           <HeroIconBadge icon={Wand2} />
           <div>
-            <h3 className="text-[15px] font-bold text-[#1e3a5f]">{t("ob.autofillTitle")}</h3>
+            <h3 className="text-[15px] font-bold text-[#1e3a5f]">Auto-fill from your documents</h3>
             <p className="text-xs text-slate-500">
-              {t("ob.autofillDesc")}
+              Have a Certificate of Incorporation, KYC, board resolution or audited financials? Drop them here and we&rsquo;ll
+              read the fields below for you. You review and edit before saving — nothing is submitted automatically.
             </p>
           </div>
         </div>
@@ -301,13 +298,13 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
           {parsing ? (
             <div className="flex flex-col items-center gap-2 text-blue-600">
               <Loader2 className="animate-spin" size={24} />
-              <span className="text-sm font-medium">{t("ob.reading")}</span>
+              <span className="text-sm font-medium">Reading your documents and filling the form…</span>
             </div>
           ) : (
             <>
               <FileUp size={24} className="mx-auto text-blue-400 mb-1.5" />
-              <p className="text-sm font-medium text-slate-700">{t("ob.dropHere")}</p>
-              <p className="text-xs text-slate-500 mt-1">{t("ob.dropHint")}</p>
+              <p className="text-sm font-medium text-slate-700">Drop documents here or click to select (multiple supported)</p>
+              <p className="text-xs text-slate-500 mt-1">Text PDFs, TXT or CSV. We read them to fill the form below, and add them to your company for full analysis when you save.</p>
             </>
           )}
         </div>
@@ -316,12 +313,12 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
           <div className="mt-3 rounded-xl border border-emerald-200/70 bg-white/80 p-3.5">
             <div className="flex items-center gap-2 text-sm font-semibold text-emerald-700">
               <CheckCircle2 size={16} />
-              {t("ob.filledSummary", { fields: filled.size, docs: parsed.documentsParsed.filter((d) => d.readable).length })}
-              <span className="font-normal text-slate-400">{t("ob.reviewHighlighted")}</span>
+              Filled {filled.size} field{filled.size === 1 ? "" : "s"} from {parsed.documentsParsed.filter((d) => d.readable).length} document{parsed.documentsParsed.filter((d) => d.readable).length === 1 ? "" : "s"}.
+              <span className="font-normal text-slate-400">Review the highlighted fields below, correct anything, then save.</span>
             </div>
             {pendingFiles.length > 0 && (
               <p className="mt-1.5 text-[12px] text-slate-500">
-                {t("ob.willAddDocs", { count: pendingFiles.length })}
+                {pendingFiles.length} document{pendingFiles.length === 1 ? "" : "s"} will be added to your company and analysed on save.
               </p>
             )}
             {Object.keys(parsed.provenance).length > 0 && (
@@ -338,7 +335,7 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
             )}
             {parsed.unreadable.length > 0 && (
               <p className="mt-2 text-[11px] text-amber-700">
-                {t("ob.couldNotReadList")}{parsed.unreadable.join(", ")}
+                Could not read (likely scans — enter these manually): {parsed.unreadable.join(", ")}
               </p>
             )}
           </div>
@@ -347,26 +344,26 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
 
       <div className="grid gap-5 xl:grid-cols-[1fr_1.08fr] items-start">
         {/* ── Left column: basic details ── */}
-        <SectionCard icon={Building2} title={t("ob.sec1")}>
+        <SectionCard icon={Building2} title="1 · Basic details">
           <div className="grid md:grid-cols-2 gap-4">
-            <Field label={t("ob.companyName")} help={t("ob.companyNameHelp")}>
-              <input className={inputCls + glow("name")} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder={t("ob.companyNamePh")} />
+            <Field label="Company name" help="As per your Certificate of Incorporation">
+              <input className={inputCls + glow("name")} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="e.g. Shakti Precision Components Private Limited" />
             </Field>
-            <Field label={t("ob.cin")} help={t("ob.cinHelp")}>
+            <Field label="CIN" help="21-character number on your incorporation certificate — we'll verify it against uploads">
               <input className={inputCls + glow("cin")} value={f.cin} onChange={(e) => setF({ ...f, cin: e.target.value })} placeholder="U12345GJ2014PTC012345" />
             </Field>
-            <Field label={t("ob.industry")} help={t("ob.industryHelp")}>
+            <Field label="Industry / what the business does" help="In your own words — e.g. 'auto components manufacturing'">
               <input className={inputCls + glow("industry")} value={f.industry} onChange={(e) => setF({ ...f, industry: e.target.value })} />
             </Field>
-            <Field label={t("ob.yearInc")} help={t("ob.yearIncHelp")}>
+            <Field label="Year of incorporation" help="SME platforms generally expect a 3-year track record">
               <input className={inputCls + glow("yearOfIncorporation")} type="number" value={f.yearOfIncorporation} onChange={(e) => setF({ ...f, yearOfIncorporation: e.target.value })} />
             </Field>
-            <Field label={t("ob.city")}><input className={inputCls + glow("city")} value={f.city} onChange={(e) => setF({ ...f, city: e.target.value })} /></Field>
-            <Field label={t("ob.state")}><input className={inputCls + glow("state")} value={f.state} onChange={(e) => setF({ ...f, state: e.target.value })} /></Field>
-            <Field label={t("ob.promoterName")} help={t("ob.promoterNameHelp")}>
+            <Field label="City"><input className={inputCls + glow("city")} value={f.city} onChange={(e) => setF({ ...f, city: e.target.value })} /></Field>
+            <Field label="State"><input className={inputCls + glow("state")} value={f.state} onChange={(e) => setF({ ...f, state: e.target.value })} /></Field>
+            <Field label="Promoter name" help="We use this to detect related-party entities with matching family names">
               <input className={inputCls + glow("promoterName")} value={f.promoterName} onChange={(e) => setF({ ...f, promoterName: e.target.value })} />
             </Field>
-            <Field label={t("ob.promoterExp")}>
+            <Field label="Promoter's years of experience in this business">
               <input className={inputCls + glow("promoterExperienceYears")} type="number" value={f.promoterExperienceYears} onChange={(e) => setF({ ...f, promoterExperienceYears: e.target.value })} />
             </Field>
           </div>
@@ -376,14 +373,14 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
         <div className="space-y-5 min-w-0">
           <SectionCard
             icon={Target}
-            title={t("ob.sec2")}
-            sub={t("ob.sec2Sub")}
+            title="2 · The issue you're planning"
+            sub="Rough numbers are fine to start — your merchant banker will finalise them."
           >
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <Field label={t("ob.issueSize")}><input className={inputCls + glow("issueSizeCr")} type="number" value={f.issueSizeCr} onChange={(e) => setF({ ...f, issueSizeCr: e.target.value })} /></Field>
-              <Field label={t("ob.freshIssue")} help={t("ob.freshIssueHelp")}><input className={inputCls + glow("freshIssueCr")} type="number" value={f.freshIssueCr} onChange={(e) => setF({ ...f, freshIssueCr: e.target.value })} /></Field>
-              <Field label={t("ob.ofs")} help={t("ob.ofsHelp")}><input className={inputCls + glow("ofsCr")} type="number" value={f.ofsCr} onChange={(e) => setF({ ...f, ofsCr: e.target.value })} /></Field>
-              <Field label={t("ob.targetExchange")}>
+              <Field label="Total issue size (₹ Cr)"><input className={inputCls + glow("issueSizeCr")} type="number" value={f.issueSizeCr} onChange={(e) => setF({ ...f, issueSizeCr: e.target.value })} /></Field>
+              <Field label="Fresh issue (₹ Cr)" help="New money coming into the company"><input className={inputCls + glow("freshIssueCr")} type="number" value={f.freshIssueCr} onChange={(e) => setF({ ...f, freshIssueCr: e.target.value })} /></Field>
+              <Field label="Offer for sale (₹ Cr)" help="Promoter selling existing shares"><input className={inputCls + glow("ofsCr")} type="number" value={f.ofsCr} onChange={(e) => setF({ ...f, ofsCr: e.target.value })} /></Field>
+              <Field label="Target exchange">
                 <select className={inputCls + glow("proposedListingExchange")} value={f.proposedListingExchange} onChange={(e) => setF({ ...f, proposedListingExchange: e.target.value })}>
                   <option>NSE Emerge / BSE SME</option><option>NSE Emerge</option><option>BSE SME</option>
                 </select>
@@ -393,17 +390,17 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
 
           <SectionCard
             icon={BarChart3}
-            title={t("ob.sec3")}
-            sub={t("ob.sec3Sub")}
+            title="3 · Three-year financial snapshot (₹ crore)"
+            sub="Enter what you know — uploaded audited financials cross-check these numbers. Leave blank if unsure."
             accent
           >
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-[11px] font-semibold text-slate-500">
-                    <th className="py-2 pr-2">{t("ob.thYear")}</th><th className="pr-2">{t("ob.thRevenue")}</th><th className="pr-2">{t("ob.thEbitda")}</th>
-                    <th className="pr-2">{t("ob.thPat")}</th><th className="pr-2">{t("ob.thNetWorth")}</th><th className="pr-2">{t("ob.thBorrowings")}</th>
-                    <th className="pr-2">{t("ob.thReceivables")}</th><th className="pr-2">{t("ob.thCfo")}</th>
+                    <th className="py-2 pr-2">Year</th><th className="pr-2">Revenue</th><th className="pr-2">EBITDA</th>
+                    <th className="pr-2">PAT</th><th className="pr-2">Net worth</th><th className="pr-2">Borrowings</th>
+                    <th className="pr-2">Receivables</th><th className="pr-2">Cash from ops</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -427,19 +424,19 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
       </div>
 
       {/* ── Governance, full width ── */}
-      <SectionCard icon={ShieldCheck} title={t("ob.sec4")}>
+      <SectionCard icon={ShieldCheck} title="4 · Governance & honesty checks">
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-          <Field label={t("ob.indepDir")} help={t("ob.indepDirHelp")}>
+          <Field label="Have you appointed independent directors?" help="Required for listing — 'No' or 'Not sure' creates a tracked gap, which is fine at this stage">
             {triState(f.independentDirectorsAppointed, (v) => setF({ ...f, independentDirectorsAppointed: v }))}
           </Field>
-          <Field label={t("ob.auditComm")}>
+          <Field label="Is an audit committee constituted?">
             {triState(f.auditCommitteeConstituted, (v) => setF({ ...f, auditCommitteeConstituted: v }))}
           </Field>
-          <Field label={t("ob.top3")} help={t("ob.top3Help")}>
-            <input className={inputCls + glow("top3CustomerPct")} type="number" value={f.top3CustomerPct} onChange={(e) => setF({ ...f, top3CustomerPct: e.target.value })} placeholder={t("ob.top3Ph")} />
+          <Field label="Top 3 customers — % of revenue" help="Above 40% is a disclosure-worthy concentration; better to surface it now">
+            <input className={inputCls + glow("top3CustomerPct")} type="number" value={f.top3CustomerPct} onChange={(e) => setF({ ...f, top3CustomerPct: e.target.value })} placeholder="e.g. 48" />
           </Field>
-          <Field label={t("ob.litigation")} help={t("ob.litigationHelp")}>
-            <textarea className={inputCls + glow("pendingLitigationNote")} rows={2} value={f.pendingLitigationNote} onChange={(e) => setF({ ...f, pendingLitigationNote: e.target.value })} placeholder={t("ob.litigationPh")} />
+          <Field label="Any pending cases, notices or demands you know of?" help="Tax notices count too. Declaring them early avoids the most damaging kind of inconsistency later.">
+            <textarea className={inputCls + glow("pendingLitigationNote")} rows={2} value={f.pendingLitigationNote} onChange={(e) => setF({ ...f, pendingLitigationNote: e.target.value })} placeholder="e.g. GST demand notice of ₹18 lakh for FY2024, reply filed" />
           </Field>
         </div>
       </SectionCard>
@@ -452,21 +449,21 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
         >
           <Save size={15} />
           {saving
-            ? (pendingFiles.length ? t("ob.saveUploadAnalyse") : t("ob.saveAnalyse"))
-            : existing ? t("ob.saveReanalyse")
-            : pendingFiles.length ? t("ob.createUploadAnalyse") : t("ob.createAnalyse")}
+            ? (pendingFiles.length ? "Saving, uploading & analysing…" : "Saving & analysing…")
+            : existing ? "Save & Re-analyse"
+            : pendingFiles.length ? "Create Company, Upload & Analyse" : "Create Company & Analyse"}
         </button>
-        {saved && <span className="text-sm text-emerald-600 font-medium">{t("ob.savedUpdated")}</span>}
+        {saved && <span className="text-sm text-emerald-600 font-medium">Saved — analysis updated ✓</span>}
         {(saved || existing) && (
           <a
             href="/evidence"
             className="group flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-sky-500 text-white text-sm font-semibold rounded-xl shadow-lg shadow-blue-600/25 hover:shadow-blue-500/35 transition-shadow"
           >
-            {t("ob.continueEvidence")}
+            Continue to Evidence & Extraction
             <ArrowRight size={15} className="group-hover:translate-x-0.5 transition-transform" />
           </a>
         )}
-        {!f.name && <span className="text-xs text-slate-400">{t("ob.nameRequired")}</span>}
+        {!f.name && <span className="text-xs text-slate-400">Company name is required to save.</span>}
       </div>
     </div>
     </HeroBackdrop>

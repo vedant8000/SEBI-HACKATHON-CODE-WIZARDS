@@ -1,7 +1,7 @@
 import { getContext } from "@/lib/server/context";
 import { EmptyState, PageHeader } from "@/components/shared/ui";
 import DataRoom from "@/components/documents/DataRoom";
-import Tr from "@/components/i18n/Tr";
+import BankerFlagsCard from "@/components/shared/BankerFlagsCard";
 
 export const dynamic = "force-dynamic";
 
@@ -10,16 +10,16 @@ export default async function DataRoomPage() {
   if (!company) {
     return (
       <>
-        <PageHeader title={<Tr id="dataroom.title" />} />
-        <EmptyState title={<Tr id="common.noCompany" />} message={<Tr id="dataroom.emptyMsg" />} />
+        <PageHeader title="Smart Data Room" />
+        <EmptyState title="No company yet" message="Create your company profile first — then upload your documents here." />
       </>
     );
   }
   return (
     <>
       <PageHeader
-        title={<Tr id="dataroom.title" />}
-        subtitle={<Tr id="dataroom.subtitle" />}
+        title="Upload & Data Room"
+        subtitle="Upload any IPO-related documents you currently have. SIIM will classify them, extract facts, generate available sections, and show what is missing. Nothing is mandatory — start with what you have."
       />
       <BankerFlagsCard flags={flags.filter((f) => f.targetType === "document")} title="Document corrections from your merchant banker" />
       <DataRoom docs={docs} />
