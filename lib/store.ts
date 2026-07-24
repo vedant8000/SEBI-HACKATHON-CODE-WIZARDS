@@ -6,6 +6,7 @@ import { getMongoDb } from "./mongodb";
 import type {
   AnalysisResult,
   AuditLogEntry,
+  BankerFlag,
   Company,
   DocumentChunk,
   DocumentRecord,
@@ -36,6 +37,7 @@ export interface Db {
   facts: ExtractedFact[];
   conflicts: FactConflict[];
   draftSections: DraftSection[];
+  flags: BankerFlag[]; // merchant banker correction flags
   objects: ObjectOfIssue[]; // carries companyId via key prefix in id: `${companyId}:{n}`
   objectsByCompany: Record<string, ObjectOfIssue[]>;
   analysis: Record<string, AnalysisResult>;
@@ -62,6 +64,7 @@ const ARRAY_KEYS = [
   "facts",
   "conflicts",
   "draftSections",
+  "flags",
   "objects",
   "auditLog",
 ] as const;
@@ -74,6 +77,7 @@ const emptyDb: Db = {
   facts: [],
   conflicts: [],
   draftSections: [],
+  flags: [],
   objects: [],
   objectsByCompany: {},
   analysis: {},
@@ -193,6 +197,16 @@ export function uid(prefix = ""): string {
   return prefix + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 }
 
+/** Share code the promoter gives their merchant banker, e.g. "SIIM-7K2M4X". */
+export function genCompanyCode(taken: Set<string>): string {
+  const alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // no 0/O/1/I/L
+  for (;;) {
+    let code = "SIIM-";
+    for (let i = 0; i < 6; i++) code += alphabet[Math.floor(Math.random() * alphabet.length)];
+    if (!taken.has(code)) return code;
+  }
+}
+
 export function getActiveCompany(db: Db): Company | null {
   if (!db.companies.length) return null;
   return db.companies.find((c) => c.id === db.activeCompanyId) ?? db.companies[0];
@@ -220,6 +234,16 @@ export function companyChunks(db: Db, companyId: string): DocumentChunk[] {
 
 export function companyConflicts(db: Db, companyId: string): FactConflict[] {
   return db.conflicts.filter((c) => c.companyId === companyId);
+}
+
+export function companyFlags(db: Db, companyId: string): BankerFlag[] {
+  return db.flags.filter((f) => f.companyId === companyId);
+}
+
+/** Companies a merchant banker has linked to by entering their company code. */
+export function bankerCompanies(db: Db, bankerEmail: string): Company[] {
+  const email = bankerEmail.trim().toLowerCase();
+  return db.companies.filter((c) => (c.bankerEmails ?? []).includes(email));
 }
 
 export function logAudit(

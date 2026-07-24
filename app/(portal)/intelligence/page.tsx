@@ -1,11 +1,12 @@
 import { getContext } from "@/lib/server/context";
 import { EmptyState, PageHeader } from "@/components/shared/ui";
 import IntelligenceTabs from "@/components/intelligence/IntelligenceTabs";
+import BankerFlagsCard from "@/components/shared/BankerFlagsCard";
 
 export const dynamic = "force-dynamic";
 
 export default async function IntelligencePage() {
-  const { company, analysis, coverage, conflicts, objects, docs } = await getContext();
+  const { company, analysis, coverage, conflicts, objects, docs, flags } = await getContext();
   if (!company) {
     return (
       <>
@@ -23,6 +24,7 @@ export default async function IntelligencePage() {
         title="IPO Intelligence"
         subtitle="Everything the rule engine found in your data — readiness, missing data, inconsistencies, related-party & fund-use risk, your objects plan, and likely reviewer questions. All computed live from extracted facts; nothing is pre-set."
       />
+      <BankerFlagsCard flags={flags.filter((f) => f.targetType === "gap")} title="Gaps your merchant banker has flagged" />
       <IntelligenceTabs
         analysis={analysis}
         coverage={coverage}

@@ -12,6 +12,22 @@ export default async function SettingsPage() {
     <>
       <PageHeader title="Settings" subtitle="Companies, data management and AI provider status." />
       <div className="space-y-5 max-w-3xl">
+        {company?.companyCode && (
+          <Card className="p-5 border-blue-200">
+            <h3 className="text-sm font-semibold text-slate-800 mb-1">Merchant banker access</h3>
+            <p className="text-sm text-slate-600">
+              Share this company code with your merchant banker:{" "}
+              <span className="font-mono font-bold text-[#1e3a5f] tracking-widest bg-blue-50 border border-blue-200 rounded px-2 py-0.5">{company.companyCode}</span>
+            </p>
+            <p className="text-xs text-slate-400 mt-1.5">
+              They enter it in their SIIM banker workspace to get review access to your documents, extracted facts,
+              issues and draft — and to send you correction flags.
+              {(company.bankerEmails?.length ?? 0) > 0 && (
+                <> Linked banker{company.bankerEmails!.length > 1 ? "s" : ""}: {company.bankerEmails!.join(", ")}.</>
+              )}
+            </p>
+          </Card>
+        )}
         <Card className={`p-5 ${aiAvailable() ? "border-emerald-300" : "border-amber-300 bg-amber-50"}`}>
           <h3 className="text-sm font-semibold text-slate-800 mb-2">AI Provider</h3>
           {aiAvailable() ? (
