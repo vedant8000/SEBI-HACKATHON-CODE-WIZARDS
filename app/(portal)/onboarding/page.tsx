@@ -9,8 +9,8 @@ export default async function OnboardingPage() {
   return (
     <>
       <div className="flex flex-wrap items-center gap-4 mb-6">
-        <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-white border border-slate-200 shadow-sm text-[#1e3a5f]">
-          <Building2 size={24} strokeWidth={1.8} />
+        <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-blue-600 to-sky-500 shadow-lg shadow-blue-500/30">
+          <Building2 size={24} strokeWidth={1.8} className="text-white" />
         </span>
         <div>
           <h1 className="text-3xl font-bold font-serif tracking-tight text-[#1e3a5f]">Company Profile</h1>

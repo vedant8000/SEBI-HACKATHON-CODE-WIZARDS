@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Check, Pencil, Plus, X } from "lucide-react";
 import type { ExtractedFact, FactConflict } from "@/lib/types";
-import { Badge, Card, StatCard } from "@/components/shared/ui";
+import { Badge, GlassPanel, GlassStat, HeroBackdrop } from "@/components/shared/ui";
 
 const statusTone: Record<string, "green" | "yellow" | "red" | "blue"> = {
   ACCEPTED: "green", NEEDS_REVIEW: "yellow", REJECTED: "red", PROMOTER_EDITED: "blue",
@@ -68,41 +68,42 @@ export default function FactsTable({
   );
 
   return (
-    <div className="space-y-5">
+    <HeroBackdrop className="p-5 md:p-6">
+    <div className="relative space-y-5">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard label="Facts Extracted" value={facts.length} sub={`${facts.filter((f) => f.extractionMethod === "ai").length} by AI · ${facts.filter((f) => f.extractionMethod === "pattern").length} by pattern · ${facts.filter((f) => f.extractionMethod === "manual").length} manual`} />
-        <StatCard label="Needs Review" value={facts.filter((f) => f.status === "NEEDS_REVIEW").length} tone={facts.some((f) => f.status === "NEEDS_REVIEW") ? "warn" : "good"} />
-        <StatCard label="Conflicts" value={conflicts.filter((c) => c.status === "OPEN").length} tone={conflicts.some((c) => c.status === "OPEN") ? "bad" : "good"} sub="Same fact, different values across documents" />
-        <StatCard label="Chunks Processed" value={`${chunkStats.processed}/${chunkStats.total}`} sub={chunkStats.failed ? `${chunkStats.failed} failed — re-upload to retry` : "Page-wise extraction"} />
+        <GlassStat label="Facts Extracted" value={facts.length} sub={`${facts.filter((f) => f.extractionMethod === "ai").length} by AI · ${facts.filter((f) => f.extractionMethod === "pattern").length} by pattern · ${facts.filter((f) => f.extractionMethod === "manual").length} manual`} />
+        <GlassStat label="Needs Review" value={facts.filter((f) => f.status === "NEEDS_REVIEW").length} tone={facts.some((f) => f.status === "NEEDS_REVIEW") ? "warn" : "good"} />
+        <GlassStat label="Conflicts" value={conflicts.filter((c) => c.status === "OPEN").length} tone={conflicts.some((c) => c.status === "OPEN") ? "bad" : "good"} sub="Same fact, different values across documents" />
+        <GlassStat label="Chunks Processed" value={`${chunkStats.processed}/${chunkStats.total}`} sub={chunkStats.failed ? `${chunkStats.failed} failed — re-upload to retry` : "Page-wise extraction"} />
       </div>
 
       {conflicts.filter((c) => c.status === "OPEN").length > 0 && (
-        <Card className="p-4 border-red-200 bg-red-50">
+        <GlassPanel className="p-4 !border-red-300/80 !bg-red-100/80">
           <h3 className="text-sm font-semibold text-red-800 mb-2">Fact conflicts — reconcile before drafting</h3>
           <ul className="space-y-1.5 text-[13px] text-red-900">
             {conflicts.filter((c) => c.status === "OPEN").map((c) => (
               <li key={c.id}>⚠ <strong>{c.factKey}</strong>: {c.valueA} ({c.sourceA}) vs {c.valueB} ({c.sourceB}) — {c.explanation}</li>
             ))}
           </ul>
-        </Card>
+        </GlassPanel>
       )}
 
-      <Card className="overflow-hidden">
-        <div className="px-5 py-3 border-b border-slate-100 flex flex-wrap items-center gap-3">
-          <h3 className="text-sm font-semibold text-slate-800">Extracted Facts ({shown.length})</h3>
+      <GlassPanel className="overflow-hidden">
+        <div className="px-5 py-3 border-b border-white/60 flex flex-wrap items-center gap-3">
+          <h3 className="text-sm font-semibold text-[#1e3a5f]">Extracted Facts ({shown.length})</h3>
           <input
-            className="px-3 py-1.5 text-xs border border-slate-300 rounded-lg w-56"
+            className="px-3 py-1.5 text-xs border border-slate-300 rounded-lg w-56 bg-white/90"
             placeholder="Filter by fact, key or source…"
             value={filter} onChange={(e) => setFilter(e.target.value)}
           />
           <button onClick={() => setShowManual(!showManual)}
-            className="ml-auto inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-slate-300 rounded-lg hover:bg-slate-50">
+            className="ml-auto inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-slate-300 rounded-lg bg-white/70 hover:bg-white">
             <Plus size={13} /> Enter fact manually
           </button>
         </div>
 
         {showManual && (
-          <div className="px-5 py-3 bg-blue-50/50 border-b border-slate-100 flex flex-wrap items-end gap-3">
+          <div className="px-5 py-3 bg-blue-50/60 border-b border-white/60 flex flex-wrap items-end gap-3">
             <label className="text-[11px] text-slate-500">Fact key<br />
               <input className="mt-0.5 px-2 py-1.5 text-xs border border-slate-300 rounded w-44 bg-white" placeholder="e.g. revenueCr" value={manual.factKey} onChange={(e) => setManual({ ...manual, factKey: e.target.value })} />
             </label>
@@ -123,7 +124,7 @@ export default function FactsTable({
           <div className="overflow-x-auto">
             <table className="w-full text-[13px] min-w-[980px]">
               <thead>
-                <tr className="text-left text-xs text-slate-500 bg-slate-50">
+                <tr className="text-left text-xs text-slate-500 bg-white/50">
                   <th className="px-4 py-2.5">Fact</th>
                   <th className="px-2 py-2.5">Value</th>
                   <th className="px-2 py-2.5">FY</th>
@@ -138,7 +139,7 @@ export default function FactsTable({
               </thead>
               <tbody>
                 {shown.map((f) => (
-                  <tr key={f.id} className={`border-t border-slate-100 ${f.status === "REJECTED" ? "opacity-40" : ""}`}>
+                  <tr key={f.id} className={`border-t border-white/60 bg-white/40 ${f.status === "REJECTED" ? "opacity-40" : ""}`}>
                     <td className="px-4 py-2 font-medium text-slate-700">{pretty(f.factLabel)}<div className="text-[10px] text-slate-400 font-mono">{f.factKey}</div></td>
                     <td className="px-2 py-2">
                       {editId === f.id ? (
@@ -169,7 +170,8 @@ export default function FactsTable({
             </table>
           </div>
         )}
-      </Card>
+      </GlassPanel>
     </div>
+    </HeroBackdrop>
   );
 }

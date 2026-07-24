@@ -69,9 +69,8 @@ never fabricates AI output.
 
 | Role | Email | Password |
 |---|---|---|
-| Promoter | promoter@iposaathi.demo | demo123 |
-| Merchant Banker | banker@iposaathi.demo | demo123 |
-| Admin | admin@iposaathi.demo | demo123 |
+| Promoter | promoter@siim.demo | Demo@123 |
+| Merchant Banker | banker@siim.demo | Demo@123 |
 
 ## Demo flow
 
