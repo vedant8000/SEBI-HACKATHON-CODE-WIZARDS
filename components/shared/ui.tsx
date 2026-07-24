@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
 // ── Cards & layout ──────────────────────────────────────────────────────────
@@ -8,6 +9,97 @@ export function Card({ children, className = "" }: { children: ReactNode; classN
     <div className={`bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-shadow ${className}`}>
       {children}
     </div>
+  );
+}
+
+// ── Immersive "hero" surface (gradient backdrop + glass panels) ────────────
+// Shared visual language for pages given the glassmorphism treatment
+// (Assistant, Company Setup, …) — a soft gradient stage with a faint
+// capital-markets scene in the idle corner, echoing the sidebar's brand
+// illustration, with translucent frosted panels floating on top.
+
+/** Faint skyline / candlestick / growth-curve scene for hero backdrops. */
+export function HeroScene() {
+  return (
+    <svg viewBox="0 0 420 220" className="w-full h-full" aria-hidden>
+      <g fill="#1e3a5f">
+        <rect x="10" y="120" width="30" height="100" opacity="0.10" rx="2" />
+        <rect x="48" y="86" width="38" height="134" opacity="0.14" rx="2" />
+        <rect x="94" y="140" width="26" height="80" opacity="0.09" rx="2" />
+        <rect x="128" y="104" width="34" height="116" opacity="0.13" rx="2" />
+        <rect x="170" y="150" width="24" height="70" opacity="0.08" rx="2" />
+      </g>
+      <g stroke="#3b82f6" strokeWidth="2" opacity="0.28">
+        {[[300, 128, 158], [318, 108, 148], [336, 122, 152], [354, 92, 132], [372, 104, 140]].map(([x, top, bot]) => (
+          <g key={x}>
+            <line x1={x} y1={top - 8} x2={x} y2={bot + 8} />
+            <rect x={x - 5} y={top} width="10" height={bot - top} fill="#eff6ff" />
+          </g>
+        ))}
+      </g>
+      <path
+        d="M8,200 C 90,190 160,170 220,140 C 280,110 330,80 400,50"
+        fill="none" stroke="#2563eb" strokeWidth="3" strokeLinecap="round" opacity="0.3"
+      />
+    </svg>
+  );
+}
+
+/** Gradient stage — wrap page content that should get the immersive hero treatment. */
+export function HeroBackdrop({ children, className = "" }: { children: ReactNode; className?: string }) {
+  return (
+    <div className={`relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#7fb0ea] via-[#9dc4ef] to-[#4f80c9] border border-white/60 shadow-[0_10px_36px_rgba(20,45,80,0.28)] ${className}`}>
+      <div className="pointer-events-none absolute -left-16 -top-20 w-72 h-72 bg-white/25 rounded-full blur-3xl" />
+      <div className="pointer-events-none absolute right-10 -top-10 w-56 h-56 bg-sky-200/40 rounded-full blur-3xl" />
+      <div className="pointer-events-none absolute left-1/3 top-1/3 w-72 h-72 bg-violet-400/25 rounded-full blur-3xl" />
+      <div className="pointer-events-none absolute right-1/4 bottom-1/4 w-64 h-64 bg-teal-300/25 rounded-full blur-3xl" />
+      <div className="pointer-events-none absolute right-0 bottom-0 w-[380px] h-[200px] opacity-30">
+        <HeroScene />
+      </div>
+      <div className="relative">{children}</div>
+    </div>
+  );
+}
+
+/** Translucent, blurred card floating on a HeroBackdrop. */
+export function GlassPanel({ children, className = "" }: { children: ReactNode; className?: string }) {
+  return (
+    <div className={`rounded-2xl bg-white/80 backdrop-blur-md border border-white/60 shadow-lg shadow-blue-900/10 ${className}`}>
+      {children}
+    </div>
+  );
+}
+
+/** Glass stat tile — the StatCard equivalent for HeroBackdrop pages. Tinted by tone so good/bad reads at a glance. */
+export function GlassStat({
+  label, value, sub, tone = "default",
+}: { label: string; value: ReactNode; sub?: string; tone?: "default" | "good" | "warn" | "bad" }) {
+  const toneCls = { default: "text-[#1e3a5f]", good: "text-emerald-700", warn: "text-amber-700", bad: "text-red-700" }[tone];
+  const barCls = { default: "bg-gradient-to-r from-blue-500 to-sky-400", good: "bg-gradient-to-r from-emerald-500 to-teal-400", warn: "bg-gradient-to-r from-amber-500 to-yellow-400", bad: "bg-gradient-to-r from-red-500 to-rose-400" }[tone];
+  const washCls = {
+    default: "!bg-gradient-to-br !from-blue-100 !to-white/70 !border-blue-200/80 !shadow-blue-900/[0.08]",
+    good: "!bg-gradient-to-br !from-emerald-100 !to-white/70 !border-emerald-200/80 !shadow-emerald-500/[0.15]",
+    warn: "!bg-gradient-to-br !from-amber-100 !to-white/70 !border-amber-200/80 !shadow-amber-500/[0.15]",
+    bad: "!bg-gradient-to-br !from-red-100 !to-white/70 !border-red-200/80 !shadow-red-500/[0.15]",
+  }[tone];
+  return (
+    <GlassPanel className={`p-4 relative overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-lg ${washCls}`}>
+      <span className={`absolute inset-x-0 top-0 h-0.5 ${barCls}`} />
+      <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">{label}</div>
+      <div className={`text-2xl font-semibold mt-1 ${toneCls}`}>{value}</div>
+      {sub && <div className="text-xs text-slate-500 mt-1">{sub}</div>}
+    </GlassPanel>
+  );
+}
+
+/** Gradient icon badge used in hero headers (Bot, Sparkles, section icons…). */
+export function HeroIconBadge({
+  icon: Icon, size = 17,
+}: { icon: LucideIcon; size?: number }) {
+  return (
+    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-600 to-sky-500 shadow-md shadow-blue-500/30">
+      <Icon size={size} className="text-white" />
+    </span>
   );
 }
 
@@ -114,7 +206,8 @@ export function ScoreDonut({ score, size = 120, label }: { score: number; size?:
   const color = score >= 75 ? "#059669" : score >= 50 ? "#d97706" : "#dc2626";
   return (
     <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="-rotate-90">
+      <div className="absolute inset-3 rounded-full blur-xl opacity-40" style={{ backgroundColor: color }} />
+      <svg width={size} height={size} className="-rotate-90 relative">
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#e2e8f0" strokeWidth="10" />
         <circle
           cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth="10"
