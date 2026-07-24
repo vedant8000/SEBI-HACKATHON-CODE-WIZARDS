@@ -6,7 +6,7 @@ import Tr from "@/components/i18n/Tr";
 export const dynamic = "force-dynamic";
 
 export default async function DataRoomPage() {
-  const { company, docs } = await getContext();
+  const { company, docs, flags } = await getContext();
   if (!company) {
     return (
       <>
@@ -21,6 +21,7 @@ export default async function DataRoomPage() {
         title={<Tr id="dataroom.title" />}
         subtitle={<Tr id="dataroom.subtitle" />}
       />
+      <BankerFlagsCard flags={flags.filter((f) => f.targetType === "document")} title="Document corrections from your merchant banker" />
       <DataRoom docs={docs} />
     </>
   );

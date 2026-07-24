@@ -9,7 +9,7 @@ import { SME_PROSPECTUS_BLUEPRINT } from "@/lib/ipo-blueprint/sme-prospectus-blu
 export const dynamic = "force-dynamic";
 
 export default async function DraftPage() {
-  const { company, draft, coverage, analysis } = await getContext();
+  const { company, draft, coverage, analysis, flags } = await getContext();
   if (!company) {
     return (
       <>
@@ -42,6 +42,7 @@ export default async function DraftPage() {
         subtitle={<Tr id="draft.subtitle" params={{ sections: coverage.length, gen: generatable }} />}
         actions={<a href="/api/export/draft" target="_blank" className="px-3 py-1.5 text-xs font-medium bg-slate-800 text-white rounded-lg hover:bg-slate-700"><Tr id="draft.export" /></a>}
       />
+      <BankerFlagsCard flags={flags.filter((f) => f.targetType === "section")} title="Draft sections your merchant banker wants corrected" />
       {!aiAvailable() && (
         <Card className="p-4 mb-5 border-sky-300 bg-sky-50">
           <p className="text-sm text-sky-800">

@@ -5,19 +5,27 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   Building2, FileSearch, BrainCircuit, FileText, UserCheck, Bot,
-  UserRound, HelpCircle, Settings, LogOut,
+  UserRound, HelpCircle, Settings, LogOut, LayoutDashboard, Flag,
 } from "lucide-react";
 import { useT } from "@/components/i18n/LanguageProvider";
 import LangToggle from "@/components/i18n/LangToggle";
 
-// The focused demo flow: setup (with upload) → evidence → intelligence → draft → review (+ assistant)
-const nav = [
-  { href: "/onboarding", labelKey: "nav.onboarding", icon: Building2, step: 1, tile: "bg-blue-50 text-blue-700 border-blue-100" },
-  { href: "/evidence", labelKey: "nav.evidence", icon: FileSearch, step: 2, tile: "bg-cyan-50 text-cyan-700 border-cyan-100" },
-  { href: "/intelligence", labelKey: "nav.intelligence", icon: BrainCircuit, step: 3, tile: "bg-indigo-50 text-indigo-600 border-indigo-100" },
-  { href: "/draft", labelKey: "nav.draft", icon: FileText, step: 4, tile: "bg-violet-50 text-violet-600 border-violet-100" },
-  { href: "/merchant-review", labelKey: "nav.review", icon: UserCheck, step: 5, tile: "bg-slate-100 text-[#1e3a5f] border-slate-200" },
-  { href: "/assistant", labelKey: "nav.assistant", icon: Bot, step: 6, tile: "bg-teal-50 text-teal-700 border-teal-100" },
+// Promoter flow: setup (with upload) → evidence → intelligence → draft (+ assistant).
+// The merchant banker review moved to the banker's own workspace (/banker/*).
+const promoterNav = [
+  { href: "/onboarding", label: "Company Setup & Upload", icon: Building2, step: 1, tile: "bg-blue-50 text-blue-700 border-blue-100" },
+  { href: "/evidence", label: "Evidence & Extraction", icon: FileSearch, step: 2, tile: "bg-cyan-50 text-cyan-700 border-cyan-100" },
+  { href: "/intelligence", label: "IPO Intelligence", icon: BrainCircuit, step: 3, tile: "bg-indigo-50 text-indigo-600 border-indigo-100" },
+  { href: "/draft", label: "Draft Offer Document", icon: FileText, step: 4, tile: "bg-violet-50 text-violet-600 border-violet-100" },
+  { href: "/assistant", label: "AI Assistant", icon: Bot, step: 5, tile: "bg-teal-50 text-teal-700 border-teal-100" },
+];
+
+// Banker flow: link company by code → inspect filing → pinpoint corrections → review draft.
+const bankerNav = [
+  { href: "/banker", label: "Review Overview", icon: LayoutDashboard, step: 1, tile: "bg-blue-50 text-blue-700 border-blue-100" },
+  { href: "/banker/documents", label: "Filing Documents", icon: FileSearch, step: 2, tile: "bg-cyan-50 text-cyan-700 border-cyan-100" },
+  { href: "/banker/issues", label: "Issues & Corrections", icon: Flag, step: 3, tile: "bg-amber-50 text-amber-700 border-amber-100" },
+  { href: "/banker/draft-review", label: "Draft Review", icon: UserCheck, step: 4, tile: "bg-violet-50 text-violet-600 border-violet-100" },
 ];
 
 /**
@@ -74,22 +82,23 @@ function SidebarScene() {
   );
 }
 
-export default function Sidebar() {
+export default function Sidebar({ role = "PROMOTER" }: { role?: "PROMOTER" | "MERCHANT_BANKER" }) {
   const pathname = usePathname();
   const router = useRouter();
-  const t = useT();
-  const [who, setWho] = useState<{ name: string | null; role: string | null }>({ name: null, role: null });
+  const isBanker = role === "MERCHANT_BANKER";
+  const nav = isBanker ? bankerNav : promoterNav;
+  const [who, setWho] = useState({ name: "SIIM User", role: "SME Promoter" });
 
   useEffect(() => {
     try {
       setWho({
-        name: localStorage.getItem("siim.userName") || null,
-        role: localStorage.getItem("siim.roleLabel") || null,
+        name: localStorage.getItem("siim.userName") || "SIIM User",
+        role: localStorage.getItem("siim.roleLabel") || (isBanker ? "Merchant Banker" : "SME Promoter"),
       });
     } catch {
       /* localStorage unavailable — keep defaults */
     }
-  }, []);
+  }, [isBanker]);
 
   const logout = async () => {
     try {
@@ -102,6 +111,8 @@ export default function Sidebar() {
     } catch {
       /* ignore */
     }
+    // clear the session cookie too — role gating depends on it
+    try { await fetch("/api/auth/logout", { method: "POST" }); } catch { /* ignore */ }
     router.push("/");
     router.refresh();
   };
@@ -133,8 +144,8 @@ export default function Sidebar() {
 
       {/* journey nav */}
       <nav className="px-3 space-y-1.5">
-        {nav.map(({ href, labelKey, icon: Icon, step, tile }) => {
-          const active = pathname === href;
+        {nav.map(({ href, label, icon: Icon, step, tile }) => {
+          const active = pathname === href || (href !== "/banker" && pathname.startsWith(href + "/"));
           return (
             <Link
               key={href}
