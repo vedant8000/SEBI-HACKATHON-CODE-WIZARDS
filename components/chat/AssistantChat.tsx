@@ -5,6 +5,7 @@ import {
   Bot, ChevronDown, FileText, FolderOpen, Gauge, Loader2, Send, Sparkles, User,
 } from "lucide-react";
 import { GlassPanel, HeroBackdrop, ProgressBar, SeverityBadge } from "@/components/shared/ui";
+import ChatMarkdown from "@/components/chat/ChatMarkdown";
 
 const STARTER_PROMPTS: { label: string; q: string; primary?: boolean }[] = [
   { label: "What should I fix first?", q: "What should I fix first?", primary: true },
@@ -123,8 +124,8 @@ export default function AssistantChat({
                   {m.role === "user" ? <User size={14} className="text-slate-600" /> : <Bot size={14} className="text-white" />}
                 </span>
                 <div className={`max-w-[78%] ${m.role === "user" ? "text-right" : ""}`}>
-                  <div className={`inline-block text-left text-[13px] px-4 py-3 rounded-2xl whitespace-pre-wrap leading-relaxed ${m.role === "user" ? "bg-gradient-to-br from-blue-600 to-sky-500 text-white rounded-tr-sm shadow-md shadow-blue-500/20" : "bg-white/80 border border-white/70 text-slate-700 rounded-tl-sm shadow-sm"}`}>
-                    {m.text}
+                  <div className={`inline-block text-left text-[13px] px-4 py-3 rounded-2xl leading-relaxed ${m.role === "user" ? "bg-gradient-to-br from-blue-600 to-sky-500 text-white rounded-tr-sm whitespace-pre-wrap shadow-md shadow-blue-500/20" : "bg-white/80 border border-white/70 text-slate-700 rounded-tl-sm shadow-sm"}`}>
+                    {m.role === "user" ? m.text : <ChatMarkdown text={m.text} />}
                   </div>
                   <div className="text-[10px] text-slate-400 mt-1 px-1">{m.at}</div>
                 </div>

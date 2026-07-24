@@ -4,7 +4,7 @@ import {
   companyDocuments, companyObjects, companyDraft, companyFacts,
 } from "@/lib/store";
 import { generateDraft } from "@/lib/engine/draft";
-import { aiAvailable, AI_SETUP_MESSAGE } from "@/lib/ai/provider";
+import { aiAvailable } from "@/lib/ai/provider";
 
 export const maxDuration = 300;
 
@@ -14,12 +14,16 @@ export async function GET() {
   return NextResponse.json({ draft: company ? companyDraft(db, company.id) : [], aiAvailable: aiAvailable() });
 }
 
-/** Generate the blueprint-driven, source-linked draft (priority sections). */
+/**
+ * Generate the blueprint-driven, source-linked draft (priority sections).
+ * Uses the AI provider when available; otherwise the deterministic rule-based
+ * generator produces the same sections from extracted facts — so a draft is
+ * always produced, even without an API key or when keys are rate-limited.
+ */
 export async function POST(req: NextRequest) {
   const db = await loadDb();
   const company = getActiveCompany(db);
   if (!company) return NextResponse.json({ error: "Create a company profile first." }, { status: 400 });
-  if (!aiAvailable()) return NextResponse.json({ error: AI_SETUP_MESSAGE }, { status: 400 });
 
   const body = await req.json().catch(() => ({}));
   const sections = await generateDraft(

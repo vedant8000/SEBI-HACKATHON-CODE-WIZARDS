@@ -4,7 +4,6 @@ import {
   companyDocuments, companyObjects, companyFacts,
 } from "@/lib/store";
 import { blueprintByName, generateBlueprintSection } from "@/lib/engine/draft";
-import { aiAvailable, AI_SETUP_MESSAGE } from "@/lib/ai/provider";
 
 export const maxDuration = 120;
 
@@ -14,7 +13,6 @@ export async function POST(req: NextRequest) {
   const db = await loadDb();
   const company = getActiveCompany(db);
   if (!company) return NextResponse.json({ error: "No company" }, { status: 400 });
-  if (!aiAvailable()) return NextResponse.json({ error: AI_SETUP_MESSAGE }, { status: 400 });
   const bp = blueprintByName(sectionName);
   if (!bp) return NextResponse.json({ error: "Unknown section" }, { status: 400 });
 

@@ -49,11 +49,12 @@ export default function DraftViewer({
           Sections without enough data are created with explicit placeholders — never invented content.
           Generation takes a minute or two (one AI call per section).
         </p>
-        <button onClick={generateAll} disabled={!!busy || !aiReady}
+        <button onClick={generateAll} disabled={!!busy}
           className="mt-5 px-6 py-2.5 bg-gradient-to-r from-blue-600 to-sky-500 text-white text-sm font-medium rounded-lg shadow-sm shadow-blue-600/30 hover:shadow-md transition-shadow disabled:opacity-50 inline-flex items-center gap-2">
           {busy === "all" ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
           {busy === "all" ? "Generating…" : "Generate Draft"}
         </button>
+        {!aiReady && <p className="text-[11px] text-slate-400 mt-2">No AI key detected — sections are composed by the built-in rule-based generator from your extracted facts.</p>}
       </Card>
     );
   }
@@ -88,7 +89,7 @@ export default function DraftViewer({
           </div>
           <div className="px-5 py-4 grid gap-5 xl:grid-cols-[1fr_290px]">
             <div>
-            <AiNote confidence={s.confidence} />
+            <AiNote confidence={s.confidence} generatedBy={s.generatedBy} />
             {editing === s.id ? (
               <div className="mt-3">
                 <textarea className="w-full h-52 px-3 py-2 text-sm border border-slate-300 rounded-lg font-mono"
