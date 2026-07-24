@@ -1,7 +1,7 @@
 import { getContext } from "@/lib/server/context";
 import { EmptyState, PageHeader } from "@/components/shared/ui";
 import IntelligenceTabs from "@/components/intelligence/IntelligenceTabs";
-import BankerFlagsCard from "@/components/shared/BankerFlagsCard";
+import Tr from "@/components/i18n/Tr";
 
 export const dynamic = "force-dynamic";
 
@@ -10,10 +10,10 @@ export default async function IntelligencePage() {
   if (!company) {
     return (
       <>
-        <PageHeader title="IPO Intelligence" />
+        <PageHeader title={<Tr id="intelligence.title" />} />
         <EmptyState
-          title="No company yet"
-          message="Complete Company Setup and upload documents — this page then shows your readiness score, missing data, inconsistencies, related-party risks, fund-use plan and the questions reviewers are likely to ask."
+          title={<Tr id="common.noCompany" />}
+          message={<Tr id="intelligence.emptyMsg" />}
         />
       </>
     );
@@ -21,8 +21,8 @@ export default async function IntelligencePage() {
   return (
     <>
       <PageHeader
-        title="IPO Intelligence"
-        subtitle="Everything the rule engine found in your data — readiness, missing data, inconsistencies, related-party & fund-use risk, your objects plan, and likely reviewer questions. All computed live from extracted facts; nothing is pre-set."
+        title={<Tr id="intelligence.title" />}
+        subtitle={<Tr id="intelligence.subtitle" />}
       />
       <BankerFlagsCard flags={flags.filter((f) => f.targetType === "gap")} title="Gaps your merchant banker has flagged" />
       <IntelligenceTabs

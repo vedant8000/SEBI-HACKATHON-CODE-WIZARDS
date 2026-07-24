@@ -1,6 +1,7 @@
 import { getContext } from "@/lib/server/context";
 import { EmptyState, PageHeader } from "@/components/shared/ui";
 import AssistantChat from "@/components/chat/AssistantChat";
+import Tr from "@/components/i18n/Tr";
 
 export const dynamic = "force-dynamic";
 
@@ -9,10 +10,10 @@ export default async function AssistantPage() {
   if (!company) {
     return (
       <>
-        <PageHeader title="AI Assistant" />
+        <PageHeader title={<Tr id="assistant.title" />} />
         <EmptyState
-          title="No company yet"
-          message="Complete Company Setup and upload documents — the assistant answers only from your own data, so it needs something to read first."
+          title={<Tr id="common.noCompany" />}
+          message={<Tr id="assistant.emptyMsg" />}
         />
       </>
     );
@@ -20,7 +21,7 @@ export default async function AssistantPage() {
   const gaps = (analysis?.gaps ?? []).filter((g) => g.status !== "Resolved");
   return (
     <>
-      <PageHeader title="AI Assistant" subtitle="Grounded in your own documents, facts, gaps and draft." />
+      <PageHeader title={<Tr id="assistant.title" />} subtitle={<Tr id="assistant.subtitle" />} />
       <AssistantChat
         companyName={company.name}
         context={{
