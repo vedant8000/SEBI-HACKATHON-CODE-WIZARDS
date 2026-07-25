@@ -1,6 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { genCompanyCode, loadDb, saveDb, uid, logAudit, type Db } from "@/lib/store";
+import {
+  bankerCompanies, genCompanyCode, loadDb, promoterCompanies, saveDb, uid, logAudit, type Db,
+} from "@/lib/store";
+import { getSessionUser } from "@/lib/auth/session";
 import type { Company } from "@/lib/types";
+
+/** The companies this session may see/manage. */
+async function scopedCompanies(db: Db) {
+  const user = await getSessionUser();
+  if (!user) return { user: null, companies: [] as Company[] };
+  const companies =
+    user.role === "MERCHANT_BANKER" ? bankerCompanies(db, user.email) : promoterCompanies(db, user.email);
+  return { user, companies };
+}
 
 /** Backfill share codes for companies created before code-based banker linking. */
 function ensureCompanyCodes(db: Db): boolean {
@@ -20,7 +32,8 @@ function ensureCompanyCodes(db: Db): boolean {
 export async function GET() {
   const db = await loadDb();
   if (ensureCompanyCodes(db)) await saveDb(db);
-  return NextResponse.json({ companies: db.companies, activeCompanyId: db.activeCompanyId });
+  const { companies } = await scopedCompanies(db);
+  return NextResponse.json({ companies, activeCompanyId: db.activeCompanyId });
 }
 
 // create a company (onboarding)
@@ -28,14 +41,21 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const db = await loadDb();
   ensureCompanyCodes(db);
+  const { user, companies: myCompanies } = await scopedCompanies(db);
+  if (!user) return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
+
   if (body.action === "activate") {
+    // Only companies in the caller's own scope can be activated.
+    if (!myCompanies.some((c) => c.id === body.id))
+      return NextResponse.json({ error: "Company not found in your account." }, { status: 403 });
     db.activeCompanyId = body.id;
     await saveDb(db);
     return NextResponse.json({ ok: true });
   }
-  // Guard against duplicates: re-submitting the same company name updates the
-  // existing record (and its evidence) instead of creating a parallel company.
-  const existing = db.companies.find(
+  // Guard against duplicates WITHIN this promoter's companies: re-submitting
+  // the same company name updates their existing record instead of creating a
+  // parallel company. Another promoter's identically-named company is untouched.
+  const existing = myCompanies.find(
     (c) => c.name.trim().toLowerCase() === String(body.name ?? "").trim().toLowerCase()
   );
   if (existing) {
@@ -83,6 +103,7 @@ export async function POST(req: NextRequest) {
     auditCommitteeConstituted: body.auditCommitteeConstituted ?? null,
     pendingLitigationNote: body.pendingLitigationNote ?? "",
     createdAt: new Date().toISOString(),
+    ownerEmail: user.email.trim().toLowerCase(),
     companyCode: genCompanyCode(new Set(db.companies.map((c) => c.companyCode).filter(Boolean) as string[])),
     bankerEmails: [],
   };
@@ -98,11 +119,15 @@ export async function PATCH(req: NextRequest) {
   const body = await req.json();
   const db = await loadDb();
   ensureCompanyCodes(db);
-  const company = db.companies.find((c) => c.id === (body.id ?? db.activeCompanyId));
+  const { user, companies: myCompanies } = await scopedCompanies(db);
+  if (!user) return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
+  const company = myCompanies.find((c) => c.id === (body.id ?? db.activeCompanyId)) ?? myCompanies[0];
   if (!company) return NextResponse.json({ error: "No company" }, { status: 404 });
+  // adopt legacy unowned companies on first edit
+  if (!company.ownerEmail && user.role !== "MERCHANT_BANKER") company.ownerEmail = user.email.trim().toLowerCase();
   const before = JSON.stringify({ name: company.name, issueSizeCr: company.issueSizeCr });
-  // companyCode & bankerEmails are managed by the platform, never by profile edits
-  const { companyCode: _cc, bankerEmails: _be, ...updates } = (body.updates ?? {}) as Record<string, unknown>;
+  // companyCode, bankerEmails & ownerEmail are managed by the platform, never by profile edits
+  const { companyCode: _cc, bankerEmails: _be, ownerEmail: _oe, ...updates } = (body.updates ?? {}) as Record<string, unknown>;
   Object.assign(company, updates);
   logAudit(db, company.id, company.promoterName || "Promoter", "Company profile updated", before, JSON.stringify(body.updates ?? {}));
   await saveDb(db);

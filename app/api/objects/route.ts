@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { loadDb, saveDb, uid, logAudit, getActiveCompany, companyDocuments, companyObjects } from "@/lib/store";
+import { loadDb, saveDb, uid, logAudit, getActiveCompanyFor, companyDocuments, companyObjects } from "@/lib/store";
+import { getSessionUser } from "@/lib/auth/session";
 import { runAnalysis } from "@/lib/engine/analysis";
 import type { ObjectOfIssue } from "@/lib/types";
 
 export async function GET() {
   const db = await loadDb();
-  const company = getActiveCompany(db);
+  const user = await getSessionUser();
+  const company = user ? getActiveCompanyFor(db, user) : null;
   return NextResponse.json({ objects: company ? companyObjects(db, company.id) : [] });
 }
 
@@ -13,7 +15,8 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const body = await req.json();
   const db = await loadDb();
-  const company = getActiveCompany(db);
+  const user = await getSessionUser();
+  const company = user ? getActiveCompanyFor(db, user) : null;
   if (!company) return NextResponse.json({ error: "No company" }, { status: 400 });
 
   const items: ObjectOfIssue[] = (body.objects ?? []).map((o: Partial<ObjectOfIssue>) => ({

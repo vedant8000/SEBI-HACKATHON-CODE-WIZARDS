@@ -193,9 +193,58 @@ const CONFLICTABLE = (key: string) =>
 
 export function detectConflicts(companyId: string, facts: ExtractedFact[]): FactConflict[] {
   const conflicts: FactConflict[] = [];
+  const live = facts.filter((f) => f.status !== "REJECTED");
+
+  // ── Entity fingerprint per document (CIN preferred, else GSTIN) ──
+  // Documents from different companies must NOT be reconciled field-by-field —
+  // that turns one mistake (two companies' files mixed together) into dozens of
+  // meaningless "revenue 84 vs 132" conflicts. Cluster docs by identity, and if
+  // more than one company is present, raise a SINGLE, clear headline instead.
+  const docEntity = new Map<string, string>(); // documentId -> CIN or GSTIN
+  for (const key of ["cin", "gstin"]) {
+    for (const f of live) {
+      if (f.factKey === key && f.documentId && !docEntity.has(f.documentId))
+        docEntity.set(f.documentId, f.normalizedValue.trim().toUpperCase());
+    }
+  }
+  const cinByDoc = new Map<string, string>();
+  const filesByCin = new Map<string, Set<string>>();
+  for (const f of live) {
+    if (f.factKey !== "cin" || !f.documentId) continue;
+    const cin = f.normalizedValue.trim().toUpperCase();
+    cinByDoc.set(f.documentId, cin);
+    (filesByCin.get(cin) ?? filesByCin.set(cin, new Set()).get(cin)!).add(f.sourceFileName);
+  }
+  const distinctCins = [...filesByCin.keys()];
+  if (distinctCins.length > 1) {
+    const summary = [...filesByCin.entries()]
+      .map(([cin, files]) => `${cin} — ${[...files].slice(0, 3).join(", ")}${files.size > 3 ? ", …" : ""}`)
+      .join("   |   ");
+    conflicts.push({
+      id: uid("cf"),
+      companyId,
+      factKey: "cin",
+      valueA: distinctCins[0],
+      valueB: distinctCins[1],
+      sourceA: "multiple documents",
+      sourceB: "multiple documents",
+      severity: "Critical",
+      explanation:
+        `Documents from more than one company are mixed in this workspace (${distinctCins.length} distinct CINs detected): ${summary}. ` +
+        `These belong to different entities, so their figures cannot be reconciled. Delete the documents that do not belong to this company in the Data Room, or set them up as a separate company.`,
+      status: "OPEN",
+    });
+  }
+
+  const differentEntities = (a: ExtractedFact, b: ExtractedFact) => {
+    const ea = docEntity.get(a.documentId);
+    const eb = docEntity.get(b.documentId);
+    return !!ea && !!eb && ea !== eb;
+  };
+
   const groups = new Map<string, ExtractedFact[]>();
-  for (const f of facts) {
-    if (f.status === "REJECTED" || !CONFLICTABLE(f.factKey)) continue;
+  for (const f of live) {
+    if (!CONFLICTABLE(f.factKey)) continue;
     const k = `${f.factKey}|${f.financialYear ?? ""}`;
     groups.set(k, [...(groups.get(k) ?? []), f]);
   }
@@ -205,6 +254,8 @@ export function detectConflicts(companyId: string, facts: ExtractedFact[]): Fact
     const arr = [...byDoc.values()];
     for (let i = 0; i < arr.length; i++) {
       for (let j = i + 1; j < arr.length; j++) {
+        // skip cross-company comparisons — covered by the headline above
+        if (differentEntities(arr[i], arr[j])) continue;
         const a = parseFloat(arr[i].normalizedValue);
         const b = parseFloat(arr[j].normalizedValue);
         const bothNumeric = isFinite(a) && isFinite(b);

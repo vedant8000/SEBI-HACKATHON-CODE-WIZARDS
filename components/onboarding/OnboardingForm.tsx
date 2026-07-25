@@ -71,10 +71,27 @@ function SectionCard({
 const inputCls =
   "mt-1 w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-xl bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-600 transition-colors";
 
+const BLANK_FORM = {
+  name: "", cin: "", industry: "", city: "", state: "",
+  yearOfIncorporation: "", promoterName: "", promoterExperienceYears: "",
+  issueSizeCr: "", freshIssueCr: "", ofsCr: "",
+  proposedListingExchange: "NSE Emerge / BSE SME", top3CustomerPct: "",
+  independentDirectorsAppointed: null as boolean | null | undefined,
+  auditCommitteeConstituted: null as boolean | null | undefined,
+  pendingLitigationNote: "",
+};
+
 export default function OnboardingForm({ existing }: { existing: Company | null }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  /**
+   * When a company already exists the form EDITS it. Typing a different
+   * company's data over it would silently rename the old company and mix both
+   * companies' documents — the "Start a new company" mode prevents exactly
+   * that by forcing a fresh create with a blank form.
+   */
+  const [createNew, setCreateNew] = useState(false);
   const [f, setF] = useState({
     name: existing?.name ?? "",
     cin: existing?.cin ?? "",
@@ -186,6 +203,39 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
 
   const glow = (key: string) => (filled.has(key) ? " ring-2 ring-emerald-400/60 border-emerald-400 bg-emerald-50/40" : "");
 
+  /** Blank everything for a brand-new company — never mutate the current one. */
+  const startNewCompany = () => {
+    setCreateNew(true);
+    setF({ ...BLANK_FORM });
+    setFin(defaultYears.map((r) => ({ ...r })));
+    setParsed(null);
+    setFilled(new Set());
+    setPendingFiles([]);
+  };
+
+  const cancelNewCompany = () => {
+    setCreateNew(false);
+    setF({
+      name: existing?.name ?? "", cin: existing?.cin ?? "", industry: existing?.industry ?? "",
+      city: existing?.city ?? "", state: existing?.state ?? "",
+      yearOfIncorporation: existing?.yearOfIncorporation?.toString() ?? "",
+      promoterName: existing?.promoterName ?? "",
+      promoterExperienceYears: existing?.promoterExperienceYears?.toString() ?? "",
+      issueSizeCr: existing?.issueSizeCr?.toString() ?? "",
+      freshIssueCr: existing?.freshIssueCr?.toString() ?? "",
+      ofsCr: existing?.ofsCr?.toString() ?? "",
+      proposedListingExchange: existing?.proposedListingExchange ?? "NSE Emerge / BSE SME",
+      top3CustomerPct: existing?.top3CustomerPct?.toString() ?? "",
+      independentDirectorsAppointed: existing?.independentDirectorsAppointed,
+      auditCommitteeConstituted: existing?.auditCommitteeConstituted,
+      pendingLitigationNote: existing?.pendingLitigationNote ?? "",
+    });
+    setFin(existing?.financials?.length ? existing.financials : defaultYears);
+    setParsed(null);
+    setFilled(new Set());
+    setPendingFiles([]);
+  };
+
   const submit = async () => {
     setSaving(true);
     try {
@@ -195,7 +245,7 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
         auditCommitteeConstituted: f.auditCommitteeConstituted,
         financials: fin,
       };
-      if (existing) {
+      if (existing && !createNew) {
         await fetch("/api/companies", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -229,6 +279,12 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
       } else {
         await fetch("/api/analysis", { method: "POST" });
       }
+      // Clear one-shot state: retained files must NOT be re-uploaded on the
+      // next save (that's how duplicate documents & phantom conflicts happen).
+      setPendingFiles([]);
+      setParsed(null);
+      setFilled(new Set());
+      setCreateNew(false);
       setSaved(true);
       router.refresh();
       setTimeout(() => setSaved(false), 2500);
@@ -273,6 +329,33 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
   return (
     <HeroBackdrop className="p-5 md:p-6">
     <div className="relative space-y-5">
+      {/* ── Edit vs create-new mode banner ── */}
+      {existing && (
+        <div className={`flex flex-wrap items-center gap-3 rounded-2xl border px-4 py-3 ${createNew ? "border-emerald-300 bg-emerald-50" : "border-slate-200 bg-white/80"}`}>
+          {createNew ? (
+            <>
+              <p className="text-sm font-semibold text-emerald-800">
+                Creating a new company <span className="font-normal text-emerald-700">— a fresh profile, separate from “{existing.name}”. Its documents and analysis stay independent.</span>
+              </p>
+              <button type="button" onClick={cancelNewCompany}
+                className="ml-auto px-3 py-1.5 text-xs font-medium border border-slate-300 rounded-lg bg-white hover:bg-slate-50 text-slate-600">
+                Cancel — back to {existing.name}
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-slate-600">
+                You are editing <span className="font-semibold text-[#1e3a5f]">{existing.name}</span>.
+                <span className="text-slate-400"> Setting up a different company? Don&rsquo;t overwrite this one.</span>
+              </p>
+              <button type="button" onClick={startNewCompany}
+                className="ml-auto px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-[#1e3a5f] text-white hover:bg-[#24466f]">
+                + Start a new company
+              </button>
+            </>
+          )}
+        </div>
+      )}
       {/* ── Auto-fill from documents ── */}
       <section className="rounded-2xl border border-white/70 bg-white/70 backdrop-blur-md shadow-md shadow-blue-900/[0.04] p-5">
         <div className="flex items-center gap-3 mb-3">
@@ -450,7 +533,7 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
           <Save size={15} />
           {saving
             ? (pendingFiles.length ? "Saving, uploading & analysing…" : "Saving & analysing…")
-            : existing ? "Save & Re-analyse"
+            : existing && !createNew ? "Save & Re-analyse"
             : pendingFiles.length ? "Create Company, Upload & Analyse" : "Create Company & Analyse"}
         </button>
         {saved && <span className="text-sm text-emerald-600 font-medium">Saved — analysis updated ✓</span>}

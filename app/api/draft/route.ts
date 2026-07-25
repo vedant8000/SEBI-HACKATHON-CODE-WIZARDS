@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  loadDb, saveDb, logAudit, getActiveCompany,
+  loadDb, saveDb, logAudit, getActiveCompanyFor,
   companyDocuments, companyObjects, companyDraft, companyFacts,
 } from "@/lib/store";
+import { getSessionUser } from "@/lib/auth/session";
 import { generateDraft } from "@/lib/engine/draft";
 import { aiAvailable } from "@/lib/ai/provider";
 
@@ -10,7 +11,8 @@ export const maxDuration = 300;
 
 export async function GET() {
   const db = await loadDb();
-  const company = getActiveCompany(db);
+  const user = await getSessionUser();
+  const company = user ? getActiveCompanyFor(db, user) : null;
   return NextResponse.json({ draft: company ? companyDraft(db, company.id) : [], aiAvailable: aiAvailable() });
 }
 
@@ -22,7 +24,8 @@ export async function GET() {
  */
 export async function POST(req: NextRequest) {
   const db = await loadDb();
-  const company = getActiveCompany(db);
+  const user = await getSessionUser();
+  const company = user ? getActiveCompanyFor(db, user) : null;
   if (!company) return NextResponse.json({ error: "Create a company profile first." }, { status: 400 });
 
   const body = await req.json().catch(() => ({}));

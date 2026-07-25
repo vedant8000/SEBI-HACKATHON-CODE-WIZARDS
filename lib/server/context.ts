@@ -1,7 +1,8 @@
 import {
   companyConflicts, companyDocuments, companyDraft, companyFacts, companyFlags,
-  companyObjects, getActiveCompany, loadDb, type Db,
+  companyObjects, getActiveCompanyFor, loadDb, type Db,
 } from "../store";
+import { getSessionUser } from "../auth/session";
 import { buildCoverage } from "../engine/coverage";
 import type {
   AnalysisResult, BankerFlag, Company, CoverageRow, DocumentRecord, DraftSection,
@@ -46,8 +47,13 @@ export function composeCompanyContext(db: Db, company: Company | null): AppConte
   };
 }
 
-/** One-stop context for server components & routes. Always fresh from MongoDB. */
+/**
+ * One-stop context for server components & routes — always fresh from MongoDB
+ * and ALWAYS scoped to the logged-in user: a promoter sees only their own
+ * companies, a banker only code-linked ones. No session → no company.
+ */
 export async function getContext(): Promise<AppContext> {
   const db = await loadDb();
-  return composeCompanyContext(db, getActiveCompany(db));
+  const user = await getSessionUser();
+  return composeCompanyContext(db, user ? getActiveCompanyFor(db, user) : null);
 }

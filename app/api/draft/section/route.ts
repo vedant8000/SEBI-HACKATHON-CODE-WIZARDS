@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  loadDb, saveDb, logAudit, getActiveCompany,
+  loadDb, saveDb, logAudit, getActiveCompanyFor,
   companyDocuments, companyObjects, companyFacts,
 } from "@/lib/store";
+import { getSessionUser } from "@/lib/auth/session";
 import { blueprintByName, generateBlueprintSection } from "@/lib/engine/draft";
 
 export const maxDuration = 120;
@@ -11,7 +12,8 @@ export const maxDuration = 120;
 export async function POST(req: NextRequest) {
   const { sectionName } = await req.json();
   const db = await loadDb();
-  const company = getActiveCompany(db);
+  const user = await getSessionUser();
+  const company = user ? getActiveCompanyFor(db, user) : null;
   if (!company) return NextResponse.json({ error: "No company" }, { status: 400 });
   const bp = blueprintByName(sectionName);
   if (!bp) return NextResponse.json({ error: "Unknown section" }, { status: 400 });

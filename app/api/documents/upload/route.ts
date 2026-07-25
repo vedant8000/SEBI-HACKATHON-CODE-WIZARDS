@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import {
-  loadDb, saveDb, uid, logAudit, UPLOADS_DIR, getActiveCompany,
+  loadDb, saveDb, uid, logAudit, UPLOADS_DIR, getActiveCompanyFor,
   companyDocuments, companyObjects, companyFacts,
 } from "@/lib/store";
+import { getSessionUser } from "@/lib/auth/session";
 import { readFileText } from "@/lib/document-processing/read-file";
 import {
   classifyDocument, extractFields, extractionConfidence,
@@ -32,7 +33,8 @@ const MAX_FILE_MB = 40;
  */
 export async function POST(req: NextRequest) {
   const db = await loadDb();
-  const company = getActiveCompany(db);
+  const user = await getSessionUser();
+  const company = user ? getActiveCompanyFor(db, user) : null;
   if (!company) return NextResponse.json({ error: "Create a company profile first." }, { status: 400 });
 
   const form = await req.formData();
@@ -45,6 +47,20 @@ export async function POST(req: NextRequest) {
 
   const created: DocumentRecord[] = [];
   const warnings: string[] = [];
+
+  // The company's established identity — profile CIN, else the CIN most of its
+  // existing documents already carry. A new upload with a DIFFERENT CIN almost
+  // certainly belongs to another company and gets flagged (not silently mixed).
+  const establishedCin = (() => {
+    if (company.cin?.trim()) return company.cin.trim().toUpperCase();
+    const counts = new Map<string, number>();
+    for (const d of db.documents) {
+      if (d.companyId !== company.id) continue;
+      const c = (d.fields?.cin as string | undefined)?.trim().toUpperCase();
+      if (c) counts.set(c, (counts.get(c) ?? 0) + 1);
+    }
+    return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+  })();
 
   for (const file of files) {
     if (file.size > MAX_FILE_MB * 1024 * 1024) {
@@ -81,6 +97,11 @@ export async function POST(req: NextRequest) {
       issues.push("OCR required / manual entry: no readable text layer found (scanned copy, image or spreadsheet). Enter key details manually below or paste text.");
     if (category === "Objects Evidence" && fields.quotationAmountCr && fields.quotationHasGstin === false)
       issues.push("Quotation appears to be missing the vendor GSTIN.");
+    const docCin = (fields.cin as string | undefined)?.trim().toUpperCase();
+    if (establishedCin && docCin && docCin !== establishedCin) {
+      issues.push(`This document carries CIN ${docCin}, but this company's CIN is ${establishedCin} — it appears to belong to a different company. Delete it here if it was uploaded by mistake.`);
+      warnings.push(`${file.name}: CIN ${docCin} does not match this company (${establishedCin}) — flagged as possibly belonging to another company.`);
+    }
 
     const doc: DocumentRecord = {
       id: uid("doc"),
@@ -102,6 +123,24 @@ export async function POST(req: NextRequest) {
       fields,
       storedPath,
     };
+
+    // Re-uploading the same file REPLACES the previous version rather than
+    // stacking a duplicate — duplicates produce phantom "same fact, two values"
+    // conflicts. Drop the prior document, its chunks and its facts first.
+    const priorIds = db.documents
+      .filter((d) => d.companyId === company.id && d.fileName === file.name)
+      .map((d) => d.id);
+    if (priorIds.length) {
+      const priorSet = new Set(priorIds);
+      for (const p of db.documents.filter((d) => priorSet.has(d.id))) {
+        try { if (p.storedPath && fs.existsSync(p.storedPath)) fs.unlinkSync(p.storedPath); } catch { /* ignore */ }
+      }
+      db.documents = db.documents.filter((d) => !priorSet.has(d.id));
+      db.chunks = db.chunks.filter((c) => !priorSet.has(c.documentId));
+      db.facts = db.facts.filter((f) => !priorSet.has(f.documentId));
+      warnings.push(`${file.name}: replaced an earlier upload of the same file.`);
+    }
+
     db.documents.push(doc);
     created.push(doc);
 

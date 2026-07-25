@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  loadDb, saveDb, uid, logAudit, getActiveCompany,
+  loadDb, saveDb, uid, logAudit, getActiveCompanyFor,
   companyDocuments, companyObjects, companyFacts,
 } from "@/lib/store";
+import { getSessionUser } from "@/lib/auth/session";
 import { detectConflicts, syncFieldsFromFacts, FACT_META } from "@/lib/document-processing/facts";
 import { runAnalysis } from "@/lib/engine/analysis";
 import type { ExtractedFact } from "@/lib/types";
 
 export async function GET() {
   const db = await loadDb();
-  const company = getActiveCompany(db);
+  const user = await getSessionUser();
+  const company = user ? getActiveCompanyFor(db, user) : null;
   if (!company) return NextResponse.json({ facts: [], conflicts: [] });
   return NextResponse.json({
     facts: companyFacts(db, company.id),
@@ -56,7 +58,8 @@ export async function PATCH(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const body = await req.json();
   const db = await loadDb();
-  const company = getActiveCompany(db);
+  const user = await getSessionUser();
+  const company = user ? getActiveCompanyFor(db, user) : null;
   if (!company) return NextResponse.json({ error: "No company" }, { status: 400 });
   if (!body.factKey || body.value === undefined)
     return NextResponse.json({ error: "factKey and value are required" }, { status: 400 });

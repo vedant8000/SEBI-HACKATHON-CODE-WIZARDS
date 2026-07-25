@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { loadDb, saveDb, logAudit, getActiveCompany, companyDocuments, companyObjects } from "@/lib/store";
+import { loadDb, saveDb, logAudit, getActiveCompanyFor, companyDocuments, companyObjects } from "@/lib/store";
+import { getSessionUser } from "@/lib/auth/session";
 import { runAnalysis } from "@/lib/engine/analysis";
 
 export async function GET() {
   const db = await loadDb();
-  const company = getActiveCompany(db);
+  const user = await getSessionUser();
+  const company = user ? getActiveCompanyFor(db, user) : null;
   return NextResponse.json({ documents: company ? companyDocuments(db, company.id) : [] });
 }
 

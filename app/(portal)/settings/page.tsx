@@ -2,11 +2,19 @@ import { getContext } from "@/lib/server/context";
 import { Card, PageHeader } from "@/components/shared/ui";
 import SettingsPanel from "@/components/settings/SettingsPanel";
 import { activeProvider, aiAvailable, AI_SETUP_MESSAGE, geminiKeys } from "@/lib/ai/provider";
+import { getSessionUser } from "@/lib/auth/session";
+import { bankerCompanies, promoterCompanies } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
   const { db, company } = await getContext();
+  const user = await getSessionUser();
+  const myCompanies = !user
+    ? []
+    : user.role === "MERCHANT_BANKER"
+      ? bankerCompanies(db, user.email)
+      : promoterCompanies(db, user.email);
   const provider = activeProvider();
   return (
     <>
@@ -52,7 +60,7 @@ export default async function SettingsPage() {
           </p>
         </Card>
         <SettingsPanel
-          companies={db.companies.map((c) => ({ id: c.id, name: c.name }))}
+          companies={myCompanies.map((c) => ({ id: c.id, name: c.name }))}
           activeId={company?.id ?? null}
         />
       </div>

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { bankerCompanies, companyFlags, getActiveCompany, loadDb, logAudit, saveDb, uid } from "@/lib/store";
+import { bankerCompanies, companyFlags, getActiveCompanyFor, loadDb, logAudit, saveDb, uid } from "@/lib/store";
 import { getSessionUser } from "@/lib/auth/session";
 import type { BankerFlag, FlagTargetType, Severity } from "@/lib/types";
 
@@ -22,7 +22,7 @@ export async function GET() {
     const ids = new Set(bankerCompanies(db, user.email).map((c) => c.id));
     return NextResponse.json({ flags: db.flags.filter((f) => ids.has(f.companyId)) });
   }
-  const company = getActiveCompany(db);
+  const company = getActiveCompanyFor(db, user);
   return NextResponse.json({ flags: company ? companyFlags(db, company.id) : [] });
 }
 

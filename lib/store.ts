@@ -207,9 +207,38 @@ export function genCompanyCode(taken: Set<string>): string {
   }
 }
 
+/**
+ * @deprecated Session-blind — returns the global active company regardless of
+ * who is asking, which leaks one promoter's data into another's session.
+ * Use getActiveCompanyFor(db, sessionUser) instead.
+ */
 export function getActiveCompany(db: Db): Company | null {
   if (!db.companies.length) return null;
   return db.companies.find((c) => c.id === db.activeCompanyId) ?? db.companies[0];
+}
+
+/**
+ * Companies owned by a promoter account. Companies created before ownership
+ * existed (no ownerEmail) stay visible to every promoter until backfilled.
+ */
+export function promoterCompanies(db: Db, ownerEmail: string): Company[] {
+  const email = ownerEmail.trim().toLowerCase();
+  return db.companies.filter((c) => !c.ownerEmail || c.ownerEmail.toLowerCase() === email);
+}
+
+/**
+ * The company THIS session should see: the promoter's own companies, or the
+ * banker's code-linked companies. The global activeCompanyId only picks among
+ * companies already in the caller's scope — never someone else's.
+ */
+export function getActiveCompanyFor(
+  db: Db,
+  user: { email: string; role: string }
+): Company | null {
+  const scope =
+    user.role === "MERCHANT_BANKER" ? bankerCompanies(db, user.email) : promoterCompanies(db, user.email);
+  if (!scope.length) return null;
+  return scope.find((c) => c.id === db.activeCompanyId) ?? scope[0];
 }
 
 export function companyDocuments(db: Db, companyId: string): DocumentRecord[] {

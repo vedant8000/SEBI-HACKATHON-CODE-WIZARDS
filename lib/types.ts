@@ -41,6 +41,8 @@ export interface Company {
   auditCommitteeConstituted: boolean | null;
   pendingLitigationNote: string; // promoter's own declaration text
   createdAt: string;
+  /** Email of the promoter account that owns this company (lower-case). */
+  ownerEmail?: string;
   /** Share code the merchant banker enters to link to this company (e.g. "SIIM-7K2M4X"). */
   companyCode?: string;
   /** Emails of merchant bankers who linked via the company code (lower-case). */
