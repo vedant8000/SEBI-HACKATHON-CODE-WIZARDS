@@ -11,10 +11,12 @@ import type {
   DocumentChunk,
   DocumentRecord,
   DraftSection,
+  ExportLedgerEntry,
   ExtractedFact,
   FactConflict,
   ObjectOfIssue,
 } from "./types";
+import { computeChainHash } from "./utils/hash-chain";
 
 /**
  * MongoDB-backed datastore. Callers keep the simple load → mutate → save
@@ -42,6 +44,7 @@ export interface Db {
   objectsByCompany: Record<string, ObjectOfIssue[]>;
   analysis: Record<string, AnalysisResult>;
   auditLog: AuditLogEntry[];
+  exportLedger: ExportLedgerEntry[]; // tamper-evident export hash-chain
 }
 
 /**
@@ -67,6 +70,7 @@ const ARRAY_KEYS = [
   "flags",
   "objects",
   "auditLog",
+  "exportLedger",
 ] as const;
 
 const emptyDb: Db = {
@@ -82,6 +86,7 @@ const emptyDb: Db = {
   objectsByCompany: {},
   analysis: {},
   auditLog: [],
+  exportLedger: [],
 };
 
 /** JSON snapshot of each top-level key at load time, used to diff on save. */
@@ -293,4 +298,33 @@ export function logAudit(
     timestamp: new Date().toISOString(),
   });
   if (db.auditLog.length > 500) db.auditLog.length = 500;
+}
+
+/** A company's export ledger, oldest → newest (sequence order). */
+export function companyExportLedger(db: Db, companyId: string): ExportLedgerEntry[] {
+  return db.exportLedger.filter((e) => e.companyId === companyId).sort((a, b) => a.seq - b.seq);
+}
+
+/**
+ * Append a tamper-evident export entry for a company, chaining it to that
+ * company's previous export. Returns the new entry. Caller must saveDb().
+ */
+export function appendExportLedger(
+  db: Db,
+  entry: { companyId: string; artefact: string; user: string; readinessScore: number | null; contentHash: string }
+): ExportLedgerEntry {
+  const prior = companyExportLedger(db, entry.companyId);
+  const prev = prior[prior.length - 1];
+  const seq = prior.length + 1;
+  const prevHash = prev ? prev.chainHash : "GENESIS";
+  const timestamp = new Date().toISOString();
+  const chainHash = computeChainHash({ seq, artefact: entry.artefact, contentHash: entry.contentHash, prevHash, timestamp });
+  const e: ExportLedgerEntry = {
+    id: uid("el"), companyId: entry.companyId, seq, artefact: entry.artefact,
+    user: entry.user, readinessScore: entry.readinessScore, contentHash: entry.contentHash,
+    prevHash, chainHash, timestamp,
+  };
+  db.exportLedger.push(e);
+  if (db.exportLedger.length > 1000) db.exportLedger.splice(0, db.exportLedger.length - 1000);
+  return e;
 }

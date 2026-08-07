@@ -2,6 +2,7 @@ import { getContext } from "@/lib/server/context";
 import { EmptyState, PageHeader } from "@/components/shared/ui";
 import IntelligenceTabs from "@/components/intelligence/IntelligenceTabs";
 import BankerFlagsCard from "@/components/shared/BankerFlagsCard";
+import { benchmarkCompany } from "@/lib/engine/peers";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +34,7 @@ export default async function IntelligencePage() {
         evidenceDocs={docs.filter((d) => d.category === "Objects Evidence").map((d) => d.fileName)}
         freshIssueCr={company.freshIssueCr}
         financials={company.financials}
+        benchmark={benchmarkCompany(company)}
       />
     </>
   );

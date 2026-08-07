@@ -3,6 +3,7 @@ import type {
   FinancialYear, ObjectOfIssue,
 } from "../types";
 import type { BlueprintSection } from "../ipo-blueprint/sme-prospectus-blueprint";
+import { benchmarkCompany } from "./peers";
 
 /**
  * Deterministic, fact-driven draft generator — the fallback for lib/engine/draft.ts.
@@ -253,17 +254,86 @@ function objectsOfIssue(ctx: DetCtx): string {
 }
 
 function basisForPrice(ctx: DetCtx): string {
+  const c = ctx.company;
   const rows = finRows(ctx);
   const l = latestFin(rows);
-  const ronw = l?.patCr != null && l?.netWorthCr ? Number(((l.patCr / l.netWorthCr) * 100).toFixed(2)) : null;
-  const body: string[][] = [];
-  if (l?.patCr != null) body.push(["Restated profit after tax", cr(l.patCr)]);
-  if (l?.netWorthCr != null) body.push(["Net worth", cr(l.netWorthCr)]);
-  if (ronw != null) body.push(["Return on net worth", `${ronw}%`]);
+
+  // Per-year RoNW & margins (no share count needed — honest, fully computable).
+  const last3 = rows.filter((r) => r.patCr != null && r.netWorthCr != null).slice(-3);
+  const ronwOf = (f: FinancialYear) => (f.patCr != null && f.netWorthCr ? Number(((f.patCr / f.netWorthCr) * 100).toFixed(2)) : null);
+  const marginOf = (f: FinancialYear) => (f.ebitdaCr != null && f.revenueCr ? Number(((f.ebitdaCr / f.revenueCr) * 100).toFixed(2)) : null);
+
+  // Quantitative-factors table.
+  const qBody: (string | number)[][] = rows
+    .filter((r) => r.revenueCr != null || r.patCr != null)
+    .slice(-3)
+    .map((f) => [
+      f.fy,
+      cr(f.revenueCr), cr(f.patCr), cr(f.netWorthCr),
+      ronwOf(f) != null ? `${ronwOf(f)}%` : "—",
+      marginOf(f) != null ? `${marginOf(f)}%` : "—",
+    ]);
+
+  // Weighted-average RoNW — ICDR convention: most recent year weighted highest (1:2:3).
+  let weightedRonw: number | null = null;
+  if (last3.length) {
+    let wsum = 0, w = 0;
+    last3.forEach((f, i) => { const v = ronwOf(f); if (v != null) { const wt = i + 1; wsum += v * wt; w += wt; } });
+    weightedRonw = w ? Number((wsum / w).toFixed(2)) : null;
+  }
+
+  // Peer benchmarking (illustrative reference set; MB substitutes the real one).
+  const bm = benchmarkCompany(c);
+  const peerTbl = bm
+    ? mdTable(["Comparable (illustrative)", "Platform", "P/E", "EV/EBITDA", "RoNW"],
+        bm.peers.map((p) => [p.name, p.exchange, `${p.pe}x`, `${p.evEbitda}x`, `${p.roePct}%`]))
+    : "";
+  const compTbl = bm
+    ? mdTable(["Metric", "Our company", "Peer median", "Read"],
+        bm.rows.map((r) => [
+          r.metric,
+          r.company != null ? `${r.company}${r.unit === "%" ? "%" : r.unit === "x" ? "x" : ` ${r.unit}`}` : "—",
+          `${r.peerMedian}${r.unit === "%" ? "%" : r.unit === "x" ? "x" : ` ${r.unit}`}`,
+          r.verdict,
+        ]))
+    : "";
+
+  // Qualitative factors — only claims the data supports.
+  const quals: string[] = [];
+  if (c.yearOfIncorporation) quals.push(`An operating track record since ${c.yearOfIncorporation}${c.promoterExperienceYears ? `, led by a promoter with approximately ${c.promoterExperienceYears} years of industry experience` : ""}.`);
+  const marginRow = bm?.rows.find((r) => r.metric === "EBITDA margin");
+  if (marginRow?.verdict === "Above peers") quals.push(`EBITDA margins above the comparable-company median, reflecting operating efficiency (sustainability of which is addressed in Risk Factors).`);
+  const ronwRow = bm?.rows.find((r) => r.metric === "Return on net worth");
+  if (ronwRow && ronwRow.verdict !== "No data") quals.push(`A return on net worth ${ronwRow.verdict === "Above peers" ? "above" : ronwRow.verdict === "Below peers" ? "below" : "broadly in line with"} the comparable-company median.`);
+  const deRow = bm?.rows.find((r) => r.metric === "Debt / equity");
+  if (deRow?.verdict === "Below peers") quals.push(`A capital structure less leveraged than the comparable-company median.`);
+  if (c.top3CustomerPct != null && c.top3CustomerPct < 40) quals.push(`A diversified customer base (top three customers ${c.top3CustomerPct}% of revenue).`);
+
+  const indicative = bm?.indicativeValuationCr != null
+    ? `Applying the comparable-company median price-to-earnings multiple of ${bm.suggestedPe}x to the most recent restated profit after tax of ${cr(l?.patCr ?? null)} implies an indicative equity value of the order of ${cr(bm.indicativeValuationCr)}. This is an indicative reference only — it is not the issue price, assumes no primary dilution, and the merchant banker will determine the final price band.`
+    : "";
+
+  // Reviewer-lens note when metrics diverge from peers.
+  const outliers = bm?.rows.filter((r) => r.verdict === "Above peers" || r.verdict === "Below peers") ?? [];
+  const reviewerNote = outliers.length
+    ? `Reviewer note: ${outliers.map((r) => r.metric).join(", ")} diverge from the comparable-company median; the priced offer document should justify any premium or discount these imply, with supporting rationale.`
+    : "";
+
   return para(
-    `The issue price will be determined by the company in consultation with the merchant banker on the basis of an assessment of market demand and the qualitative and quantitative factors described below.`,
-    body.length ? mdTable(["Parameter", "Value"], body) : "",
-    `Earnings per share, net asset value per share and the price-to-earnings multiple will be computed on the final share capital, and a peer comparison (P/E, EV/EBITDA, RoNW) will be provided by the merchant banker to justify the proposed price band.`
+    `The issue price will be determined by the company in consultation with the merchant banker on the basis of an assessment of market demand and the qualitative and quantitative factors set out below. Investors should read this section together with the Risk Factors and the Restated Financial Statements.`,
+    quals.length ? `**Qualitative factors**\n\n${quals.map((q) => `- ${q}`).join("\n")}` : "",
+    `**Quantitative factors**`,
+    qBody.length
+      ? mdTable(["Financial year", "Revenue", "Restated PAT", "Net worth", "RoNW", "EBITDA margin"], qBody)
+      : "Year-wise financial parameters will be presented once the restated financials are available.",
+    weightedRonw != null ? `Weighted average return on net worth for the periods above (most recent year weighted highest) is approximately **${weightedRonw}%**.` : "",
+    `Basic and diluted earnings per share, net asset value per share and the price-to-earnings multiple at the offer price will be computed on the final post-issue share capital by the merchant banker.`,
+    bm ? `**Comparison with listed industry peers — ${bm.sector}**` : "",
+    compTbl,
+    peerTbl,
+    indicative,
+    reviewerNote,
+    bm ? `The comparable companies above are illustrative reference values selected on a sector basis and are not live market data or a valuation opinion; the merchant banker will finalise the peer set, the accounting ratios and the issue price in the offer document.` : ""
   );
 }
 

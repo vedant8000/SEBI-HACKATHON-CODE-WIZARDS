@@ -204,6 +204,26 @@ export interface AuditLogEntry {
   timestamp: string;
 }
 
+/**
+ * One entry in a company's tamper-evident export ledger. Each machine-readable
+ * filing pack that is exported appends an entry whose `chainHash` binds its
+ * `contentHash` to the previous entry's `chainHash` — so altering, reordering
+ * or deleting any past export breaks every subsequent hash. Proves integrity
+ * and sequence of the export history (not signer identity — that needs signing).
+ */
+export interface ExportLedgerEntry {
+  id: string;
+  companyId: string;
+  seq: number;                 // 1-based sequence within the company
+  artefact: string;            // e.g. "filing-pack"
+  user: string;                // who exported (email or "unknown")
+  readinessScore: number | null;
+  contentHash: string;         // sha256 of the exported content
+  prevHash: string;            // previous entry's chainHash ("GENESIS" for the first)
+  chainHash: string;           // sha256 binding this entry to the previous
+  timestamp: string;
+}
+
 export interface RptRisk {
   id: string;
   entityName: string;
@@ -269,6 +289,51 @@ export interface ComplianceTask {
   status: "Upcoming" | "Due Soon" | "Overdue" | "Filed";
 }
 
+/**
+ * A single SME-IPO eligibility / structural obligation under the SEBI ICDR
+ * framework (as tightened by the Dec-2024 board decision / Mar-2025 amendments).
+ * Computed from the company profile + objects where the data allows, else marked
+ * "Pending" as a checklist item to be ensured at the RHP stage.
+ */
+export interface ComplianceObligation {
+  id: string;
+  rule: string;         // short name, e.g. "Offer for Sale cap"
+  requirement: string;  // the numeric/textual requirement
+  status: "Met" | "Attention" | "Pending" | "N/A";
+  detail: string;       // computed explanation
+  basis: string;        // regulatory basis / effective date
+}
+
+/**
+ * One earnings-quality / internal-consistency signal behind the Disclosure
+ * Integrity Score. Derived from the promoter's OWN reported figures — never an
+ * accusation, only a heads-up on what a reviewer will likely probe.
+ */
+export interface IntegritySignal {
+  id: string;
+  label: string;
+  status: "clean" | "watch" | "flag" | "na";
+  weight: number;        // max points this signal can deduct
+  deduction: number;     // points actually deducted (0..weight)
+  detail: string;        // plain-language finding
+  whyItMatters: string;  // why a reviewer cares
+  prepare: string;       // what to prepare / fix
+}
+
+/**
+ * The Disclosure Integrity Score: a 0-100 read on how well the reported numbers
+ * hang together, aggregated from the individual signals. Explicitly NOT fraud
+ * detection — a pre-filing readiness indicator.
+ */
+export interface IntegrityScore {
+  score: number;
+  band: "Strong" | "Generally consistent" | "Several items to address" | "High scrutiny expected";
+  summary: string;
+  signals: IntegritySignal[];
+  benford: { checked: boolean; sampleSize: number; madPct: number | null; note: string };
+  disclaimer: string;
+}
+
 /** Everything the analysis engine computes for one company in one run. */
 export interface AnalysisResult {
   checks: ReadinessCheck[];
@@ -277,6 +342,10 @@ export interface AnalysisResult {
   rptRisks: RptRisk[];
   financialChecks: FinancialCheck[];
   observations: ExchangeObservation[];
+  complianceObligations: ComplianceObligation[];
+  /** Earnings-quality / internal-consistency read (optional: absent on analyses
+   *  produced before this engine existed — callers should guard). */
+  integrity?: IntegrityScore;
   scores: {
     overall: number;
     byCategory: Record<string, number>;

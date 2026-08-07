@@ -6,10 +6,11 @@ import type { Company, FinancialYear } from "@/lib/types";
 import type { ParsedProfile } from "@/lib/document-processing/profile-parser";
 import {
   Building2, Target, BarChart3, ShieldCheck, Save, ArrowRight,
-  Wand2, FileUp, Loader2, CheckCircle2,
+  Wand2, FileUp, Loader2, CheckCircle2, Landmark, Database,
   type LucideIcon,
 } from "lucide-react";
 import { HeroBackdrop, HeroIconBadge } from "@/components/shared/ui";
+import type { Connector } from "@/lib/integrations/india-stack";
 
 const emptyFy = (fy: string): FinancialYear => ({
   fy, revenueCr: null, patCr: null, ebitdaCr: null, netWorthCr: null,
@@ -151,8 +152,35 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
     }
   };
 
+  // ── Auto-fill from India Stack (simulated MCA21 / GSTN / DigiLocker / Udyam) ──
+  const [stackCin, setStackCin] = useState(existing?.cin ?? "");
+  const [stackGstin, setStackGstin] = useState("");
+  const [stackLoading, setStackLoading] = useState(false);
+  const [stackErr, setStackErr] = useState<string | null>(null);
+  const [connectors, setConnectors] = useState<Connector[] | null>(null);
+
+  const runIndiaStack = async () => {
+    setStackLoading(true);
+    setStackErr(null);
+    try {
+      const res = await fetch("/api/integrations/prefill", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cin: stackCin, gstin: stackGstin, name: f.name }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setStackErr(data.error ?? "Could not reach the source systems."); return; }
+      applyParsed(data as ParsedProfile, { summary: false });
+      setConnectors(data.connectors ?? []);
+    } catch {
+      setStackErr("Auto-population failed — please try again.");
+    } finally {
+      setStackLoading(false);
+    }
+  };
+
   /** Merge parser suggestions into the form; the promoter reviews before saving. */
-  const applyParsed = (p: ParsedProfile) => {
+  const applyParsed = (p: ParsedProfile, opts?: { summary?: boolean }) => {
     const touched = new Set<string>();
     const pr = p.profile;
     setF((prev) => {
@@ -198,7 +226,7 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
     }
 
     setFilled(touched);
-    setParsed(p);
+    if (opts?.summary !== false) setParsed(p);
   };
 
   const glow = (key: string) => (filled.has(key) ? " ring-2 ring-emerald-400/60 border-emerald-400 bg-emerald-50/40" : "");
@@ -421,6 +449,61 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
                 Could not read (likely scans — enter these manually): {parsed.unreadable.join(", ")}
               </p>
             )}
+          </div>
+        )}
+      </section>
+
+      {/* ── Auto-fill from India Stack (simulated connectors) ── */}
+      <section className="rounded-2xl border border-white/70 bg-white/70 backdrop-blur-md shadow-md shadow-blue-900/[0.04] p-5">
+        <div className="flex flex-wrap items-center gap-3 mb-3">
+          <HeroIconBadge icon={Landmark} />
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h3 className="text-[15px] font-bold text-[#1e3a5f]">Auto-fill from India Stack</h3>
+              <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700">Simulated connectors</span>
+            </div>
+            <p className="text-xs text-slate-500">
+              Pull your company master, financials, promoter KYC and MSME status straight from
+              <span className="font-medium text-slate-600"> MCA21 V3, GSTN, DigiLocker/CKYC and the Udyam registry</span> — no manual typing.
+              Every field is source-tagged and editable before you save.
+            </p>
+          </div>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] items-end">
+          <label className="flex flex-col">
+            <span className="text-[12px] font-semibold text-[#1e3a5f]">CIN</span>
+            <input className={inputCls} value={stackCin} onChange={(e) => setStackCin(e.target.value)} placeholder="U29253MP2013PLC031288" />
+          </label>
+          <label className="flex flex-col">
+            <span className="text-[12px] font-semibold text-[#1e3a5f]">GSTIN</span>
+            <input className={inputCls} value={stackGstin} onChange={(e) => setStackGstin(e.target.value)} placeholder="23AACVP1234R1Z9" />
+          </label>
+          <button type="button" onClick={runIndiaStack} disabled={stackLoading}
+            className="h-[42px] px-5 inline-flex items-center justify-center gap-2 rounded-xl bg-[#1e3a5f] text-white text-sm font-semibold hover:bg-[#24466f] disabled:opacity-50">
+            {stackLoading ? <Loader2 size={15} className="animate-spin" /> : <Database size={15} />}
+            {stackLoading ? "Fetching…" : "Fetch & pre-fill"}
+          </button>
+        </div>
+        {stackErr && <p className="text-sm text-red-600 mt-2">{stackErr}</p>}
+        {connectors && !stackLoading && (
+          <div className="mt-3 rounded-xl border border-emerald-200/70 bg-white/80 p-3.5">
+            <div className="flex items-center gap-2 text-sm font-semibold text-emerald-700 mb-2">
+              <CheckCircle2 size={16} /> Retrieved from {connectors.filter((c) => c.status === "connected").length} government systems — review the highlighted fields below, then save.
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {connectors.map((c) => (
+                <div key={c.system} className="rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className={`h-2 w-2 rounded-full ${c.status === "connected" ? "bg-emerald-500" : "bg-slate-300"}`} />
+                    <span className="text-[12px] font-semibold text-[#1e3a5f]">{c.system}</span>
+                  </div>
+                  <div className="text-[11px] text-slate-500 mt-0.5">{c.fetched.join(" · ")}</div>
+                </div>
+              ))}
+            </div>
+            <p className="mt-2 text-[11px] text-amber-700">
+              Simulated for demonstration — figures are fictional. In production these are live, consent-based API calls; the promoter always reviews before saving.
+            </p>
           </div>
         )}
       </section>

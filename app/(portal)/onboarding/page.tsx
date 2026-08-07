@@ -1,13 +1,48 @@
 import { getContext } from "@/lib/server/context";
 import { Building2, KeyRound } from "lucide-react";
 import OnboardingForm from "@/components/onboarding/OnboardingForm";
+import PromoterHero, { type HeroGap } from "@/components/onboarding/PromoterHero";
 
 export const dynamic = "force-dynamic";
 
+const sevOrder = { Critical: 0, High: 1, Medium: 2, Low: 3 } as const;
+
 export default async function OnboardingPage() {
-  const { company } = await getContext();
+  const { company, analysis, docs, draft } = await getContext();
+
+  const openGaps = (analysis?.gaps ?? []).filter((g) => g.status !== "Resolved");
+  const sortedGaps = [...openGaps].sort(
+    (a, b) => (sevOrder[a.severity] ?? 9) - (sevOrder[b.severity] ?? 9)
+  );
+  const criticalCount = openGaps.filter((g) => g.severity === "Critical").length;
+  const highCount = openGaps.filter((g) => g.severity === "High").length;
+  const obAttention = (analysis?.complianceObligations ?? []).filter((o) => o.status === "Attention").length;
+  const topGaps: HeroGap[] = sortedGaps.slice(0, 3).map((g) => ({
+    title: g.title, severity: g.severity, section: g.affectedSection, href: "/intelligence",
+  }));
+
+  const draftStarted = draft.some((d) => d.status !== "Not Started");
+  const nextAction =
+    !company ? { label: "Complete your profile", href: "#" }
+      : docs.length === 0 ? { label: "Upload your documents", href: "/onboarding#upload" }
+        : !analysis ? { label: "Run IPO Intelligence", href: "/intelligence" }
+          : criticalCount > 0 ? { label: `Resolve ${criticalCount} critical gap${criticalCount > 1 ? "s" : ""}`, href: "/intelligence" }
+            : !draftStarted ? { label: "Generate the draft", href: "/draft" }
+              : { label: "Progress to merchant-banker review", href: "/draft" };
+
   return (
     <>
+      <PromoterHero
+        hasCompany={!!company}
+        score={analysis?.scores.overall ?? 0}
+        statusLine={analysis?.scores.statusLine ?? (company ? "Run IPO Intelligence to compute your readiness." : "")}
+        coveragePct={analysis?.scores.draftCompletionPct ?? 0}
+        criticalCount={criticalCount}
+        highCount={highCount}
+        obAttention={obAttention}
+        topGaps={topGaps}
+        nextAction={nextAction}
+      />
       <div className="flex flex-wrap items-center gap-4 mb-6">
         <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-blue-600 to-sky-500 shadow-lg shadow-blue-500/30">
           <Building2 size={24} strokeWidth={1.8} className="text-white" />

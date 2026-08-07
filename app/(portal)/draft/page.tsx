@@ -3,6 +3,7 @@ import { Card, EmptyState, PageHeader } from "@/components/shared/ui";
 import DraftViewer, { type SectionMeta } from "@/components/draft/DraftViewer";
 import DraftQa from "@/components/chat/DraftQa";
 import BankerFlagsCard from "@/components/shared/BankerFlagsCard";
+import TrustStrip from "@/components/shared/TrustStrip";
 import { aiAvailable } from "@/lib/ai/provider";
 import { SME_PROSPECTUS_BLUEPRINT } from "@/lib/ipo-blueprint/sme-prospectus-blueprint";
 
@@ -40,8 +41,15 @@ export default async function DraftPage() {
       <PageHeader
         title="Draft Offer Document"
         subtitle={`The complete SME offer-document blueprint (${coverage.length} sections), generated only from your extracted facts and evidence — AI drafts the company-specific sections, the rule engine composes the standard ones (${generatable} sections currently have enough data). Missing information is omitted or flagged — never invented. Every section requires authorised intermediary review.`}
-        actions={<a href="/api/export/draft" target="_blank" className="px-3 py-1.5 text-xs font-medium bg-slate-800 text-white rounded-lg hover:bg-slate-700">Export Draft Offer Document</a>}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <a href="/api/export/draft" target="_blank" className="px-3 py-1.5 text-xs font-medium bg-slate-800 text-white rounded-lg hover:bg-slate-700">Export Draft Offer Document</a>
+            <a href="/api/export/filing-pack" target="_blank" className="px-3 py-1.5 text-xs font-medium border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50" title="Structured, source-linked JSON disclosure data model with a tamper-evident hash-chain — for the merchant banker's systems and supervisory use.">Export Machine-Readable Pack (JSON)</a>
+            <a href="/api/export/verify-ledger" target="_blank" className="px-3 py-1.5 text-xs font-medium border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50" title="Recompute and verify the tamper-evident hash-chain over this company's export history.">Verify Export Ledger</a>
+          </div>
+        }
       />
+      <TrustStrip className="mb-5" />
       <BankerFlagsCard flags={flags.filter((f) => f.targetType === "section")} title="Draft sections your merchant banker wants corrected" />
       {!aiAvailable() && (
         <Card className="p-4 mb-5 border-sky-300 bg-sky-50">

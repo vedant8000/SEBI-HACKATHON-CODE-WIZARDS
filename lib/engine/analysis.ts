@@ -2,6 +2,7 @@ import type {
   AnalysisResult,
   CheckStatus,
   Company,
+  ComplianceObligation,
   DocumentRecord,
   ExchangeObservation,
   FinancialCheck,
@@ -13,6 +14,7 @@ import type {
   Severity,
 } from "../types";
 import { SCORING_WEIGHTS, STATUS_SCORE } from "../rules/scoring-config";
+import { computeIntegrityScore } from "./forensics";
 
 /**
  * The analysis engine. Every readiness check, gap, heatmap cell, RPT flag and
@@ -109,13 +111,14 @@ export function runAnalysis(
   }
 
   if (fin.length >= 2) {
-    const ebitdaYears = fin.filter((f) => (f.ebitdaCr ?? 0) > 0).length;
-    addCheck("Eligibility", "Operating profit (EBITDA) in preceding years",
+    const last3e = fin.slice(-3);
+    const ebitdaYears = last3e.filter((f) => (f.ebitdaCr ?? 0) >= 1).length;
+    addCheck("Eligibility", "Operating profit ≥ ₹1 Cr in 2 of 3 years",
       ebitdaYears >= 2 ? "pass" : "fail", "Critical",
-      `Positive EBITDA detected in ${ebitdaYears} of ${fin.length} reported years.`,
-      ebitdaYears >= 2 ? "—" : "SME eligibility generally requires operating profit in 2 of the last 3 years — discuss timing with your merchant banker.");
+      `EBITDA of ₹1 Cr or more in ${ebitdaYears} of the last ${last3e.length} reported year(s). SEBI ICDR (for DRHPs filed on/after 1 Apr 2025) requires operating profit of at least ₹1 Cr in 2 of the 3 financial years preceding the DRHP.`,
+      ebitdaYears >= 2 ? "—" : "Achieve EBITDA ≥ ₹1 Cr in at least 2 of the last 3 years, or discuss issue timing with your merchant banker.");
   } else {
-    addCheck("Eligibility", "Operating profit (EBITDA) in preceding years", "missing", "Critical",
+    addCheck("Eligibility", "Operating profit ≥ ₹1 Cr in 2 of 3 years", "missing", "Critical",
       "Less than two years of financial data available.", "Enter 3 years of financials in Company Profile or upload audited statements.");
   }
 
@@ -167,21 +170,65 @@ export function runAnalysis(
 
   if (company.ofsCr != null && company.issueSizeCr) {
     const ofsPct = Math.round((company.ofsCr / company.issueSizeCr) * 100);
-    addCheck("Eligibility", "Offer-for-sale proportion", ofsPct > 20 ? "warning" : "pass", "Medium",
-      `OFS of ₹${company.ofsCr} Cr is ${ofsPct}% of the issue.` + (ofsPct > 20 ? " High OFS in an SME issue invites questions on promoter intent." : ""),
-      ofsPct > 20 ? "Add clear rationale for promoter dilution in Capital Structure." : "—");
+    addCheck("Eligibility", "Offer-for-Sale within 20% statutory cap", ofsPct > 20 ? "fail" : "pass", "High",
+      `OFS of ₹${company.ofsCr} Cr is ${ofsPct}% of the issue.` +
+      (ofsPct > 20
+        ? " SEBI ICDR (2025) caps SME OFS at 20% of the issue size, and bars any selling shareholder from offloading more than 50% of their pre-issue holding."
+        : " Within the 20% SME cap; confirm no single seller exceeds 50% of their pre-issue holding."),
+      ofsPct > 20 ? "Reduce the OFS to ≤ 20% of the issue size (SEBI ICDR 2025) and confirm per-holder dilution ≤ 50% from the shareholding pattern." : "—");
+    if (ofsPct > 20) {
+      addObs({
+        observation: `Restructure the Offer for Sale — ${ofsPct}% exceeds the 20% SME cap.`,
+        affectedSection: "The Offer / Capital Structure", severity: "High",
+        whyItMayBeAsked: "SEBI ICDR (2025) caps SME OFS at 20% of the issue; an OFS above this is a hard eligibility defect the exchange will not clear.",
+        suggestedResponse: "Reduce the OFS component to ≤ 20% of the issue and confirm no selling shareholder offloads more than 50% of their pre-issue holding.",
+        requiredEvidence: "Revised issue structure, pre- and post-issue shareholding pattern",
+      });
+    }
+  }
+
+  // Net tangible assets floor (₹1 Cr) — net worth used as a proxy.
+  if (latest?.netWorthCr != null) {
+    addCheck("Eligibility", "Net tangible assets ≥ ₹1 Cr",
+      latest.netWorthCr >= 1 ? "pass" : "fail", "Critical",
+      `Latest net worth ₹${latest.netWorthCr} Cr in ${latest.fy}, used as a proxy for net tangible assets (SME eligibility floor is ₹1 Cr).`,
+      latest.netWorthCr >= 1 ? "—" : "Confirm net tangible assets ≥ ₹1 Cr with your auditor (net of intangibles and revaluation reserves).");
+  } else {
+    addCheck("Eligibility", "Net tangible assets ≥ ₹1 Cr", "missing", "Critical",
+      "Net worth / NTA not available in profile or uploads.", "Upload the audited balance sheet or enter net worth in Company Profile.");
+  }
+
+  // General Corporate Purpose cap — ≤ 15% of proceeds or ₹10 Cr, whichever lower.
+  const gcpObjAmt = objects.filter((o) => /general corporate|gcp/i.test(o.category)).reduce((s, o) => s + o.amountCr, 0);
+  if (company.issueSizeCr != null && objects.length) {
+    const gcpCap = r1(Math.min(0.15 * company.issueSizeCr, 10));
+    addCheck("Eligibility", "General Corporate Purpose within cap",
+      gcpObjAmt <= gcpCap ? "pass" : "fail", "High",
+      gcpObjAmt > 0
+        ? `GCP object ₹${r1(gcpObjAmt)} Cr against the cap of ₹${gcpCap} Cr (15% of the ₹${company.issueSizeCr} Cr issue, capped at ₹10 Cr).`
+        : `No General Corporate Purpose object defined; the applicable cap would be ₹${gcpCap} Cr.`,
+      gcpObjAmt <= gcpCap ? "—" : `Reduce the General Corporate Purpose object to ≤ ₹${gcpCap} Cr (SEBI ICDR 2025).`);
+    if (gcpObjAmt > gcpCap) {
+      addObs({
+        observation: `Justify or cap the General Corporate Purpose allocation of ₹${r1(gcpObjAmt)} Cr.`,
+        affectedSection: "Objects of the Issue", severity: "High",
+        whyItMayBeAsked: `GCP is capped at 15% of proceeds or ₹10 Cr (whichever is lower) — here ₹${gcpCap} Cr. Amounts above the cap are routinely questioned as vague deployment.`,
+        suggestedResponse: `Re-allocate the excess to specific, evidenced objects and bring GCP within ₹${gcpCap} Cr.`,
+        requiredEvidence: "Revised objects table with itemised deployment and evidence",
+      });
+    }
   }
 
   const promoterLoan = field<number>([...rptDocs, ...finDocs], "promoterLoanCr");
   const debtObject = objects.find((o) => /debt|repayment|loan/i.test(o.category));
   if (promoterLoan && debtObject) {
-    addCheck("Eligibility", "IPO proceeds vs related-party loan repayment", "warning", "High",
-      `Debt-repayment object of ₹${debtObject.amountCr} Cr exists while an unsecured related-party loan of ₹${promoterLoan} Cr is on record — if proceeds repay promoter-group loans, heightened scrutiny applies.`,
-      "Obtain legal opinion; either exclude related-party loans from Objects or disclose prominently.");
+    addCheck("Eligibility", "No repayment of promoter/related-party loans from proceeds", "fail", "High",
+      `Debt-repayment object of ₹${debtObject.amountCr} Cr exists while an unsecured related-party loan of ₹${promoterLoan} Cr is on record. SEBI ICDR (2025) prohibits using IPO proceeds to repay loans availed from promoters, the promoter group or related parties, directly or indirectly.`,
+      "Exclude any promoter/related-party loan from the debt-repayment object; only third-party lender debt may be repaid from proceeds.");
   } else {
-    addCheck("Eligibility", "IPO proceeds vs related-party loan repayment",
+    addCheck("Eligibility", "No repayment of promoter/related-party loans from proceeds",
       debtObject ? "pass" : "missing", "High",
-      debtObject ? "No related-party loan detected among borrowings proposed for repayment." : "Objects of issue not defined yet.",
+      debtObject ? "No related-party loan detected among the borrowings proposed for repayment (SEBI ICDR 2025 prohibits repaying promoter/related-party loans from proceeds)." : "Objects of issue not defined yet.",
       debtObject ? "—" : "Build your fund utilisation plan in Objects Builder.");
   }
 
@@ -538,6 +585,13 @@ export function runAnalysis(
       suggestedFix: "Engage a peer-reviewed audit firm and upload the restated financials.",
       owner: "Auditor", status: finDocs.length ? "In Progress" : "Open",
     });
+    addObs({
+      observation: "Provide restated financial statements examined by a peer-reviewed auditor.",
+      affectedSection: "Restated Financial Statements", severity: "Critical",
+      whyItMayBeAsked: "Restated financials examined by a peer-reviewed auditor are mandatory offer-document content; statutory audited statements alone are not accepted.",
+      suggestedResponse: "Engage a peer-reviewed audit firm to restate three years of financials and issue the examination report.",
+      requiredEvidence: "Restated financial statements + auditor's examination report + peer-review certificate",
+    });
   }
 
   addCheck("Disclosure Completeness", "Material contracts",
@@ -714,6 +768,85 @@ export function runAnalysis(
     owner: "Merchant Banker",
   });
 
+  // ════ SME FRAMEWORK OBLIGATIONS (SEBI ICDR — Dec-2024 / Mar-2025) ═════════
+  // A regulator-facing checklist: computed from data where possible, else a
+  // "Pending" obligation to be ensured at the RHP stage. This is the promoter's
+  // (and banker's) at-a-glance proof of current-framework compliance.
+  const complianceObligations: ComplianceObligation[] = [];
+  const BASIS = "SEBI ICDR — Dec-2024 board decision / Mar-2025 amendments";
+  const ob = (
+    rule: string, requirement: string, status: ComplianceObligation["status"],
+    detail: string, basis = BASIS
+  ) => complianceObligations.push({ id: nid("ob"), rule, requirement, status, detail, basis });
+
+  const last3 = fin.slice(-3);
+  const ebitda1cr = last3.filter((f) => (f.ebitdaCr ?? 0) >= 1).length;
+  ob("Operating profitability", "EBITDA ≥ ₹1 Cr in 2 of the last 3 FYs",
+    fin.length < 2 ? "Pending" : ebitda1cr >= 2 ? "Met" : "Attention",
+    fin.length < 2 ? "Enter at least two years of financials to test this."
+      : `EBITDA ≥ ₹1 Cr achieved in ${ebitda1cr} of the last ${last3.length} reported year(s).`);
+
+  ob("Net tangible assets", "NTA ≥ ₹1 Cr",
+    latest?.netWorthCr == null ? "Pending" : latest.netWorthCr >= 1 ? "Met" : "Attention",
+    latest?.netWorthCr == null ? "Net worth (NTA proxy) not available."
+      : `Latest net worth ₹${latest.netWorthCr} Cr (proxy for NTA; confirm net of intangibles with the auditor).`);
+
+  if (latest?.netWorthCr != null && company.freshIssueCr != null) {
+    const postCap = r1((latest.netWorthCr + company.freshIssueCr) * 0.6);
+    ob("Post-issue paid-up capital", "Between ₹1 Cr and ₹25 Cr (SME platform)",
+      postCap >= 1 && postCap <= 25 ? "Met" : "Attention",
+      `Estimated post-issue capital ≈ ₹${postCap} Cr (exact figure depends on issue pricing).`);
+  } else {
+    ob("Post-issue paid-up capital", "Between ₹1 Cr and ₹25 Cr (SME platform)", "Pending", "Provide issue size and net worth to estimate.");
+  }
+
+  ob("Operating track record", "≥ 3 years, positive net worth",
+    opYears == null ? "Pending" : opYears >= 3 && (latest?.netWorthCr ?? 0) > 0 ? "Met" : "Attention",
+    opYears == null ? "Year of incorporation not provided."
+      : `${opYears} years since incorporation; latest net worth ${latest?.netWorthCr != null ? `₹${latest.netWorthCr} Cr` : "unknown"}.`);
+
+  if (company.ofsCr != null && company.issueSizeCr) {
+    const ofsPct = r1((company.ofsCr / company.issueSizeCr) * 100);
+    ob("Offer for Sale cap", "OFS ≤ 20% of issue; no seller > 50% of pre-issue holding",
+      ofsPct <= 20 ? "Met" : "Attention",
+      `OFS is ${ofsPct}% of the issue (₹${company.ofsCr} Cr of ₹${company.issueSizeCr} Cr).${ofsPct > 20 ? " Exceeds the 20% statutory cap." : ""} Per-holder 50% limit to be confirmed from the shareholding pattern.`);
+  } else {
+    ob("Offer for Sale cap", "OFS ≤ 20% of issue; no seller > 50% of pre-issue holding", "Pending", "OFS amount not specified.");
+  }
+
+  if (company.issueSizeCr != null && objects.length) {
+    const gcpCap = r1(Math.min(0.15 * company.issueSizeCr, 10));
+    ob("General Corporate Purpose cap", "GCP ≤ 15% of proceeds or ₹10 Cr (lower)",
+      gcpObjAmt <= gcpCap ? "Met" : "Attention",
+      gcpObjAmt > 0 ? `GCP object ₹${r1(gcpObjAmt)} Cr against cap ₹${gcpCap} Cr.` : `No GCP object defined; cap would be ₹${gcpCap} Cr.`);
+  } else {
+    ob("General Corporate Purpose cap", "GCP ≤ 15% of proceeds or ₹10 Cr (lower)", "Pending", "Define objects and issue size to test the GCP cap.");
+  }
+
+  ob("Use of proceeds", "No repayment of promoter / related-party loans",
+    promoterLoan != null && debtObject ? "Attention" : promoterLoan != null || objects.length ? "Met" : "Pending",
+    promoterLoan != null && debtObject
+      ? `Related-party loan of ₹${promoterLoan} Cr on record alongside a debt-repayment object — ensure no IPO proceeds repay promoter/related-party loans (prohibited).`
+      : promoterLoan != null ? `Related-party loan of ₹${promoterLoan} Cr on record but not proposed for repayment from proceeds.`
+        : objects.length ? "No related-party loan detected in the objects / borrowings." : "Objects plan not defined yet.");
+
+  if (company.issueSizeCr != null) {
+    ob("Monitoring agency", "Mandatory for issue size ₹20–50 Cr and above",
+      company.issueSizeCr >= 20 ? "Pending" : "N/A",
+      company.issueSizeCr >= 20
+        ? `Issue of ₹${company.issueSizeCr} Cr requires a SEBI-registered monitoring agency to certify utilisation of proceeds.`
+        : `Issue of ₹${company.issueSizeCr} Cr is below the ₹20 Cr monitoring-agency threshold.`);
+  } else {
+    ob("Monitoring agency", "Mandatory for issue size ₹20–50 Cr and above", "Pending", "Issue size not specified.");
+  }
+
+  ob("Minimum application size", "₹2 lakh per application", "Pending",
+    "Set in the RHP by the merchant banker — SEBI raised the SME minimum application to ₹2 lakh.");
+  ob("Public comment period", "DRHP hosted 21 days + newspaper advertisement", "Pending",
+    "The lead manager hosts the DRHP for 21 days for public comments and issues a newspaper advertisement before filing.");
+  ob("Allottees & allocation", "≥ 50 allottees; NII allocation aligned to Main Board", "Pending",
+    "Ensured at allotment; the non-institutional allocation methodology now mirrors the Main Board framework.");
+
   // ════ SCORES ═════════════════════════════════════════════════════════════
   const byCategory: Record<string, number> = {};
   for (const cat of Object.keys(SCORING_WEIGHTS) as (keyof typeof SCORING_WEIGHTS)[]) {
@@ -745,8 +878,11 @@ export function runAnalysis(
         ? "Partially ready — merchant banker review recommended before draft finalisation."
         : "Early stage — resolve critical gaps before draft finalisation.";
 
+  const integrity = computeIntegrityScore(company, docs, objects, { financialChecks, rptRisks });
+
   return {
-    checks, gaps, heatmap, rptRisks, financialChecks, observations,
+    checks, gaps, heatmap, rptRisks, financialChecks, observations, complianceObligations,
+    integrity,
     scores: { overall, byCategory, rptScore, finConsistencyScore, draftCompletionPct, statusLine },
     ranAt: new Date().toISOString(),
   };

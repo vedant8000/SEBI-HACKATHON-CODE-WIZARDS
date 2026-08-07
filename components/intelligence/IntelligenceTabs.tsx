@@ -12,11 +12,35 @@ import {
 import { CategoryScoreChart } from "@/components/charts/charts";
 import ObjectsForm from "@/components/objects/ObjectsForm";
 import { rptBand } from "@/lib/rules/scoring-config";
+import type { PeerBenchmark } from "@/lib/engine/peers";
 
 const TABS = [
-  "Overview", "Missing Data", "Inconsistencies", "RPT & Fund Use Risk",
-  "Objects of Issue", "Likely Reviewer Questions",
+  "Overview", "Disclosure Integrity", "SME Framework", "Missing Data", "Inconsistencies",
+  "RPT & Fund Use Risk", "Objects of Issue", "Valuation & Peers", "Exchange Observations",
 ] as const;
+
+// Tone + label for a single Disclosure-Integrity signal.
+const sigTone: Record<string, { cls: string; label: string }> = {
+  flag: { cls: "bg-red-100 text-red-800 border-red-300", label: "Likely to be questioned" },
+  watch: { cls: "bg-amber-100 text-amber-800 border-amber-300", label: "Keep an eye on" },
+  clean: { cls: "bg-emerald-100 text-emerald-800 border-emerald-300", label: "Consistent" },
+  na: { cls: "bg-slate-100 text-slate-400 border-slate-200", label: "Not assessed" },
+};
+
+// Likelihood a real NSE Emerge / BSE SME reviewer raises the query, from severity.
+const likelihood: Record<string, { label: string; cls: string }> = {
+  Critical: { label: "Very likely", cls: "bg-red-100 text-red-800 border-red-300" },
+  High: { label: "Likely", cls: "bg-amber-100 text-amber-800 border-amber-300" },
+  Medium: { label: "Possible", cls: "bg-blue-50 text-blue-700 border-blue-200" },
+  Low: { label: "Low", cls: "bg-slate-100 text-slate-500 border-slate-200" },
+};
+
+const obTone: Record<string, string> = {
+  Met: "bg-emerald-100 text-emerald-800 border-emerald-300",
+  Attention: "bg-red-100 text-red-800 border-red-300",
+  Pending: "bg-blue-50 text-blue-700 border-blue-200",
+  "N/A": "bg-slate-100 text-slate-400 border-slate-200",
+};
 
 const riskTone: Record<string, string> = {
   Ready: "bg-emerald-100 border-emerald-300",
@@ -33,7 +57,7 @@ const riskExplain: Record<string, string> = {
 };
 
 export default function IntelligenceTabs({
-  analysis, coverage, conflicts, objects, evidenceDocs, freshIssueCr,
+  analysis, coverage, conflicts, objects, evidenceDocs, freshIssueCr, benchmark,
 }: {
   analysis: AnalysisResult | null;
   coverage: CoverageRow[];
@@ -42,6 +66,7 @@ export default function IntelligenceTabs({
   evidenceDocs: string[];
   freshIssueCr: number | null;
   financials: FinancialYear[];
+  benchmark: PeerBenchmark | null;
 }) {
   const router = useRouter();
   const [tab, setTab] = useState<(typeof TABS)[number]>("Overview");
@@ -63,6 +88,11 @@ export default function IntelligenceTabs({
   const finIssues = finChecks.filter((c) => c.severity !== "Low");
   const rpt = analysis?.rptRisks ?? [];
   const observations = analysis?.observations ?? [];
+  const obligations = analysis?.complianceObligations ?? [];
+  const obAttention = obligations.filter((o) => o.status === "Attention").length;
+  const integrity = analysis?.integrity ?? null;
+  const integritySignals = integrity?.signals ?? [];
+  const integrityFlags = integritySignals.filter((x) => x.status === "flag").length;
   const avgCoverage = coverage.length ? Math.round(coverage.reduce((x, c) => x + c.completionPct, 0) / coverage.length) : 0;
 
   // fund-use warnings derived from the saved objects plan
@@ -97,9 +127,11 @@ export default function IntelligenceTabs({
           <button key={t} onClick={() => setTab(t)}
             className={`px-3.5 py-1.5 text-[13px] font-medium rounded-full transition-all ${tab === t ? "bg-gradient-to-r from-blue-600 to-sky-500 text-white shadow-sm shadow-blue-600/30" : "text-slate-600 hover:bg-white/60"}`}>
             {t}
+            {t === "Disclosure Integrity" && integrityFlags > 0 && <span className="ml-1.5 text-[10px] bg-white/20 px-1.5 rounded-full">{integrityFlags}</span>}
+            {t === "SME Framework" && obAttention > 0 && <span className="ml-1.5 text-[10px] bg-white/20 px-1.5 rounded-full">{obAttention}</span>}
             {t === "Missing Data" && gaps.length > 0 && <span className="ml-1.5 text-[10px] bg-white/20 px-1.5 rounded-full">{gaps.length}</span>}
             {t === "Inconsistencies" && (finIssues.length + openConflicts.length) > 0 && <span className="ml-1.5 text-[10px] bg-white/20 px-1.5 rounded-full">{finIssues.length + openConflicts.length}</span>}
-            {t === "Likely Reviewer Questions" && observations.length > 0 && <span className="ml-1.5 text-[10px] bg-white/20 px-1.5 rounded-full">{observations.length}</span>}
+            {t === "Exchange Observations" && observations.length > 0 && <span className="ml-1.5 text-[10px] bg-white/20 px-1.5 rounded-full">{observations.length}</span>}
           </button>
         ))}
         <button onClick={rerun} disabled={running}
@@ -124,7 +156,11 @@ export default function IntelligenceTabs({
             <GlassStat label="Fact Conflicts" value={openConflicts.length} tone={openConflicts.length ? "bad" : "good"} sub="Same fact, different values across documents" />
             <GlassStat label="RPT Risk" value={`${s?.rptScore ?? 0}/100`} tone={s && s.rptScore > 60 ? "bad" : s && s.rptScore > 30 ? "warn" : "good"} sub={`${rptBand(s?.rptScore ?? 0)} band`} />
             <GlassStat label="Financial Consistency" value={`${s?.finConsistencyScore ?? 0}/100`} tone={s && s.finConsistencyScore < 60 ? "bad" : s && s.finConsistencyScore < 85 ? "warn" : "good"} sub={`${finChecks.length} cross-checks run`} />
-            <GlassStat label="Reviewer Questions" value={observations.length} sub="Simulated exchange/MB queries" />
+            {integrity ? (
+              <GlassStat label="Disclosure Integrity" value={`${integrity.score}/100`} tone={integrity.score < 50 ? "bad" : integrity.score < 70 ? "warn" : "good"} sub={`${integrity.band} · ${integrityFlags} to address`} />
+            ) : (
+              <GlassStat label="Reviewer Questions" value={observations.length} sub="Simulated exchange/MB queries" />
+            )}
           </div>
 
           <div className="grid lg:grid-cols-2 gap-4">
@@ -170,6 +206,116 @@ export default function IntelligenceTabs({
                 ))}
               </ul>
             )}
+          </GlassPanel>
+        </div>
+      )}
+
+      {/* ── Tab: Disclosure Integrity (earnings-quality signals) ────────── */}
+      {tab === "Disclosure Integrity" && (
+        <div className="space-y-4">
+          {!integrity ? (
+            <GlassPanel className="p-8 text-center text-sm text-slate-400">
+              Run the rule engine to compute the Disclosure Integrity Score.
+            </GlassPanel>
+          ) : (
+            <>
+              <GlassPanel className="p-5 flex flex-wrap items-center gap-6">
+                <ScoreDonut score={integrity.score} label="INTEGRITY" />
+                <div className="min-w-[240px] flex-1">
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <h3 className="text-sm font-semibold text-slate-800">Disclosure Integrity: {integrity.band}</h3>
+                    <Badge tone="blue">Earnings-quality read</Badge>
+                  </div>
+                  <p className="text-sm text-slate-600 max-w-2xl">{integrity.summary}</p>
+                  <p className="mt-2 text-[11px] text-slate-400 max-w-2xl">{integrity.disclaimer}</p>
+                </div>
+              </GlassPanel>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <GlassStat label="Likely to be questioned" value={integritySignals.filter((x) => x.status === "flag").length} tone={integrityFlags ? "bad" : "good"} sub="Prepare an explanation" />
+                <GlassStat label="Keep an eye on" value={integritySignals.filter((x) => x.status === "watch").length} tone={integritySignals.some((x) => x.status === "watch") ? "warn" : "good"} sub="Minor signals" />
+                <GlassStat label="Consistent" value={integritySignals.filter((x) => x.status === "clean").length} tone="good" sub="No concern" />
+                <GlassStat label="Not assessed" value={integritySignals.filter((x) => x.status === "na").length} sub="Need more data" />
+              </div>
+
+              {integritySignals.map((x) => (
+                <GlassPanel key={x.id} className="p-5">
+                  <div className="flex flex-wrap items-center gap-2 mb-2">
+                    <h3 className="text-sm font-semibold text-slate-800">{x.label}</h3>
+                    <span className={`inline-block px-2 py-0.5 text-[11px] font-medium rounded-full border ${sigTone[x.status]?.cls}`}>{sigTone[x.status]?.label}</span>
+                    {x.status !== "clean" && x.status !== "na" && (
+                      <span className="ml-auto text-[11px] text-slate-400">−{x.deduction} pts</span>
+                    )}
+                  </div>
+                  <p className="text-sm text-slate-700">{x.detail}</p>
+                  <div className="grid md:grid-cols-2 gap-3 mt-3 text-[13px]">
+                    <div className="bg-slate-50 rounded-lg px-3 py-2"><span className="font-medium text-slate-700">Why a reviewer cares:</span> <span className="text-slate-600">{x.whyItMatters}</span></div>
+                    {x.prepare !== "—" && (
+                      <div className="bg-blue-50 rounded-lg px-3 py-2"><span className="font-medium text-blue-800">Prepare:</span> <span className="text-blue-900">{x.prepare}</span></div>
+                    )}
+                  </div>
+                </GlassPanel>
+              ))}
+
+              <p className="text-[11px] text-slate-400">
+                Leading-digit (Benford) check: {integrity.benford.note} Sample size {integrity.benford.sampleSize} reported figures.
+              </p>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── Tab: SME Framework (SEBI ICDR compliance) ───────────────────── */}
+      {tab === "SME Framework" && (
+        <div className="space-y-4">
+          <GlassPanel className="p-5">
+            <div className="flex flex-wrap items-center gap-2 mb-1">
+              <h3 className="text-sm font-semibold text-slate-800">SME IPO Framework Compliance</h3>
+              <Badge tone="blue">SEBI ICDR · Dec-2024 / Mar-2025</Badge>
+            </div>
+            <p className="text-xs text-slate-500 mb-4 max-w-3xl">
+              Eligibility and structural obligations under the current SME framework, computed from your profile and
+              objects where the data allows. <span className="font-medium text-slate-600">Pending</span> items are
+              process obligations ensured at the RHP stage with your merchant banker. This is a preparation aid, not
+              legal advice — your merchant banker and legal counsel confirm final compliance.
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-5">
+              <GlassStat label="Met" value={obligations.filter((o) => o.status === "Met").length} tone="good" sub="Data confirms compliance" />
+              <GlassStat label="Needs attention" value={obAttention} tone={obAttention ? "bad" : "good"} sub="Likely non-compliant" />
+              <GlassStat label="Pending" value={obligations.filter((o) => o.status === "Pending").length} sub="Ensured at RHP stage" />
+              <GlassStat label="Not applicable" value={obligations.filter((o) => o.status === "N/A").length} sub="Below thresholds" />
+            </div>
+            {obligations.length === 0 ? (
+              <p className="text-sm text-slate-400">Run the rule engine to compute framework obligations.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-[13px] min-w-[680px]">
+                  <thead>
+                    <tr className="text-left text-xs text-slate-500 border-b border-slate-200">
+                      <th className="py-2 pr-3 w-52">Rule</th>
+                      <th className="py-2 pr-3">Requirement</th>
+                      <th className="py-2 pr-3 w-28">Status</th>
+                      <th className="py-2">Your position</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {obligations.map((o) => (
+                      <tr key={o.id} className="border-b border-slate-100 align-top">
+                        <td className="py-2.5 pr-3 font-medium text-slate-800">{o.rule}</td>
+                        <td className="py-2.5 pr-3 text-slate-600">{o.requirement}</td>
+                        <td className="py-2.5 pr-3">
+                          <span className={`inline-block px-2 py-0.5 text-[11px] font-medium rounded-full border ${obTone[o.status]}`}>{o.status}</span>
+                        </td>
+                        <td className="py-2.5 text-slate-600">{o.detail}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <p className="mt-4 text-[11px] text-slate-400">
+              Basis: {obligations[0]?.basis ?? "SEBI ICDR (SME) framework"}. Verify against the latest SEBI circulars before filing.
+            </p>
           </GlassPanel>
         </div>
       )}
@@ -291,20 +437,126 @@ export default function IntelligenceTabs({
         <ObjectsForm existing={objects} freshIssueCr={freshIssueCr} evidenceDocs={evidenceDocs} />
       )}
 
-      {/* ── Tab 6: Likely Reviewer Questions ────────────────────────────── */}
-      {tab === "Likely Reviewer Questions" && (
+      {/* ── Tab: Valuation & Peers ──────────────────────────────────────── */}
+      {tab === "Valuation & Peers" && (
+        <div className="space-y-4">
+          <GlassPanel className="p-5">
+            <div className="flex flex-wrap items-center gap-2 mb-1">
+              <h3 className="text-sm font-semibold text-slate-800">Peer Benchmarking &amp; Basis for Issue Price</h3>
+              <Badge tone="blue">Market-calibrated</Badge>
+            </div>
+            <p className="text-xs text-slate-500 max-w-3xl">
+              Your fundamentals against a sector-matched set of comparable listed SMEs. Divergences are exactly what an
+              exchange reviewer probes in the <em>Basis for Issue Price</em>. Peer figures are illustrative reference
+              values — your merchant banker substitutes the actual peer set and pricing for the filing.
+            </p>
+          </GlassPanel>
+
+          {!benchmark ? (
+            <GlassPanel className="p-8 text-center text-sm text-slate-400">
+              Enter at least one year of financials in Company Profile to benchmark against peers.
+            </GlassPanel>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <GlassStat label="Peer sector" value={benchmark.peers.length} sub={benchmark.sector} />
+                <GlassStat label="Suggested peer P/E" value={`${benchmark.suggestedPe}×`} sub="Median of the peer set" />
+                <GlassStat label="Indicative equity value" value={benchmark.indicativeValuationCr != null ? `₹${benchmark.indicativeValuationCr} Cr` : "—"} sub="Latest PAT × peer median P/E" />
+                <GlassStat label="Metrics off peers" value={benchmark.rows.filter((r) => r.verdict === "Above peers" || r.verdict === "Below peers").length} tone={benchmark.rows.some((r) => r.verdict !== "In line" && r.verdict !== "No data") ? "warn" : "good"} sub="Likely reviewer probes" />
+              </div>
+
+              <GlassPanel className="p-5">
+                <p className="text-sm text-slate-600 mb-3">{benchmark.summary}</p>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-[13px] min-w-[560px]">
+                    <thead>
+                      <tr className="text-left text-xs text-slate-500 border-b border-slate-200">
+                        <th className="py-2 pr-3">Metric</th>
+                        <th className="py-2 pr-3 w-28">Your company</th>
+                        <th className="py-2 pr-3 w-28">Peer median</th>
+                        <th className="py-2 pr-3 w-28">Read</th>
+                        <th className="py-2">Why it matters</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {benchmark.rows.map((r) => (
+                        <tr key={r.metric} className="border-b border-slate-100 align-top">
+                          <td className="py-2.5 pr-3 font-medium text-slate-800">{r.metric}</td>
+                          <td className="py-2.5 pr-3 tabular-nums">{r.company != null ? `${r.company}${r.unit === "%" ? "%" : r.unit === "x" ? "×" : ` ${r.unit}`}` : "—"}</td>
+                          <td className="py-2.5 pr-3 tabular-nums text-slate-500">{r.peerMedian}{r.unit === "%" ? "%" : r.unit === "x" ? "×" : ` ${r.unit}`}</td>
+                          <td className="py-2.5 pr-3">
+                            <span className={`inline-block px-2 py-0.5 text-[11px] font-medium rounded-full border ${
+                              r.verdict === "In line" ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+                                : r.verdict === "No data" ? "bg-slate-100 text-slate-400 border-slate-200"
+                                  : "bg-amber-100 text-amber-800 border-amber-300"}`}>{r.verdict}</span>
+                          </td>
+                          <td className="py-2.5 text-slate-500">{r.note}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </GlassPanel>
+
+              <GlassPanel className="p-5">
+                <h4 className="text-sm font-semibold text-slate-800 mb-2">Peer set ({benchmark.sector})</h4>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-[13px] min-w-[520px]">
+                    <thead>
+                      <tr className="text-left text-xs text-slate-500 border-b border-slate-200">
+                        <th className="py-2 pr-3">Peer</th><th className="py-2 pr-3">Platform</th>
+                        <th className="py-2 pr-3">Revenue</th><th className="py-2 pr-3">P/E</th>
+                        <th className="py-2 pr-3">EV/EBITDA</th><th className="py-2">RoNW</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {benchmark.peers.map((p) => (
+                        <tr key={p.name} className="border-b border-slate-100">
+                          <td className="py-2 pr-3 font-medium text-slate-700">{p.name}</td>
+                          <td className="py-2 pr-3 text-slate-500">{p.exchange}</td>
+                          <td className="py-2 pr-3 tabular-nums">₹{p.revenueCr} Cr</td>
+                          <td className="py-2 pr-3 tabular-nums">{p.pe}×</td>
+                          <td className="py-2 pr-3 tabular-nums">{p.evEbitda}×</td>
+                          <td className="py-2 tabular-nums">{p.roePct}%</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="mt-3 text-[11px] text-slate-400">Illustrative reference peers for benchmarking — not live market data and not a valuation opinion. The merchant banker finalises the peer set and issue price.</p>
+              </GlassPanel>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── Tab: Exchange Observation Simulator ─────────────────────────── */}
+      {tab === "Exchange Observations" && (
         <div className="space-y-3">
-          <p className="text-xs text-slate-500">
-            Your gaps, RPT flags and inconsistencies, reframed as the questions a merchant banker or exchange reviewer
-            would ask. Answering these now is dramatically cheaper than answering them after filing.
-          </p>
-          {observations.length === 0 && <GlassPanel className="p-8 text-center text-sm text-slate-400">No likely questions derived yet — upload more documents and re-run.</GlassPanel>}
+          <GlassPanel className="p-5 !bg-slate-900/[0.03] border-slate-300/70">
+            <div className="flex flex-wrap items-center gap-2 mb-1">
+              <h3 className="text-sm font-semibold text-slate-800">Exchange Observation Simulator</h3>
+              <Badge tone="blue">NSE Emerge / BSE SME lens</Badge>
+            </div>
+            <p className="text-xs text-slate-500 max-w-3xl">
+              The clarifications an exchange reviewer is most likely to raise on your draft, predicted from your own
+              gaps, RPT flags, financial inconsistencies and framework breaches — each with why it gets asked and the
+              disclosure that pre-empts it. On NSE Emerge and BSE SME the <em>exchange</em> reviews the offer document,
+              so answering these before filing is dramatically cheaper than a post-filing query round.
+            </p>
+            <div className="flex flex-wrap gap-2 mt-3 text-[11px] text-slate-500">
+              <span>Predicted observations: <b className="text-slate-700">{observations.length}</b></span>
+              <span>· Very likely: <b className="text-red-700">{observations.filter((o) => o.severity === "Critical").length}</b></span>
+              <span>· Likely: <b className="text-amber-700">{observations.filter((o) => o.severity === "High").length}</b></span>
+            </div>
+          </GlassPanel>
+          {observations.length === 0 && <GlassPanel className="p-8 text-center text-sm text-slate-400">No observations derived yet — upload more documents and re-run.</GlassPanel>}
           {observations.map((o, i) => (
             <GlassPanel key={o.id} className="p-5">
               <div className="flex flex-wrap items-center gap-2 mb-2">
                 <span className="w-6 h-6 rounded-full bg-slate-800 text-white text-xs flex items-center justify-center font-semibold shrink-0">{i + 1}</span>
                 <h3 className="text-sm font-semibold text-slate-800">{o.observation}</h3>
-                <SeverityBadge severity={o.severity} />
+                <span className={`inline-block px-2 py-0.5 text-[11px] font-medium rounded-full border ${likelihood[o.severity]?.cls}`}>{likelihood[o.severity]?.label}</span>
                 <span className="text-xs text-slate-400">· {o.affectedSection}</span>
               </div>
               <div className="grid md:grid-cols-3 gap-3 text-[13px]">
