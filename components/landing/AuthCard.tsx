@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { usePreloader } from "./PreloaderProvider";
 import { useLanguage, type Lang } from "./LanguageProvider";
+import LearnAboutSiimModal from "@/components/shared/LearnAboutSiimModal";
 
 type Mode = "login" | "register";
 type RoleKey = "PROMOTER" | "MERCHANT_BANKER";
@@ -128,6 +129,7 @@ export default function AuthCard() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [learnOpen, setLearnOpen] = useState(false);
   const preloader = usePreloader();
 
   const t = T[lang];
@@ -376,7 +378,8 @@ export default function AuthCard() {
 
       {/* learn about SIIM */}
       <button
-        onClick={() => document.getElementById("workflow")?.scrollIntoView({ behavior: "smooth" })}
+        type="button"
+        onClick={() => setLearnOpen(true)}
         className="mt-6 w-full flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50/70 px-4 py-3.5 text-left hover:bg-emerald-50 transition-colors"
       >
         <PlayCircle size={30} className="text-emerald-600 shrink-0" />
@@ -388,6 +391,7 @@ export default function AuthCard() {
         </div>
         <ChevronRight size={18} className="text-slate-400" />
       </button>
+      <LearnAboutSiimModal open={learnOpen} onClose={() => setLearnOpen(false)} lang={lang} />
     </div>
   );
 }

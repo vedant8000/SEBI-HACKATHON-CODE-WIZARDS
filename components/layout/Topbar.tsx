@@ -61,7 +61,7 @@ export default function Topbar({
                 {busy === "analysis" ? "Analysing…" : "Re-run Rules"}
               </button>
               <button
-                onClick={() => act("draft", () => fetch("/api/draft", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }))}
+                onClick={() => { router.push("/draft"); act("draft", () => fetch("/api/draft", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" })); }}
                 disabled={!companyName || !!busy || !aiReady}
                 title={aiReady ? "Generate the blueprint-driven draft from your extracted facts" : "Configure an AI API key in .env.local to enable generation"}
                 className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-gradient-to-r from-blue-600 to-sky-500 text-white rounded-lg ring-1 ring-sky-300/60 shadow-sm shadow-blue-600/30 hover:shadow-md hover:shadow-blue-500/30 transition-shadow disabled:opacity-50"

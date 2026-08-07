@@ -8,12 +8,14 @@ import { BrainCircuit, Loader2 } from "lucide-react";
 export default function RunIntelligenceButton() {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
-  const run = async () => {
+  const run = () => {
     setBusy(true);
-    try {
-      await fetch("/api/analysis", { method: "POST" });
-      router.push("/intelligence");
-    } finally { setBusy(false); }
+    // Navigate immediately so the tab opens without waiting; run the analysis in
+    // the background and refresh the Intelligence page once it lands.
+    router.push("/intelligence");
+    fetch("/api/analysis", { method: "POST" })
+      .catch(() => {})
+      .finally(() => router.refresh());
   };
   return (
     <button onClick={run} disabled={busy}

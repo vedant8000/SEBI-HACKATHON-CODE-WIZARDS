@@ -1,17 +1,33 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { RefreshCw } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowRight,
+  BarChart3,
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  CircleDashed,
+  FileSearch,
+  RefreshCw,
+  Search,
+  ShieldCheck,
+  Sparkles,
+  XCircle,
+} from "lucide-react";
 import type {
-  AnalysisResult, CoverageRow, FactConflict, FinancialYear, ObjectOfIssue,
+  AnalysisResult, CheckStatus, CoverageRow, FactConflict, FinancialYear, ObjectOfIssue, ReadinessCheck,
 } from "@/lib/types";
 import {
-  Badge, CheckStatusBadge, GlassPanel, GlassStat, HeroBackdrop, ProgressBar, ScoreDonut, SeverityBadge,
+  Badge, GlassPanel, GlassStat, HeroBackdrop, ProgressBar, ScoreDonut, SeverityBadge,
 } from "@/components/shared/ui";
 import { CategoryScoreChart } from "@/components/charts/charts";
 import ObjectsForm from "@/components/objects/ObjectsForm";
 import { rptBand } from "@/lib/rules/scoring-config";
+import { prettyLabel } from "@/lib/utils/labels";
 import type { PeerBenchmark } from "@/lib/engine/peers";
 
 const TABS = [
@@ -56,6 +72,10 @@ const riskExplain: Record<string, string> = {
   "Missing Data": "No extracted facts yet — upload supporting documents for this section.",
 };
 
+type RuleView = "attention" | "all" | CheckStatus;
+type ObservationView = "all" | "Critical" | "High" | "Medium" | "Low";
+type HeatmapView = "All" | CoverageRow["riskLevel"];
+
 export default function IntelligenceTabs({
   analysis, coverage, conflicts, objects, evidenceDocs, freshIssueCr, benchmark,
 }: {
@@ -71,6 +91,12 @@ export default function IntelligenceTabs({
   const router = useRouter();
   const [tab, setTab] = useState<(typeof TABS)[number]>("Overview");
   const [running, setRunning] = useState(false);
+  const [rulesOpen, setRulesOpen] = useState(false);
+  const [ruleView, setRuleView] = useState<RuleView>("attention");
+  const [ruleSearch, setRuleSearch] = useState("");
+  const [observationView, setObservationView] = useState<ObservationView>("all");
+  const [heatmapView, setHeatmapView] = useState<HeatmapView>("All");
+  const [selectedHeatmapSection, setSelectedHeatmapSection] = useState<string | null>(null);
 
   const rerun = async () => {
     setRunning(true);
@@ -88,12 +114,39 @@ export default function IntelligenceTabs({
   const finIssues = finChecks.filter((c) => c.severity !== "Low");
   const rpt = analysis?.rptRisks ?? [];
   const observations = analysis?.observations ?? [];
+  const observationOrder = { Critical: 0, High: 1, Medium: 2, Low: 3 } as const;
+  const visibleObservations = observations
+    .filter((observation) => observationView === "all" || observation.severity === observationView)
+    .sort((left, right) => observationOrder[left.severity] - observationOrder[right.severity]);
   const obligations = analysis?.complianceObligations ?? [];
   const obAttention = obligations.filter((o) => o.status === "Attention").length;
   const integrity = analysis?.integrity ?? null;
   const integritySignals = integrity?.signals ?? [];
   const integrityFlags = integritySignals.filter((x) => x.status === "flag").length;
   const avgCoverage = coverage.length ? Math.round(coverage.reduce((x, c) => x + c.completionPct, 0) / coverage.length) : 0;
+  const ruleCounts = {
+    pass: analysis?.checks.filter((check) => check.status === "pass").length ?? 0,
+    warning: analysis?.checks.filter((check) => check.status === "warning").length ?? 0,
+    fail: analysis?.checks.filter((check) => check.status === "fail").length ?? 0,
+    missing: analysis?.checks.filter((check) => check.status === "missing").length ?? 0,
+  };
+
+  const selectHeatmapView = (nextView: HeatmapView) => {
+    setHeatmapView(nextView);
+    const firstMatch = nextView === "All" ? null : coverage.find((row) => row.riskLevel === nextView) ?? null;
+    setSelectedHeatmapSection(firstMatch?.sectionId ?? null);
+  };
+  const attentionRuleCount = ruleCounts.warning + ruleCounts.fail + ruleCounts.missing;
+  const visibleCoverage = coverage.filter((row) => heatmapView === "All" || row.riskLevel === heatmapView);
+  const selectedCoverage = coverage.find((row) => row.sectionId === selectedHeatmapSection) ?? null;
+  const coverageGroups = Array.from(
+    visibleCoverage.reduce((groups, row) => {
+      const group = groups.get(row.parentSection) ?? [];
+      group.push(row);
+      groups.set(row.parentSection, group);
+      return groups;
+    }, new Map<string, CoverageRow[]>()),
+  );
 
   // fund-use warnings derived from the saved objects plan
   const objectsTotal = objects.reduce((x, o) => x + o.amountCr, 0);
@@ -122,89 +175,167 @@ export default function IntelligenceTabs({
   return (
     <HeroBackdrop className="p-5 md:p-6">
     <div className="relative">
-      <div className="flex flex-wrap items-center gap-1.5 mb-5 border-b border-white/60 pb-3">
-        {TABS.map((t) => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`px-3.5 py-1.5 text-[13px] font-medium rounded-full transition-all ${tab === t ? "bg-gradient-to-r from-blue-600 to-sky-500 text-white shadow-sm shadow-blue-600/30" : "text-slate-600 hover:bg-white/60"}`}>
-            {t}
-            {t === "Disclosure Integrity" && integrityFlags > 0 && <span className="ml-1.5 text-[10px] bg-white/20 px-1.5 rounded-full">{integrityFlags}</span>}
-            {t === "SME Framework" && obAttention > 0 && <span className="ml-1.5 text-[10px] bg-white/20 px-1.5 rounded-full">{obAttention}</span>}
-            {t === "Missing Data" && gaps.length > 0 && <span className="ml-1.5 text-[10px] bg-white/20 px-1.5 rounded-full">{gaps.length}</span>}
-            {t === "Inconsistencies" && (finIssues.length + openConflicts.length) > 0 && <span className="ml-1.5 text-[10px] bg-white/20 px-1.5 rounded-full">{finIssues.length + openConflicts.length}</span>}
-            {t === "Exchange Observations" && observations.length > 0 && <span className="ml-1.5 text-[10px] bg-white/20 px-1.5 rounded-full">{observations.length}</span>}
-          </button>
-        ))}
+      <GlassPanel className="mb-5 p-2.5">
+        <div className="flex flex-col gap-2 xl:flex-row xl:items-start">
+        <div className="grid min-w-0 flex-1 grid-cols-2 gap-1.5 sm:grid-cols-3 xl:grid-cols-5">
+          {TABS.map((t) => {
+            const count = t === "Disclosure Integrity" ? integrityFlags
+              : t === "SME Framework" ? obAttention
+                : t === "Missing Data" ? gaps.length
+                  : t === "Inconsistencies" ? finIssues.length + openConflicts.length
+                    : t === "Exchange Observations" ? observations.length
+                      : 0;
+            return (
+              <button key={t} onClick={() => setTab(t)}
+                className={`inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-center text-xs font-semibold leading-4 transition-all ${tab === t ? "bg-gradient-to-r from-[#174376] to-blue-600 text-white shadow-md shadow-blue-900/20" : "border border-transparent bg-white/45 text-slate-600 hover:border-blue-100 hover:bg-blue-50 hover:text-blue-700"}`}>
+                <span>{t}</span>
+                {count > 0 && <span className={`rounded-md px-1.5 py-0.5 text-[9px] font-bold ${tab === t ? "bg-white/15 text-white" : "bg-amber-100 text-amber-700"}`}>{count}</span>}
+              </button>
+            );
+          })}
+        </div>
         <button onClick={rerun} disabled={running}
-          className="ml-auto px-3 py-1.5 text-xs font-medium border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 inline-flex items-center gap-1.5">
-          <RefreshCw size={12} className={running ? "animate-spin" : ""} /> Re-run
+          className="inline-flex min-h-10 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-4 text-xs font-semibold text-blue-700 transition hover:bg-blue-100 disabled:opacity-50 xl:w-36">
+          <RefreshCw size={13} className={running ? "animate-spin" : ""} /> Re-run analysis
         </button>
-      </div>
+        </div>
+      </GlassPanel>
 
       {/* ── Tab 1: Overview ─────────────────────────────────────────────── */}
       {tab === "Overview" && (
         <div className="space-y-5">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <GlassPanel className="p-4 flex items-center gap-4 col-span-2">
-              <ScoreDonut score={s?.overall ?? 0} />
-              <div>
-                <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">IPO Readiness Score</div>
-                <div className="text-sm text-slate-700 mt-1 max-w-[240px]">{s?.statusLine}</div>
-              </div>
-            </GlassPanel>
-            <GlassStat label="Draft Coverage" value={`${avgCoverage}%`} sub={`${coverage.filter((c) => c.canGenerate === "YES").length} of ${coverage.length} sections fully generatable`} />
-            <GlassStat label="Critical Gaps" value={gaps.filter((g) => g.severity === "Critical").length} tone={gaps.some((g) => g.severity === "Critical") ? "bad" : "good"} sub={`${gaps.filter((g) => g.severity === "High").length} high-priority items`} />
-            <GlassStat label="Fact Conflicts" value={openConflicts.length} tone={openConflicts.length ? "bad" : "good"} sub="Same fact, different values across documents" />
-            <GlassStat label="RPT Risk" value={`${s?.rptScore ?? 0}/100`} tone={s && s.rptScore > 60 ? "bad" : s && s.rptScore > 30 ? "warn" : "good"} sub={`${rptBand(s?.rptScore ?? 0)} band`} />
-            <GlassStat label="Financial Consistency" value={`${s?.finConsistencyScore ?? 0}/100`} tone={s && s.finConsistencyScore < 60 ? "bad" : s && s.finConsistencyScore < 85 ? "warn" : "good"} sub={`${finChecks.length} cross-checks run`} />
-            {integrity ? (
-              <GlassStat label="Disclosure Integrity" value={`${integrity.score}/100`} tone={integrity.score < 50 ? "bad" : integrity.score < 70 ? "warn" : "good"} sub={`${integrity.band} · ${integrityFlags} to address`} />
-            ) : (
-              <GlassStat label="Reviewer Questions" value={observations.length} sub="Simulated exchange/MB queries" />
-            )}
-          </div>
-
-          <div className="grid lg:grid-cols-2 gap-4">
-            <GlassPanel className="p-5">
-              <h3 className="text-sm font-semibold text-slate-800 mb-1">Readiness by Category</h3>
-              <p className="text-xs text-slate-500 mb-2">Eligibility 30% · Disclosure 25% · Financial 20% · Governance 15% · Documents 10%</p>
-              <CategoryScoreChart data={Object.entries(s?.byCategory ?? {}).map(([category, score]) => ({ category, score }))} />
-            </GlassPanel>
-            <GlassPanel className="p-5">
-              <h3 className="text-sm font-semibold text-slate-800 mb-1">Section Coverage Heatmap</h3>
-              <p className="text-xs text-slate-500 mb-3">All {coverage.length} prospectus sections — hover for names</p>
-              <div className="flex flex-wrap gap-1.5">
-                {coverage.map((c) => (
-                  <div key={c.sectionId} title={`${c.sectionName} — ${c.completionPct}% (${c.riskLevel})\n${riskExplain[c.riskLevel]}`}
-                    className={`w-9 h-9 rounded border flex items-center justify-center text-[9px] font-semibold text-slate-700 transition-transform hover:scale-110 hover:shadow-md cursor-default ${riskTone[c.riskLevel]}`}>
-                    {c.completionPct}
+          <section className="grid gap-4 xl:grid-cols-[1.25fr_1fr]">
+            <GlassPanel className="overflow-hidden p-5 md:p-6">
+              <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+                <ScoreDonut score={s?.overall ?? 0} size={136} label="READINESS" />
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-blue-700"><ShieldCheck size={14} /> IPO readiness command centre</span>
+                    <Badge tone="blue">{analysis.checks.length} automated checks</Badge>
                   </div>
-                ))}
+                  <h2 className="mt-2 text-xl font-semibold text-[#15345b]">{s?.statusLine}</h2>
+                  <p className="mt-1.5 text-sm leading-6 text-slate-600">Prioritise failed rules and blocked disclosures first. Every score below is linked to the evidence currently available in the workspace.</p>
+                  <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    <RuleOutcome label="Passed" value={ruleCounts.pass} tone="green" />
+                    <RuleOutcome label="Warnings" value={ruleCounts.warning} tone="amber" />
+                    <RuleOutcome label="Failed" value={ruleCounts.fail} tone="red" />
+                    <RuleOutcome label="Missing" value={ruleCounts.missing} tone="slate" />
+                  </div>
+                </div>
               </div>
-              <div className="flex gap-3 mt-3 text-[11px] text-slate-500 flex-wrap">
-                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-emerald-100 border border-emerald-300" />Ready</span>
-                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-amber-100 border border-amber-300" />Needs clarification</span>
-                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-red-100 border border-red-300" />Critical</span>
-                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-slate-200 border border-slate-300" />Missing data</span>
+              <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
+                <p className="text-xs text-slate-500"><span className="font-semibold text-slate-700">{attentionRuleCount} rules need attention</span> before merchant banker review.</p>
+                <button type="button" onClick={() => setRulesOpen(true)} className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-700 hover:text-blue-900">
+                  Open rule audit <ArrowRight size={13} />
+                </button>
+              </div>
+            </GlassPanel>
+
+            <div className="grid grid-cols-2 gap-3">
+              <IntelligenceMetric icon={FileSearch} label="Draft coverage" value={`${avgCoverage}%`} note={`${coverage.filter((c) => c.canGenerate === "YES").length}/${coverage.length} sections ready`} tone={avgCoverage >= 75 ? "green" : "blue"} />
+              <IntelligenceMetric icon={AlertTriangle} label="Critical gaps" value={gaps.filter((g) => g.severity === "Critical").length} note={`${gaps.filter((g) => g.severity === "High").length} high priority`} tone={gaps.some((g) => g.severity === "Critical") ? "red" : "green"} />
+              <IntelligenceMetric icon={CircleDashed} label="RPT risk" value={`${s?.rptScore ?? 0}/100`} note={`${rptBand(s?.rptScore ?? 0)} risk band`} tone={s && s.rptScore > 60 ? "red" : s && s.rptScore > 30 ? "amber" : "green"} />
+              <IntelligenceMetric icon={BarChart3} label="Financial consistency" value={`${s?.finConsistencyScore ?? 0}%`} note={`${finChecks.length} cross-checks run`} tone={s && s.finConsistencyScore < 60 ? "red" : s && s.finConsistencyScore < 85 ? "amber" : "green"} />
+            </div>
+          </section>
+
+          <GlassPanel className="overflow-hidden">
+            <div className="grid divide-y divide-slate-100 md:grid-cols-3 md:divide-x md:divide-y-0">
+              <SignalStrip icon={XCircle} label="Evidence conflicts" value={openConflicts.length} note="Values disagree across documents" tone={openConflicts.length ? "red" : "green"} onClick={() => setTab("Inconsistencies")} />
+              <SignalStrip icon={Sparkles} label="Disclosure integrity" value={integrity ? `${integrity.score}/100` : "Pending"} note={integrity ? `${integrityFlags} signal${integrityFlags === 1 ? "" : "s"} to prepare for` : "Run analysis to calculate"} tone={integrity && integrity.score < 70 ? "amber" : "green"} onClick={() => setTab("Disclosure Integrity")} />
+              <SignalStrip icon={FileSearch} label="Predicted observations" value={observations.length} note="Likely exchange reviewer queries" tone={observations.length ? "amber" : "green"} onClick={() => setTab("Exchange Observations")} />
+            </div>
+          </GlassPanel>
+
+          <div className="grid gap-4 xl:grid-cols-[0.9fr_1.3fr]">
+            <GlassPanel className="p-5">
+              <div className="mb-3 flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-[#15345b]">Readiness by category</h3>
+                  <p className="mt-0.5 text-xs text-slate-500">Weighted contribution to the overall score</p>
+                </div>
+                <Badge tone="blue">5 dimensions</Badge>
+              </div>
+              <CategoryScoreChart data={Object.entries(s?.byCategory ?? {}).map(([category, score]) => ({ category, score }))} />
+              <div className="mt-2 rounded-xl bg-blue-50/70 px-3 py-2.5 text-[11px] leading-5 text-blue-800">Eligibility 30% · Disclosure 25% · Financial 20% · Governance 15% · Documents 10%</div>
+            </GlassPanel>
+
+            <GlassPanel className="overflow-hidden">
+              <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-[#15345b]">Prospectus coverage heatmap</h3>
+                  <p className="mt-0.5 text-xs text-slate-500">Select a colour to filter sections, then click a section to inspect the points behind its rating.</p>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  <HeatLegend label="All" count={coverage.length} tone="blue" active={heatmapView === "All"} onClick={() => selectHeatmapView("All")} />
+                  <HeatLegend label="Ready" count={coverage.filter((c) => c.riskLevel === "Ready").length} tone="green" active={heatmapView === "Ready"} onClick={() => selectHeatmapView("Ready")} />
+                  <HeatLegend label="Clarify" count={coverage.filter((c) => c.riskLevel === "Needs Clarification").length} tone="amber" active={heatmapView === "Needs Clarification"} onClick={() => selectHeatmapView("Needs Clarification")} />
+                  <HeatLegend label="Critical" count={coverage.filter((c) => c.riskLevel === "Critical Issue").length} tone="red" active={heatmapView === "Critical Issue"} onClick={() => selectHeatmapView("Critical Issue")} />
+                  <HeatLegend label="Missing" count={coverage.filter((c) => c.riskLevel === "Missing Data").length} tone="slate" active={heatmapView === "Missing Data"} onClick={() => selectHeatmapView("Missing Data")} />
+                </div>
+              </div>
+              {selectedCoverage && (
+                <HeatmapDetail row={selectedCoverage} onClose={() => setSelectedHeatmapSection(null)} />
+              )}
+              <div className="max-h-[440px] space-y-4 overflow-y-auto bg-slate-50/60 p-4">
+                <div className="flex items-center justify-between gap-3 px-1">
+                  <p className="text-[10px] font-semibold text-slate-500">Showing {visibleCoverage.length} of {coverage.length} sections</p>
+                  {heatmapView !== "All" && <button type="button" onClick={() => selectHeatmapView("All")} className="text-[10px] font-semibold text-blue-700 hover:text-blue-900">Clear colour filter</button>}
+                </div>
+                {coverageGroups.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-xs text-slate-500">No sections fall in this readiness band.</div>
+                ) : coverageGroups.map(([parent, rows]) => (
+                  <section key={parent}>
+                    <div className="mb-2 flex items-center justify-between gap-3 px-1">
+                      <h4 className="truncate text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">{parent}</h4>
+                      <span className="shrink-0 text-[10px] text-slate-400">{rows.length} section{rows.length === 1 ? "" : "s"}</span>
+                    </div>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {rows.map((row) => (
+                        <HeatmapSectionCard
+                          key={row.sectionId}
+                          row={row}
+                          selected={selectedHeatmapSection === row.sectionId}
+                          onClick={() => setSelectedHeatmapSection(row.sectionId)}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                ))}
               </div>
             </GlassPanel>
           </div>
 
-          <GlassPanel className="p-5">
-            <h3 className="text-sm font-semibold text-slate-800 mb-3">Top 5 Blockers</h3>
+          <GlassPanel className="overflow-hidden">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
+              <div>
+                <h3 className="text-sm font-semibold text-[#15345b]">Priority remediation queue</h3>
+                <p className="mt-0.5 text-xs text-slate-500">The five issues with the greatest impact on readiness and draft quality</p>
+              </div>
+              {sortedGaps.length > 0 && <button type="button" onClick={() => setTab("Missing Data")} className="inline-flex items-center gap-1 text-xs font-semibold text-blue-700 hover:text-blue-900">View all {sortedGaps.length} gaps <ArrowRight size={13} /></button>}
+            </div>
             {sortedGaps.length === 0 ? (
-              <p className="text-sm text-slate-400">No open blockers.</p>
+              <div className="px-5 py-10 text-center">
+                <CheckCircle2 size={26} className="mx-auto text-emerald-500" />
+                <p className="mt-2 text-sm font-semibold text-slate-700">No open blockers</p>
+                <p className="mt-1 text-xs text-slate-500">The current evidence set has cleared all generated gaps.</p>
+              </div>
             ) : (
-              <ul className="divide-y divide-slate-100">
-                {sortedGaps.slice(0, 5).map((g) => (
-                  <li key={g.id} className="py-2.5 flex items-start gap-3">
-                    <SeverityBadge severity={g.severity} />
-                    <div>
-                      <div className="text-sm font-medium text-slate-800">{g.title}</div>
-                      <div className="text-xs text-slate-500 mt-0.5">{g.suggestedFix} · Owner: {g.owner}</div>
+              <div className="grid gap-3 bg-slate-50/50 p-4 lg:grid-cols-2">
+                {sortedGaps.slice(0, 5).map((gap, index) => (
+                  <article key={gap.id} className={`relative overflow-hidden rounded-xl border bg-white p-4 shadow-sm ${gap.severity === "Critical" ? "border-red-200" : gap.severity === "High" ? "border-amber-200" : "border-slate-200"}`}>
+                    <span className={`absolute inset-y-0 left-0 w-1 ${gap.severity === "Critical" ? "bg-red-500" : gap.severity === "High" ? "bg-amber-500" : "bg-blue-500"}`} />
+                    <div className="flex items-start gap-3 pl-1">
+                      <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-slate-100 text-xs font-bold text-slate-600">{index + 1}</span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2"><h4 className="text-sm font-semibold text-slate-800">{gap.title}</h4><SeverityBadge severity={gap.severity} /></div>
+                        <p className="mt-1.5 text-xs leading-5 text-slate-600">{gap.suggestedFix}</p>
+                        <div className="mt-3 flex flex-wrap gap-2 text-[10px]"><span className="rounded-md bg-blue-50 px-2 py-1 font-semibold text-blue-700">Owner: {gap.owner}</span><span className="rounded-md bg-slate-100 px-2 py-1 text-slate-500">{gap.affectedSection}</span></div>
+                      </div>
                     </div>
-                  </li>
+                  </article>
                 ))}
-              </ul>
+              </div>
             )}
           </GlassPanel>
         </div>
@@ -353,7 +484,7 @@ export default function IntelligenceTabs({
               <h3 className="text-sm font-semibold text-red-800 mb-2">Fact conflicts across documents</h3>
               <ul className="space-y-1.5 text-[13px] text-red-900">
                 {openConflicts.map((c) => (
-                  <li key={c.id}>⚠ <strong>{c.factKey}</strong>: {c.valueA} ({c.sourceA}) vs {c.valueB} ({c.sourceB})</li>
+                  <li key={c.id}>⚠ <strong>{prettyLabel(c.factKey)}</strong>: {c.valueA} ({c.sourceA}) vs {c.valueB} ({c.sourceB})</li>
                 ))}
               </ul>
             </GlassPanel>
@@ -532,70 +663,597 @@ export default function IntelligenceTabs({
 
       {/* ── Tab: Exchange Observation Simulator ─────────────────────────── */}
       {tab === "Exchange Observations" && (
-        <div className="space-y-3">
-          <GlassPanel className="p-5 !bg-slate-900/[0.03] border-slate-300/70">
-            <div className="flex flex-wrap items-center gap-2 mb-1">
-              <h3 className="text-sm font-semibold text-slate-800">Exchange Observation Simulator</h3>
-              <Badge tone="blue">NSE Emerge / BSE SME lens</Badge>
-            </div>
-            <p className="text-xs text-slate-500 max-w-3xl">
-              The clarifications an exchange reviewer is most likely to raise on your draft, predicted from your own
-              gaps, RPT flags, financial inconsistencies and framework breaches — each with why it gets asked and the
-              disclosure that pre-empts it. On NSE Emerge and BSE SME the <em>exchange</em> reviews the offer document,
-              so answering these before filing is dramatically cheaper than a post-filing query round.
-            </p>
-            <div className="flex flex-wrap gap-2 mt-3 text-[11px] text-slate-500">
-              <span>Predicted observations: <b className="text-slate-700">{observations.length}</b></span>
-              <span>· Very likely: <b className="text-red-700">{observations.filter((o) => o.severity === "Critical").length}</b></span>
-              <span>· Likely: <b className="text-amber-700">{observations.filter((o) => o.severity === "High").length}</b></span>
-            </div>
-          </GlassPanel>
-          {observations.length === 0 && <GlassPanel className="p-8 text-center text-sm text-slate-400">No observations derived yet — upload more documents and re-run.</GlassPanel>}
-          {observations.map((o, i) => (
-            <GlassPanel key={o.id} className="p-5">
-              <div className="flex flex-wrap items-center gap-2 mb-2">
-                <span className="w-6 h-6 rounded-full bg-slate-800 text-white text-xs flex items-center justify-center font-semibold shrink-0">{i + 1}</span>
-                <h3 className="text-sm font-semibold text-slate-800">{o.observation}</h3>
-                <span className={`inline-block px-2 py-0.5 text-[11px] font-medium rounded-full border ${likelihood[o.severity]?.cls}`}>{likelihood[o.severity]?.label}</span>
-                <span className="text-xs text-slate-400">· {o.affectedSection}</span>
-              </div>
-              <div className="grid md:grid-cols-3 gap-3 text-[13px]">
-                <div className="bg-slate-50 rounded-lg px-3 py-2"><div className="text-xs font-medium text-slate-500 mb-0.5">Why it may be asked</div>{o.whyItMayBeAsked}</div>
-                <div className="bg-blue-50 rounded-lg px-3 py-2"><div className="text-xs font-medium text-blue-700 mb-0.5">Suggested response</div>{o.suggestedResponse}</div>
-                <div className="bg-amber-50 rounded-lg px-3 py-2"><div className="text-xs font-medium text-amber-700 mb-0.5">Required evidence</div>{o.requiredEvidence}</div>
+        <div className="space-y-5">
+          <section className="grid gap-4 xl:grid-cols-[1.3fr_1fr]">
+            <GlassPanel className="relative overflow-hidden !border-blue-400/40 !bg-gradient-to-br !from-[#102b4d] !via-[#174376] !to-blue-700 p-5 text-white md:p-6">
+              <div className="pointer-events-none absolute -right-10 -top-16 h-52 w-52 rounded-full bg-cyan-300/15 blur-3xl" />
+              <div className="pointer-events-none absolute -bottom-20 left-1/3 h-44 w-44 rounded-full bg-violet-300/15 blur-3xl" />
+              <div className="relative">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-200"><FileSearch size={14} /> Pre-filing query room</span>
+                  <span className="rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-[10px] font-semibold text-blue-50">NSE Emerge / BSE SME lens</span>
+                </div>
+                <h2 className="mt-4 max-w-xl text-2xl font-semibold leading-tight">See your draft through an exchange reviewer&apos;s eyes</h2>
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-blue-100">
+                  SIIM converts your gaps, RPT signals, financial inconsistencies and framework breaches into the clarifications most likely to be raised—then prepares the response and evidence trail before filing.
+                </p>
+                <div className="mt-5 flex flex-wrap items-center gap-2 text-[11px]">
+                  <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/10 px-2.5 py-1.5 text-blue-50"><ShieldCheck size={13} /> Evidence-linked</span>
+                  <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/10 px-2.5 py-1.5 text-blue-50"><Sparkles size={13} /> Pre-emptive disclosure guidance</span>
+                  <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/10 px-2.5 py-1.5 text-blue-50"><RefreshCw size={13} /> Recomputed from live analysis</span>
+                </div>
               </div>
             </GlassPanel>
-          ))}
+
+            <GlassPanel className="overflow-hidden p-5 md:p-6">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Predicted observations</p>
+                  <div className="mt-1 flex items-baseline gap-2"><span className="text-4xl font-bold text-[#15345b]">{observations.length}</span><span className="text-xs text-slate-500">queries to pre-empt</span></div>
+                </div>
+                <span className={`grid h-11 w-11 place-items-center rounded-2xl ${observations.some((observation) => observation.severity === "Critical") ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700"}`}><AlertTriangle size={20} /></span>
+              </div>
+              <p className="mt-3 text-xs leading-5 text-slate-600">
+                {observations.some((observation) => observation.severity === "Critical")
+                  ? "Immediate response preparation is recommended for the highest-likelihood queries."
+                  : "No very-likely query is currently predicted from the available evidence."}
+              </p>
+              <div className="mt-5 h-2 overflow-hidden rounded-full bg-slate-100">
+                {observations.length > 0 && (
+                  <div className="flex h-full w-full">
+                    <span className="bg-red-500" style={{ width: `${(observations.filter((o) => o.severity === "Critical").length / observations.length) * 100}%` }} />
+                    <span className="bg-amber-500" style={{ width: `${(observations.filter((o) => o.severity === "High").length / observations.length) * 100}%` }} />
+                    <span className="bg-blue-500" style={{ width: `${(observations.filter((o) => o.severity === "Medium").length / observations.length) * 100}%` }} />
+                    <span className="bg-slate-400" style={{ width: `${(observations.filter((o) => o.severity === "Low").length / observations.length) * 100}%` }} />
+                  </div>
+                )}
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <ObservationMetric label="Very likely" value={observations.filter((o) => o.severity === "Critical").length} tone="red" />
+                <ObservationMetric label="Likely" value={observations.filter((o) => o.severity === "High").length} tone="amber" />
+                <ObservationMetric label="Possible" value={observations.filter((o) => o.severity === "Medium").length} tone="blue" />
+                <ObservationMetric label="Low likelihood" value={observations.filter((o) => o.severity === "Low").length} tone="slate" />
+              </div>
+            </GlassPanel>
+          </section>
+
+          {observations.length === 0 ? (
+            <GlassPanel className="px-6 py-12 text-center">
+              <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-emerald-50 text-emerald-600"><CheckCircle2 size={22} /></span>
+              <h3 className="mt-3 text-sm font-semibold text-slate-800">No predicted observations yet</h3>
+              <p className="mx-auto mt-1 max-w-md text-xs leading-5 text-slate-500">Upload additional documents and re-run IPO Intelligence to test the draft against a broader evidence set.</p>
+            </GlassPanel>
+          ) : (
+            <>
+              <GlassPanel className="flex flex-col gap-3 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-[#15345b]">Reviewer observation queue</h3>
+                  <p className="mt-0.5 text-xs text-slate-500">Highest-likelihood questions appear first. Filter the queue to prepare response packs by priority.</p>
+                </div>
+                <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Observation likelihood filters">
+                  <ObservationFilter active={observationView === "all"} label="All" count={observations.length} onClick={() => setObservationView("all")} />
+                  <ObservationFilter active={observationView === "Critical"} label="Very likely" count={observations.filter((o) => o.severity === "Critical").length} onClick={() => setObservationView("Critical")} />
+                  <ObservationFilter active={observationView === "High"} label="Likely" count={observations.filter((o) => o.severity === "High").length} onClick={() => setObservationView("High")} />
+                  <ObservationFilter active={observationView === "Medium"} label="Possible" count={observations.filter((o) => o.severity === "Medium").length} onClick={() => setObservationView("Medium")} />
+                  <ObservationFilter active={observationView === "Low"} label="Low" count={observations.filter((o) => o.severity === "Low").length} onClick={() => setObservationView("Low")} />
+                </div>
+              </GlassPanel>
+
+              {visibleObservations.length === 0 ? (
+                <GlassPanel className="p-8 text-center text-sm text-slate-500">No observations in this likelihood band.</GlassPanel>
+              ) : (
+                <div className="space-y-3">
+                  {visibleObservations.map((observation, index) => (
+                    <ObservationCard key={observation.id} observation={observation} rank={index + 1} />
+                  ))}
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
 
-      {/* rule detail table lives under Overview for completeness */}
       {tab === "Overview" && (
-        <details className="mt-5">
-          <summary className="text-xs text-slate-500 cursor-pointer hover:text-slate-700">Show rule-by-rule readiness results ({analysis.checks.length} rules)</summary>
-          <GlassPanel className="mt-3 overflow-hidden">
-            <table className="w-full text-[13px]">
-              <tbody>
-                {analysis.checks.map((c) => (
-                  <tr key={c.id} className="border-t border-slate-100 align-top">
-                    <td className="px-4 py-2 w-40 text-xs text-slate-400">{c.category}</td>
-                    <td className="px-2 py-2 w-56 font-medium text-slate-700">{c.ruleName}</td>
-                    <td className="px-2 py-2 w-24"><CheckStatusBadge status={c.status} /></td>
-                    <td className="px-2 py-2 text-slate-600">{c.explanation}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </GlassPanel>
-        </details>
+        <RuleAudit
+          checks={analysis.checks}
+          open={rulesOpen}
+          onToggle={() => setRulesOpen((current) => !current)}
+          view={ruleView}
+          onView={setRuleView}
+          search={ruleSearch}
+          onSearch={setRuleSearch}
+        />
       )}
 
-      {/* progress hint */}
-      <div className="mt-6 text-right">
-        <a href="/draft" className="text-sm text-blue-600 hover:underline">Next: Generate the Draft Offer Document →</a>
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/60 bg-white/50 px-4 py-3 backdrop-blur-sm">
+        <div className="min-w-[220px] flex-1">
+          <div className="mb-1.5 flex items-center justify-between text-[11px] text-slate-600"><span>Draft evidence coverage</span><span className="font-bold text-blue-700">{avgCoverage}%</span></div>
+          <ProgressBar value={avgCoverage} tone="blue" />
+        </div>
+        <Link href="/draft" prefetch className="inline-flex items-center gap-2 rounded-xl bg-[#15345b] px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-900">Continue to Draft Offer Document <ArrowRight size={14} /></Link>
       </div>
-      <div className="mt-2"><ProgressBar value={avgCoverage} tone="blue" /></div>
     </div>
     </HeroBackdrop>
+  );
+}
+
+function RuleOutcome({ label, value, tone }: { label: string; value: number; tone: "green" | "amber" | "red" | "slate" }) {
+  const styles = {
+    green: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    amber: "border-amber-200 bg-amber-50 text-amber-700",
+    red: "border-red-200 bg-red-50 text-red-700",
+    slate: "border-slate-200 bg-slate-50 text-slate-600",
+  }[tone];
+  return (
+    <div className={`rounded-xl border px-3 py-2 ${styles}`}>
+      <div className="text-lg font-bold leading-none">{value}</div>
+      <div className="mt-1 text-[10px] font-semibold uppercase tracking-wide">{label}</div>
+    </div>
+  );
+}
+
+function ObservationMetric({ label, value, tone }: { label: string; value: number; tone: "red" | "amber" | "blue" | "slate" }) {
+  const styles = {
+    red: "border-red-200 bg-red-50 text-red-700",
+    amber: "border-amber-200 bg-amber-50 text-amber-700",
+    blue: "border-blue-200 bg-blue-50 text-blue-700",
+    slate: "border-slate-200 bg-slate-50 text-slate-600",
+  }[tone];
+  return (
+    <div className={`flex items-center justify-between rounded-xl border px-3 py-2 ${styles}`}>
+      <span className="text-[10px] font-semibold">{label}</span>
+      <span className="text-base font-bold">{value}</span>
+    </div>
+  );
+}
+
+function ObservationFilter({ active, label, count, onClick }: { active: boolean; label: string; count: number; onClick: () => void }) {
+  return (
+    <button type="button" role="tab" aria-selected={active} onClick={onClick} className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[10px] font-semibold transition ${active ? "border-[#15345b] bg-[#15345b] text-white shadow-sm" : "border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:text-blue-700"}`}>
+      {label}<span className={`rounded px-1 py-0.5 text-[9px] ${active ? "bg-white/15" : "bg-slate-100"}`}>{count}</span>
+    </button>
+  );
+}
+
+function ObservationCard({
+  observation,
+  rank,
+}: {
+  observation: AnalysisResult["observations"][number];
+  rank: number;
+}) {
+  const severityStyle = {
+    Critical: { border: "!border-red-200", accent: "bg-red-500", rank: "bg-red-600", wash: "bg-red-50 text-red-700" },
+    High: { border: "!border-amber-200", accent: "bg-amber-500", rank: "bg-amber-500", wash: "bg-amber-50 text-amber-700" },
+    Medium: { border: "!border-blue-200", accent: "bg-blue-500", rank: "bg-blue-600", wash: "bg-blue-50 text-blue-700" },
+    Low: { border: "!border-slate-200", accent: "bg-slate-400", rank: "bg-slate-600", wash: "bg-slate-100 text-slate-600" },
+  }[observation.severity];
+
+  return (
+    <GlassPanel className={`relative overflow-hidden ${severityStyle.border}`}>
+      <span className={`absolute inset-y-0 left-0 w-1 ${severityStyle.accent}`} />
+      <div className="border-b border-slate-100 bg-white/60 px-5 py-4 md:px-6">
+        <div className="flex items-start gap-3">
+          <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl text-xs font-bold text-white shadow-sm ${severityStyle.rank}`}>{rank}</span>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={`inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-bold ${severityStyle.wash}`}><AlertTriangle size={11} /> {likelihood[observation.severity]?.label}</span>
+              <span className="rounded-lg bg-slate-100 px-2 py-1 text-[10px] font-semibold text-slate-500">{observation.affectedSection}</span>
+            </div>
+            <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">Simulated reviewer observation</p>
+            <h3 className="mt-1 text-base font-semibold leading-6 text-[#15345b]">{observation.observation}</h3>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-3 bg-slate-50/55 p-4 lg:grid-cols-3 md:p-5">
+        <ObservationStep
+          number="01"
+          icon={AlertTriangle}
+          label="Review trigger"
+          title="Why this may be asked"
+          body={observation.whyItMayBeAsked}
+          tone="slate"
+        />
+        <ObservationStep
+          number="02"
+          icon={Sparkles}
+          label="Pre-emptive disclosure"
+          title="Suggested response"
+          body={observation.suggestedResponse}
+          tone="blue"
+        />
+        <ObservationStep
+          number="03"
+          icon={FileSearch}
+          label="Response pack"
+          title="Required evidence"
+          body={observation.requiredEvidence}
+          tone="amber"
+        />
+      </div>
+    </GlassPanel>
+  );
+}
+
+function ObservationStep({
+  number,
+  icon: Icon,
+  label,
+  title,
+  body,
+  tone,
+}: {
+  number: string;
+  icon: typeof FileSearch;
+  label: string;
+  title: string;
+  body: string;
+  tone: "slate" | "blue" | "amber";
+}) {
+  const styles = {
+    slate: { card: "border-slate-200 bg-white", icon: "bg-slate-100 text-slate-600", label: "text-slate-500" },
+    blue: { card: "border-blue-200 bg-blue-50/70", icon: "bg-blue-100 text-blue-700", label: "text-blue-600" },
+    amber: { card: "border-amber-200 bg-amber-50/70", icon: "bg-amber-100 text-amber-700", label: "text-amber-600" },
+  }[tone];
+  return (
+    <div className={`relative rounded-xl border p-4 ${styles.card}`}>
+      <span className="absolute right-3 top-2 text-2xl font-bold text-slate-200/70">{number}</span>
+      <span className={`grid h-8 w-8 place-items-center rounded-lg ${styles.icon}`}><Icon size={15} /></span>
+      <p className={`mt-3 text-[9px] font-bold uppercase tracking-[0.14em] ${styles.label}`}>{label}</p>
+      <h4 className="mt-1 text-xs font-semibold text-slate-800">{title}</h4>
+      <p className="mt-1.5 text-xs leading-5 text-slate-600">{body}</p>
+    </div>
+  );
+}
+
+function IntelligenceMetric({
+  icon: Icon,
+  label,
+  value,
+  note,
+  tone,
+}: {
+  icon: typeof FileSearch;
+  label: string;
+  value: string | number;
+  note: string;
+  tone: "blue" | "green" | "amber" | "red";
+}) {
+  const styles = {
+    blue: { panel: "!border-blue-200 !bg-gradient-to-br !from-blue-50 !to-white", icon: "bg-blue-100 text-blue-700" },
+    green: { panel: "!border-emerald-200 !bg-gradient-to-br !from-emerald-50 !to-white", icon: "bg-emerald-100 text-emerald-700" },
+    amber: { panel: "!border-amber-200 !bg-gradient-to-br !from-amber-50 !to-white", icon: "bg-amber-100 text-amber-700" },
+    red: { panel: "!border-red-200 !bg-gradient-to-br !from-red-50 !to-white", icon: "bg-red-100 text-red-700" },
+  }[tone];
+  return (
+    <GlassPanel className={`p-4 ${styles.panel}`}>
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">{label}</p>
+          <p className="mt-1 text-2xl font-bold text-[#15345b]">{value}</p>
+        </div>
+        <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${styles.icon}`}><Icon size={16} /></span>
+      </div>
+      <p className="mt-2 truncate text-[11px] text-slate-500" title={note}>{note}</p>
+    </GlassPanel>
+  );
+}
+
+function SignalStrip({
+  icon: Icon,
+  label,
+  value,
+  note,
+  tone,
+  onClick,
+}: {
+  icon: typeof FileSearch;
+  label: string;
+  value: string | number;
+  note: string;
+  tone: "green" | "amber" | "red";
+  onClick: () => void;
+}) {
+  const styles = {
+    green: "bg-emerald-50 text-emerald-700",
+    amber: "bg-amber-50 text-amber-700",
+    red: "bg-red-50 text-red-700",
+  }[tone];
+  return (
+    <button type="button" onClick={onClick} className="group flex items-center gap-3 px-4 py-4 text-left transition hover:bg-blue-50/60">
+      <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${styles}`}><Icon size={18} /></span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">{label}</span>
+        <span className="mt-0.5 block text-lg font-bold text-[#15345b]">{value}</span>
+        <span className="block truncate text-[11px] text-slate-500">{note}</span>
+      </span>
+      <ChevronRight size={15} className="text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-blue-600" />
+    </button>
+  );
+}
+
+function HeatLegend({
+  label,
+  count,
+  tone,
+  active,
+  onClick,
+}: {
+  label: string;
+  count: number;
+  tone: "blue" | "green" | "amber" | "red" | "slate";
+  active: boolean;
+  onClick: () => void;
+}) {
+  const styles = {
+    blue: "border-blue-200 bg-blue-50 text-blue-700",
+    green: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    amber: "border-amber-200 bg-amber-50 text-amber-700",
+    red: "border-red-200 bg-red-50 text-red-700",
+    slate: "border-slate-200 bg-slate-100 text-slate-600",
+  }[tone];
+  const activeRing = {
+    blue: "ring-blue-400",
+    green: "ring-emerald-400",
+    amber: "ring-amber-400",
+    red: "ring-red-400",
+    slate: "ring-slate-400",
+  }[tone];
+  return (
+    <button type="button" aria-pressed={active} onClick={onClick} className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1.5 text-[9px] font-semibold transition hover:-translate-y-0.5 hover:shadow-sm ${styles} ${active ? `ring-2 ring-offset-1 ${activeRing}` : ""}`}>
+      <b>{count}</b> {label}
+    </button>
+  );
+}
+
+function HeatmapSectionCard({ row, selected, onClick }: { row: CoverageRow; selected: boolean; onClick: () => void }) {
+  const accent = {
+    Ready: "bg-emerald-500",
+    "Needs Clarification": "bg-amber-500",
+    "Critical Issue": "bg-red-500",
+    "Missing Data": "bg-slate-400",
+  }[row.riskLevel];
+  const label = {
+    Ready: "Ready",
+    "Needs Clarification": "Clarify",
+    "Critical Issue": "Critical",
+    "Missing Data": "Missing",
+  }[row.riskLevel];
+  const selectedRing = {
+    Ready: "ring-2 ring-emerald-400",
+    "Needs Clarification": "ring-2 ring-amber-400",
+    "Critical Issue": "ring-2 ring-red-400",
+    "Missing Data": "ring-2 ring-slate-400",
+  }[row.riskLevel];
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={selected}
+      className={`group relative w-full overflow-hidden rounded-xl border bg-white p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${riskTone[row.riskLevel]} ${selected ? selectedRing : ""}`}
+      title={`${row.sectionName} — ${row.completionPct}%\n${riskExplain[row.riskLevel]}`}
+    >
+      <span className={`absolute inset-y-0 left-0 w-1 ${accent}`} />
+      <div className="flex items-start justify-between gap-2 pl-1">
+        <div className="min-w-0">
+          <h5 className="truncate text-xs font-semibold text-slate-800" title={row.sectionName}>{row.sectionName}</h5>
+          <p className="mt-0.5 text-[10px] text-slate-500">{row.sourceDocs.length} source{row.sourceDocs.length === 1 ? "" : "s"} · {row.avgConfidence}% confidence</p>
+        </div>
+        <span className="shrink-0 text-sm font-bold text-[#15345b]">{row.completionPct}%</span>
+      </div>
+      <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-white/80">
+        <div className={`h-full rounded-full ${accent}`} style={{ width: `${row.completionPct}%` }} />
+      </div>
+      <div className="mt-2 flex items-center justify-between gap-2 pl-1 text-[9px]">
+        <span className="font-semibold text-slate-600">{label}</span>
+        <span className="truncate text-slate-500">{row.missingFacts.length > 0 ? `${row.missingFacts.length} input${row.missingFacts.length === 1 ? "" : "s"} missing` : "Click to inspect"}</span>
+      </div>
+    </button>
+  );
+}
+
+function HeatmapDetail({ row, onClose }: { row: CoverageRow; onClose: () => void }) {
+  const theme = {
+    Ready: {
+      shell: "border-emerald-200 bg-gradient-to-r from-emerald-50 to-white",
+      icon: "bg-emerald-100 text-emerald-700",
+      text: "text-emerald-800",
+      chip: "border-emerald-200 bg-emerald-100 text-emerald-800",
+      label: "Evidence points supporting this ready rating",
+    },
+    "Needs Clarification": {
+      shell: "border-amber-200 bg-gradient-to-r from-amber-50 to-white",
+      icon: "bg-amber-100 text-amber-700",
+      text: "text-amber-800",
+      chip: "border-amber-200 bg-amber-100 text-amber-800",
+      label: "Points requiring clarification",
+    },
+    "Critical Issue": {
+      shell: "border-red-200 bg-gradient-to-r from-red-50 to-white",
+      icon: "bg-red-100 text-red-700",
+      text: "text-red-800",
+      chip: "border-red-200 bg-red-100 text-red-800",
+      label: "Critical points blocking this section",
+    },
+    "Missing Data": {
+      shell: "border-slate-300 bg-gradient-to-r from-slate-100 to-white",
+      icon: "bg-slate-200 text-slate-700",
+      text: "text-slate-700",
+      chip: "border-slate-300 bg-slate-200 text-slate-700",
+      label: "Inputs still missing for this section",
+    },
+  }[row.riskLevel];
+  const points = row.riskLevel === "Ready" ? row.availableFacts : row.missingFacts;
+
+  return (
+    <div className={`border-b px-4 py-4 md:px-5 ${theme.shell}`}>
+      <div className="flex items-start gap-3">
+        <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${theme.icon}`}>
+          {row.riskLevel === "Ready" ? <CheckCircle2 size={19} /> : row.riskLevel === "Critical Issue" ? <XCircle size={19} /> : <AlertTriangle size={19} />}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h4 className="text-sm font-semibold text-slate-800">{row.sectionName}</h4>
+            <span className={`rounded-lg px-2 py-1 text-[10px] font-bold ${theme.icon}`}>{row.riskLevel} · {row.completionPct}%</span>
+          </div>
+          <p className="mt-1 text-xs leading-5 text-slate-600">{riskExplain[row.riskLevel]}</p>
+          <p className={`mt-3 text-[10px] font-bold uppercase tracking-[0.12em] ${theme.text}`}>{theme.label}</p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {points.length > 0 ? points.map((point) => (
+              <span key={point} className={`rounded-lg border px-2 py-1 text-[10px] font-semibold ${theme.chip}`}>{prettyLabel(point)}</span>
+            )) : (
+              <span className="text-[11px] text-slate-500">No individual input keys were recorded for this section.</span>
+            )}
+          </div>
+          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-slate-500">
+            <span><b className="text-slate-700">{row.availableFacts.length}</b> sourced facts</span>
+            <span><b className="text-slate-700">{row.missingFacts.length}</b> missing inputs</span>
+            <span><b className="text-slate-700">{row.avgConfidence}%</b> average confidence</span>
+            <span><b className="text-slate-700">{row.canGenerate}</b> draft generation</span>
+          </div>
+        </div>
+        <button type="button" onClick={onClose} title="Close section details" className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white/70 text-slate-400 transition hover:bg-white hover:text-slate-700"><XCircle size={16} /></button>
+      </div>
+    </div>
+  );
+}
+
+function RuleAudit({
+  checks,
+  open,
+  onToggle,
+  view,
+  onView,
+  search,
+  onSearch,
+}: {
+  checks: ReadinessCheck[];
+  open: boolean;
+  onToggle: () => void;
+  view: RuleView;
+  onView: (view: RuleView) => void;
+  search: string;
+  onSearch: (value: string) => void;
+}) {
+  const counts = {
+    pass: checks.filter((check) => check.status === "pass").length,
+    warning: checks.filter((check) => check.status === "warning").length,
+    fail: checks.filter((check) => check.status === "fail").length,
+    missing: checks.filter((check) => check.status === "missing").length,
+  };
+  const attention = counts.warning + counts.fail + counts.missing;
+  const query = search.trim().toLowerCase();
+  const filtered = checks
+    .filter((check) => view === "all" || (view === "attention" ? check.status !== "pass" : check.status === view))
+    .filter((check) => !query || [check.category, check.ruleName, check.explanation, check.suggestedFix].some((value) => value.toLowerCase().includes(query)))
+    .sort((left, right) => {
+      const priority: Record<CheckStatus, number> = { fail: 0, missing: 1, warning: 2, pass: 3 };
+      return priority[left.status] - priority[right.status];
+    });
+  const groups = Array.from(filtered.reduce((map, check) => {
+    const group = map.get(check.category) ?? [];
+    group.push(check);
+    map.set(check.category, group);
+    return map;
+  }, new Map<ReadinessCheck["category"], ReadinessCheck[]>()));
+
+  return (
+    <GlassPanel className="mt-5 overflow-hidden">
+      <div className="flex flex-col gap-4 px-5 py-4 lg:flex-row lg:items-center">
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[#174376] to-blue-600 text-white shadow-md shadow-blue-900/20"><ShieldCheck size={20} /></span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2"><h3 className="text-sm font-semibold text-[#15345b]">Rule-by-rule readiness audit</h3><Badge tone="blue">{checks.length} deterministic checks</Badge></div>
+          <p className="mt-1 text-xs text-slate-500">Inspect the exact rule, outcome, evidence-based explanation and recommended remediation.</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <AuditTotal label="Pass" value={counts.pass} tone="green" />
+          <AuditTotal label="Warn" value={counts.warning} tone="amber" />
+          <AuditTotal label="Fail" value={counts.fail} tone="red" />
+          <AuditTotal label="Missing" value={counts.missing} tone="slate" />
+        </div>
+        <button type="button" onClick={onToggle} className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-3 text-xs font-semibold text-blue-700 hover:bg-blue-100">
+          {open ? "Hide audit" : `Review ${attention} exceptions`} {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+        </button>
+      </div>
+
+      {open && (
+        <div className="border-t border-slate-100 bg-slate-50/65">
+          <div className="flex flex-col gap-3 border-b border-slate-200/70 bg-white/60 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Rule result filters">
+              <RuleFilter active={view === "attention"} label="Needs attention" count={attention} onClick={() => onView("attention")} />
+              <RuleFilter active={view === "fail"} label="Failed" count={counts.fail} onClick={() => onView("fail")} />
+              <RuleFilter active={view === "missing"} label="Missing" count={counts.missing} onClick={() => onView("missing")} />
+              <RuleFilter active={view === "warning"} label="Warnings" count={counts.warning} onClick={() => onView("warning")} />
+              <RuleFilter active={view === "pass"} label="Passed" count={counts.pass} onClick={() => onView("pass")} />
+              <RuleFilter active={view === "all"} label="All rules" count={checks.length} onClick={() => onView("all")} />
+            </div>
+            <div className="relative min-w-[220px] lg:w-72">
+              <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input value={search} onChange={(event) => onSearch(event.target.value)} placeholder="Search rule or explanation" className="h-9 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-xs text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
+            </div>
+          </div>
+
+          <div className="max-h-[620px] space-y-4 overflow-y-auto p-4">
+            {groups.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-slate-300 bg-white px-5 py-10 text-center"><Search size={20} className="mx-auto text-slate-400" /><p className="mt-2 text-sm font-semibold text-slate-700">No matching rules</p><p className="mt-1 text-xs text-slate-500">Change the status filter or search term.</p></div>
+            ) : groups.map(([category, categoryChecks]) => (
+              <section key={category}>
+                <div className="mb-2 flex items-center justify-between gap-3 px-1"><h4 className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">{category}</h4><span className="text-[10px] text-slate-400">{categoryChecks.length} result{categoryChecks.length === 1 ? "" : "s"}</span></div>
+                <div className="space-y-2">
+                  {categoryChecks.map((check) => <RuleResultCard key={check.id} check={check} />)}
+                </div>
+              </section>
+            ))}
+          </div>
+        </div>
+      )}
+    </GlassPanel>
+  );
+}
+
+function AuditTotal({ label, value, tone }: { label: string; value: number; tone: "green" | "amber" | "red" | "slate" }) {
+  const style = {
+    green: "bg-emerald-50 text-emerald-700",
+    amber: "bg-amber-50 text-amber-700",
+    red: "bg-red-50 text-red-700",
+    slate: "bg-slate-100 text-slate-600",
+  }[tone];
+  return <span className={`rounded-lg px-2 py-1 text-[10px] font-semibold ${style}`}><b>{value}</b> {label}</span>;
+}
+
+function RuleFilter({ active, label, count, onClick }: { active: boolean; label: string; count: number; onClick: () => void }) {
+  return (
+    <button type="button" role="tab" aria-selected={active} onClick={onClick} className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[10px] font-semibold transition ${active ? "border-[#15345b] bg-[#15345b] text-white" : "border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:text-blue-700"}`}>
+      {label}<span className={`rounded px-1 py-0.5 text-[9px] ${active ? "bg-white/15" : "bg-slate-100"}`}>{count}</span>
+    </button>
+  );
+}
+
+function RuleResultCard({ check }: { check: ReadinessCheck }) {
+  const styles: Record<CheckStatus, { accent: string; wash: string; icon: typeof CheckCircle2; label: string }> = {
+    pass: { accent: "bg-emerald-500", wash: "border-emerald-200", icon: CheckCircle2, label: "Pass" },
+    warning: { accent: "bg-amber-500", wash: "border-amber-200", icon: AlertTriangle, label: "Warning" },
+    fail: { accent: "bg-red-500", wash: "border-red-200", icon: XCircle, label: "Fail" },
+    missing: { accent: "bg-slate-400", wash: "border-slate-200", icon: CircleDashed, label: "Missing data" },
+  };
+  const style = styles[check.status];
+  const Icon = style.icon;
+  return (
+    <article className={`relative overflow-hidden rounded-xl border bg-white p-4 shadow-sm ${style.wash}`}>
+      <span className={`absolute inset-y-0 left-0 w-1 ${style.accent}`} />
+      <div className="flex items-start gap-3 pl-1">
+        <span className={`mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg ${check.status === "pass" ? "bg-emerald-50 text-emerald-700" : check.status === "warning" ? "bg-amber-50 text-amber-700" : check.status === "fail" ? "bg-red-50 text-red-700" : "bg-slate-100 text-slate-600"}`}><Icon size={16} /></span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2"><h5 className="text-sm font-semibold text-slate-800">{check.ruleName}</h5><span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[9px] font-semibold text-slate-500">{check.severity}</span></div>
+          <p className="mt-1 text-xs leading-5 text-slate-600">{check.explanation}</p>
+          {check.status !== "pass" && check.suggestedFix && check.suggestedFix !== "—" && (
+            <div className="mt-2 rounded-lg bg-blue-50 px-3 py-2 text-[11px] leading-5 text-blue-800"><span className="font-semibold">Recommended action:</span> {check.suggestedFix}</div>
+          )}
+        </div>
+        <span className={`shrink-0 rounded-lg px-2 py-1 text-[10px] font-bold ${check.status === "pass" ? "bg-emerald-100 text-emerald-700" : check.status === "warning" ? "bg-amber-100 text-amber-700" : check.status === "fail" ? "bg-red-100 text-red-700" : "bg-slate-100 text-slate-600"}`}>{style.label}</span>
+      </div>
+    </article>
   );
 }

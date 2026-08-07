@@ -7,6 +7,7 @@ import {
   Building2, FileSearch, BrainCircuit, FileText, UserCheck, Bot,
   UserRound, HelpCircle, Settings, LogOut, LayoutDashboard, Flag,
 } from "lucide-react";
+import LearnAboutSiimModal from "@/components/shared/LearnAboutSiimModal";
 
 // Promoter flow: setup (with upload) → evidence → intelligence → draft (+ assistant).
 // The merchant banker review moved to the banker's own workspace (/banker/*).
@@ -86,16 +87,21 @@ export default function Sidebar({ role = "PROMOTER" }: { role?: "PROMOTER" | "ME
   const isBanker = role === "MERCHANT_BANKER";
   const nav = isBanker ? bankerNav : promoterNav;
   const [who, setWho] = useState({ name: "SIIM User", role: "SME Promoter" });
+  const [learnOpen, setLearnOpen] = useState(false);
+  const [learnLang, setLearnLang] = useState<"en" | "hi">("en");
 
   useEffect(() => {
-    try {
-      setWho({
-        name: localStorage.getItem("siim.userName") || "SIIM User",
-        role: localStorage.getItem("siim.roleLabel") || (isBanker ? "Merchant Banker" : "SME Promoter"),
-      });
-    } catch {
-      /* localStorage unavailable — keep defaults */
-    }
+    const timer = window.setTimeout(() => {
+      try {
+        setWho({
+          name: localStorage.getItem("siim.userName") || "SIIM User",
+          role: localStorage.getItem("siim.roleLabel") || (isBanker ? "Merchant Banker" : "SME Promoter"),
+        });
+      } catch {
+        /* localStorage unavailable — keep defaults */
+      }
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [isBanker]);
 
   const logout = async () => {
@@ -107,6 +113,11 @@ export default function Sidebar({ role = "PROMOTER" }: { role?: "PROMOTER" | "ME
     // clear the session cookie too — role gating depends on it
     try { await fetch("/api/auth/logout", { method: "POST" }); } catch { /* ignore */ }
     router.push("/");
+  };
+
+  const openLearn = () => {
+    try { setLearnLang(localStorage.getItem("siim.lang") === "hi" ? "hi" : "en"); } catch { /* use English */ }
+    setLearnOpen(true);
   };
 
   return (
@@ -171,9 +182,9 @@ export default function Sidebar({ role = "PROMOTER" }: { role?: "PROMOTER" | "ME
 
       {/* utilities */}
       <div className="border-t border-white/10 bg-black/10 px-3 py-2.5 space-y-0.5">
-        <Link href="/" className="flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[12px] text-sky-100/75 hover:bg-white/10 hover:text-white">
+        <button type="button" onClick={openLearn} className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left text-[12px] text-sky-100/75 transition hover:bg-white/10 hover:text-white">
           <HelpCircle size={14} className="text-sky-300" /> Learn about SIIM
-        </Link>
+        </button>
         <Link href="/settings" className="flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[12px] text-sky-100/75 hover:bg-white/10 hover:text-white">
           <Settings size={14} className="text-sky-300/60" /> Settings
         </Link>
@@ -181,6 +192,7 @@ export default function Sidebar({ role = "PROMOTER" }: { role?: "PROMOTER" | "ME
           <LogOut size={14} className="text-red-300/80" /> Log out
         </button>
       </div>
+      <LearnAboutSiimModal open={learnOpen} onClose={() => setLearnOpen(false)} lang={learnLang} />
     </aside>
   );
 }

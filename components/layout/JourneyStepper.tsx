@@ -18,7 +18,7 @@ export default function JourneyStepper({ steps }: { steps: JourneyState[] }) {
     <div className="bg-[#f6f9fc] border-b border-slate-200 px-6 py-2 no-print overflow-x-auto">
       <div className="flex items-center gap-1 max-w-[1400px] mx-auto min-w-[720px]">
         {steps.map((s, i) => (
-          <div key={s.href} className="flex items-center flex-1 min-w-0">
+          <div key={`${s.href}-${i}`} className="flex items-center flex-1 min-w-0">
             <Link href={s.href} className="group flex items-center gap-1.5 min-w-0">
               <span className={`w-4.5 h-4.5 w-[18px] h-[18px] rounded-full flex items-center justify-center text-[9px] font-bold shrink-0 transition-colors ${
                 s.done

@@ -223,12 +223,50 @@ export function getActiveCompany(db: Db): Company | null {
 }
 
 /**
+ * The reserved testing account. It must ALWAYS start empty and is wiped on every
+ * login (see the login route), so it strictly sees only its own companies —
+ * never ownerless/sample data — and never accumulates state across sessions.
+ */
+export const DEMO_PROMOTER_EMAIL = "promoter@siim.demo";
+export const isDemoPromoter = (email: string) => email.trim().toLowerCase() === DEMO_PROMOTER_EMAIL;
+
+/**
  * Companies owned by a promoter account. Companies created before ownership
- * existed (no ownerEmail) stay visible to every promoter until backfilled.
+ * existed (no ownerEmail) stay visible to every promoter until backfilled —
+ * EXCEPT for the demo testing account, which is scoped strictly to its own
+ * companies so seeded/ownerless data never leaks into a clean test session.
  */
 export function promoterCompanies(db: Db, ownerEmail: string): Company[] {
   const email = ownerEmail.trim().toLowerCase();
+  if (isDemoPromoter(email)) {
+    return db.companies.filter((c) => c.ownerEmail?.toLowerCase() === email);
+  }
   return db.companies.filter((c) => !c.ownerEmail || c.ownerEmail.toLowerCase() === email);
+}
+
+/**
+ * Delete a set of companies and everything attached to them (documents, chunks,
+ * facts, conflicts, draft sections, banker flags, objects, analysis, audit log
+ * and export ledger). Clears the active company if it was among them. Caller
+ * must saveDb(). Shared by the reset route and the demo login wipe.
+ */
+export function purgeCompanyIds(db: Db, ids: Set<string>): number {
+  if (!ids.size) return 0;
+  db.companies = db.companies.filter((c) => !ids.has(c.id));
+  db.documents = db.documents.filter((d) => !ids.has(d.companyId));
+  db.chunks = db.chunks.filter((c) => !ids.has(c.companyId));
+  db.facts = db.facts.filter((f) => !ids.has(f.companyId));
+  db.conflicts = db.conflicts.filter((c) => !ids.has(c.companyId));
+  db.draftSections = db.draftSections.filter((s) => !ids.has(s.companyId));
+  db.flags = db.flags.filter((f) => !ids.has(f.companyId));
+  db.auditLog = db.auditLog.filter((a) => !ids.has(a.companyId));
+  db.exportLedger = db.exportLedger.filter((e) => !ids.has(e.companyId));
+  for (const id of ids) {
+    delete db.objectsByCompany[id];
+    delete db.analysis[id];
+  }
+  if (db.activeCompanyId && ids.has(db.activeCompanyId)) db.activeCompanyId = null;
+  return ids.size;
 }
 
 /**

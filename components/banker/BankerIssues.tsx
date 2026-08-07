@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { CoverageRow, FactConflict, FinancialCheck, Gap, RptRisk } from "@/lib/types";
 import { Badge, Card, SeverityBadge } from "@/components/shared/ui";
+import { prettyLabel } from "@/lib/utils/labels";
 import FlagForm from "./FlagForm";
 
 const TABS = ["Missing Data & Gaps", "Inconsistencies", "RPT Risks", "Blocked Sections"] as const;
@@ -87,7 +88,7 @@ export default function BankerIssues({
             <Card key={c.id} className="p-5 border-red-200">
               <div className="flex flex-wrap items-center gap-2 mb-2">
                 <SeverityBadge severity={c.severity} />
-                <h3 className="text-sm font-semibold text-slate-800">Fact conflict: {c.factKey}</h3>
+                <h3 className="text-sm font-semibold text-slate-800">Fact conflict: {prettyLabel(c.factKey)}</h3>
               </div>
               <p className="text-sm text-slate-600">{c.explanation}</p>
               <div className="grid md:grid-cols-2 gap-3 mt-2 text-[13px]">
@@ -95,7 +96,7 @@ export default function BankerIssues({
                 <div className="bg-red-50 rounded-lg px-3 py-2"><span className="text-slate-500">Value B:</span> <span className="font-medium">{c.valueB}</span> <span className="text-slate-400">({c.sourceB})</span></div>
               </div>
               <div className="mt-3">
-                <FlagForm companyId={companyId} targetType="general" targetId={c.id} targetLabel={`Fact conflict: ${c.factKey}`} />
+                <FlagForm companyId={companyId} targetType="general" targetId={c.id} targetLabel={`Fact conflict: ${prettyLabel(c.factKey)}`} />
               </div>
             </Card>
           ))}

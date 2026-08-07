@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { loadDb, promoterCompanies, saveDb } from "@/lib/store";
+import { loadDb, promoterCompanies, purgeCompanyIds, saveDb } from "@/lib/store";
 import { getSessionUser } from "@/lib/auth/session";
 
 /**
@@ -13,21 +13,8 @@ export async function DELETE() {
 
   const db = await loadDb();
   const ids = new Set(promoterCompanies(db, user.email).map((c) => c.id));
-
-  db.companies = db.companies.filter((c) => !ids.has(c.id));
-  db.documents = db.documents.filter((d) => !ids.has(d.companyId));
-  db.chunks = db.chunks.filter((c) => !ids.has(c.companyId));
-  db.facts = db.facts.filter((f) => !ids.has(f.companyId));
-  db.conflicts = db.conflicts.filter((c) => !ids.has(c.companyId));
-  db.draftSections = db.draftSections.filter((s) => !ids.has(s.companyId));
-  db.flags = db.flags.filter((f) => !ids.has(f.companyId));
-  db.auditLog = db.auditLog.filter((a) => !ids.has(a.companyId));
-  for (const id of ids) {
-    delete db.objectsByCompany[id];
-    delete db.analysis[id];
-  }
-  if (db.activeCompanyId && ids.has(db.activeCompanyId)) db.activeCompanyId = null;
+  const removed = purgeCompanyIds(db, ids);
 
   await saveDb(db);
-  return NextResponse.json({ ok: true, removedCompanies: ids.size });
+  return NextResponse.json({ ok: true, removedCompanies: removed });
 }

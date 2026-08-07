@@ -472,11 +472,11 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
         <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] items-end">
           <label className="flex flex-col">
             <span className="text-[12px] font-semibold text-[#1e3a5f]">CIN</span>
-            <input className={inputCls} value={stackCin} onChange={(e) => setStackCin(e.target.value)} placeholder="U29253MP2013PLC031288" />
+            <input className={inputCls} value={stackCin} onChange={(e) => setStackCin(e.target.value)} />
           </label>
           <label className="flex flex-col">
             <span className="text-[12px] font-semibold text-[#1e3a5f]">GSTIN</span>
-            <input className={inputCls} value={stackGstin} onChange={(e) => setStackGstin(e.target.value)} placeholder="23AACVP1234R1Z9" />
+            <input className={inputCls} value={stackGstin} onChange={(e) => setStackGstin(e.target.value)} />
           </label>
           <button type="button" onClick={runIndiaStack} disabled={stackLoading}
             className="h-[42px] px-5 inline-flex items-center justify-center gap-2 rounded-xl bg-[#1e3a5f] text-white text-sm font-semibold hover:bg-[#24466f] disabled:opacity-50">
@@ -513,10 +513,10 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
         <SectionCard icon={Building2} title="1 · Basic details">
           <div className="grid md:grid-cols-2 gap-4">
             <Field label="Company name" help="As per your Certificate of Incorporation">
-              <input className={inputCls + glow("name")} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="e.g. Shakti Precision Components Private Limited" />
+              <input className={inputCls + glow("name")} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
             </Field>
             <Field label="CIN" help="21-character number on your incorporation certificate — we'll verify it against uploads">
-              <input className={inputCls + glow("cin")} value={f.cin} onChange={(e) => setF({ ...f, cin: e.target.value })} placeholder="U12345GJ2014PTC012345" />
+              <input className={inputCls + glow("cin")} value={f.cin} onChange={(e) => setF({ ...f, cin: e.target.value })} />
             </Field>
             <Field label="Industry / what the business does" help="In your own words — e.g. 'auto components manufacturing'">
               <input className={inputCls + glow("industry")} value={f.industry} onChange={(e) => setF({ ...f, industry: e.target.value })} />
@@ -599,10 +599,10 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
             {triState(f.auditCommitteeConstituted, (v) => setF({ ...f, auditCommitteeConstituted: v }))}
           </Field>
           <Field label="Top 3 customers — % of revenue" help="Above 40% is a disclosure-worthy concentration; better to surface it now">
-            <input className={inputCls + glow("top3CustomerPct")} type="number" value={f.top3CustomerPct} onChange={(e) => setF({ ...f, top3CustomerPct: e.target.value })} placeholder="e.g. 48" />
+            <input className={inputCls + glow("top3CustomerPct")} type="number" value={f.top3CustomerPct} onChange={(e) => setF({ ...f, top3CustomerPct: e.target.value })} />
           </Field>
           <Field label="Any pending cases, notices or demands you know of?" help="Tax notices count too. Declaring them early avoids the most damaging kind of inconsistency later.">
-            <textarea className={inputCls + glow("pendingLitigationNote")} rows={2} value={f.pendingLitigationNote} onChange={(e) => setF({ ...f, pendingLitigationNote: e.target.value })} placeholder="e.g. GST demand notice of ₹18 lakh for FY2024, reply filed" />
+            <textarea className={inputCls + glow("pendingLitigationNote")} rows={2} value={f.pendingLitigationNote} onChange={(e) => setF({ ...f, pendingLitigationNote: e.target.value })} />
           </Field>
         </div>
       </SectionCard>

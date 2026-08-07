@@ -34,6 +34,7 @@ export default async function OnboardingPage() {
     <>
       <PromoterHero
         hasCompany={!!company}
+        assessed={!!analysis}
         score={analysis?.scores.overall ?? 0}
         statusLine={analysis?.scores.statusLine ?? (company ? "Run IPO Intelligence to compute your readiness." : "")}
         coveragePct={analysis?.scores.draftCompletionPct ?? 0}
