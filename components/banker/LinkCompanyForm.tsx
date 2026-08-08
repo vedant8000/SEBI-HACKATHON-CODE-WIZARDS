@@ -78,7 +78,7 @@ export default function LinkCompanyForm({ compact = false }: { compact?: boolean
       </span>
       <h2 className="text-lg font-semibold text-slate-800">Link to a company filing</h2>
       <p className="text-sm text-slate-500 mt-1.5 mb-5 max-w-md mx-auto">
-        Ask the promoter for their <strong>company code</strong> — it is shown on their Company Setup and
+        Ask the promoter for their <strong>company code</strong>, it is shown on their Company Setup and
         Settings pages (format <span className="font-mono">SIIM-XXXXXX</span>). Entering it gives you review
         access to their uploaded documents, extracted facts, issues and draft.
       </p>

@@ -57,7 +57,7 @@ export default function BankerIssues({
 
       {tab === "Missing Data & Gaps" && (
         <div className="space-y-3">
-          {openGaps.length === 0 && <Card className="p-8 text-center text-sm text-slate-400">No open gaps — the filing record is complete as per the rule engine.</Card>}
+          {openGaps.length === 0 && <Card className="p-8 text-center text-sm text-slate-400">No open gaps, the filing record is complete as per the rule engine.</Card>}
           {openGaps.map((g) => (
             <Card key={g.id} className="p-5">
               <div className="flex flex-wrap items-center gap-2 mb-2">

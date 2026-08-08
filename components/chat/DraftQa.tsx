@@ -14,7 +14,7 @@ const SUGGESTED = [
   "Explain my biggest risk factor in simple Hindi",
 ];
 
-/** Grounded Q&A about the draft filing — answers come only from the company's
+/** Grounded Q&A about the draft filing, answers come only from the company's
  *  own facts, gaps and draft sections (via /api/qa). */
 export default function DraftQa() {
   const [chat, setChat] = useState<{ role: "user" | "assistant"; text: string }[]>([]);
@@ -33,7 +33,7 @@ export default function DraftQa() {
         body: JSON.stringify({ question }),
       });
       const data = await res.json();
-      setChat((c) => [...c, { role: "assistant", text: data.answer ?? "No response — please try again." }]);
+      setChat((c) => [...c, { role: "assistant", text: data.answer ?? "No response, please try again." }]);
     } catch {
       setChat((c) => [...c, { role: "assistant", text: "The assistant could not respond (network or rate limit). Please try again." }]);
     } finally {
@@ -47,7 +47,7 @@ export default function DraftQa() {
         <span className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center"><Bot size={16} className="text-white" /></span>
         <div>
           <h3 className="text-sm font-semibold text-slate-800">Ask about your draft filing</h3>
-          <p className="text-xs text-slate-400">Answers come only from your uploaded documents, extracted facts, gaps and this draft — final judgement rests with your merchant banker.</p>
+          <p className="text-xs text-slate-400">Answers come only from your uploaded documents, extracted facts, gaps and this draft, final judgement rests with your merchant banker.</p>
         </div>
       </div>
       <div className="flex flex-wrap gap-1.5 my-3">

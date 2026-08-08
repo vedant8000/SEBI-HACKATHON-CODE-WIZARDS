@@ -3,7 +3,7 @@
  *
  * Each page is `force-dynamic` and loads its data from MongoDB on the server, so
  * without a loading fallback the App Router keeps the previous page frozen on
- * screen until that render finishes — which reads as "the tab hangs, then jumps".
+ * screen until that render finishes, which reads as "the tab hangs, then jumps".
  * This Suspense fallback renders the moment a link is clicked, so switching tabs
  * feels instant while the real content streams in behind it. The sidebar, topbar
  * and journey stepper live in the layout and stay put across the transition.

@@ -7,13 +7,13 @@ import type { DocumentRecord } from "@/lib/types";
 import { DocStatusBadge, GlassPanel, HeroBackdrop } from "@/components/shared/ui";
 
 const CHECKLIST: { label: string; why: string }[] = [
-  { label: "Audited financial statements (3 years)", why: "Your track record — the core of the offer document" },
+  { label: "Audited financial statements (3 years)", why: "Your track record, the core of the offer document" },
   { label: "Restated financials (peer-reviewed auditor)", why: "Mandatory format for the offer document" },
   { label: "GST returns / annual summary", why: "We cross-check turnover against your books" },
   { label: "Certificate of Incorporation, MOA/AOA", why: "Proves corporate history and authorised capital" },
   { label: "Board & shareholder resolutions for the IPO", why: "Authorises the issue" },
   { label: "Promoter & director KYC (PAN/DIN)", why: "Identity and no-debarment verification" },
-  { label: "Litigation declaration", why: "Even a NIL declaration is required — and must match reality" },
+  { label: "Litigation declaration", why: "Even a NIL declaration is required, and must match reality" },
   { label: "Related-party transaction register", why: "Reviewers scrutinise promoter-group dealings first" },
   { label: "Quotations / invoices for planned capex", why: "Evidence for your Objects of the Issue" },
   { label: "Working capital assessment", why: "Basis for any working-capital object" },
@@ -40,7 +40,7 @@ export default function DataRoom({ docs }: { docs: DocumentRecord[] }) {
       if (!res.ok) setError((await res.json()).error ?? "Upload failed");
       router.refresh();
     } catch {
-      setError("Upload failed — please try again.");
+      setError("Upload failed, please try again.");
     } finally {
       setUploading(false);
     }
@@ -77,7 +77,7 @@ export default function DataRoom({ docs }: { docs: DocumentRecord[] }) {
             <FileUp size={26} className="mx-auto text-slate-400 mb-2" />
             <p className="text-sm font-medium text-slate-700">Drop files here or click to upload (multiple files supported)</p>
             <p className="text-xs text-slate-500 mt-1">
-              Best results with text PDFs. Scans and spreadsheets are stored and classified by filename — you can then
+              Best results with text PDFs. Scans and spreadsheets are stored and classified by filename, you can then
               enter key figures manually. Nothing leaves your machine unless you configure an AI provider.
             </p>
           </>
@@ -88,7 +88,7 @@ export default function DataRoom({ docs }: { docs: DocumentRecord[] }) {
       {/* Checklist */}
       <GlassPanel className="p-5">
         <h3 className="text-sm font-semibold text-[#1e3a5f] mb-1">Helpful documents you may upload</h3>
-        <p className="text-xs text-slate-500 mb-3">A guide, not a gate — the platform works with whatever you have and tells you what each missing item would unlock.</p>
+        <p className="text-xs text-slate-500 mb-3">A guide, not a gate, the platform works with whatever you have and tells you what each missing item would unlock.</p>
         <div className="grid md:grid-cols-2 gap-x-8 gap-y-1.5">
           {CHECKLIST.map((c) => {
             const done = docs.some((d) => d.fileName.toLowerCase().includes(c.label.split(" ")[0].toLowerCase())) ||
@@ -98,7 +98,7 @@ export default function DataRoom({ docs }: { docs: DocumentRecord[] }) {
                 <span className={`mt-0.5 w-4 h-4 rounded-full border flex items-center justify-center text-[10px] shrink-0 ${done ? "bg-emerald-500 border-emerald-500 text-white" : "border-slate-300 text-transparent"}`}>✓</span>
                 <span>
                   <span className="text-slate-700 font-medium">{c.label}</span>
-                  <span className="text-slate-400"> — {c.why}</span>
+                  <span className="text-slate-400">, {c.why}</span>
                 </span>
               </div>
             );
@@ -113,7 +113,7 @@ export default function DataRoom({ docs }: { docs: DocumentRecord[] }) {
           <span className="text-xs text-slate-500">Click a row to see extracted data & correct it</span>
         </div>
         {docs.length === 0 ? (
-          <p className="text-sm text-slate-400 p-8 text-center">No documents yet — upload above to begin.</p>
+          <p className="text-sm text-slate-400 p-8 text-center">No documents yet, upload above to begin.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[860px]">
@@ -220,7 +220,7 @@ function DetailPanel({ d }: { d: DocumentRecord }) {
         )}
       </div>
       <div>
-        <p className="font-semibold text-slate-700 mb-1">Extracted values — correct anything we misread <span className="font-normal text-slate-400">(all in ₹ crore)</span></p>
+        <p className="font-semibold text-slate-700 mb-1">Extracted values, correct anything we misread <span className="font-normal text-slate-400">(all in ₹ crore)</span></p>
         <div className="grid grid-cols-3 gap-2">
           {shown.slice(0, 9).map((k) => (
             <label key={k} className="text-[11px] text-slate-500">

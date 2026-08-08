@@ -4,7 +4,7 @@ import AuthCard from "./AuthCard";
 import HeroBackdrop from "./HeroBackdrop";
 import LanguageProvider, { useLanguage, type Lang } from "./LanguageProvider";
 
-/** Hero copy in both languages — switched by the toggle inside AuthCard. */
+/** Hero copy in both languages, switched by the toggle inside AuthCard. */
 const T: Record<Lang, {
   brandTag: string;
   h1Line1: string;
@@ -17,7 +17,7 @@ const T: Record<Lang, {
     h1Line1: "Simplifying SME IPO",
     h1Line2: "Offer Document Preparation",
     pitch:
-      "Empowering SME promoters and merchant bankers to prepare compliant, investor-ready offer documents—faster.",
+      "Empowering SME promoters and merchant bankers to prepare compliant, investor-ready offer documents, faster.",
     cards: [
       { img: "/landing/icon-extract.png", title: "Smart Extraction", body: "Extract key data from documents accurately." },
       { img: "/landing/icon-compliance.png", title: "Compliance Check", body: "SEBI-aligned checks for accuracy and completeness." },
@@ -41,7 +41,7 @@ const T: Record<Lang, {
 function Logo({ tag }: { tag: string }) {
   return (
     <div className="flex items-center gap-3">
-      {/* Brand mark — the loading-screen temple logo (navy on light) */}
+      {/* Brand mark, the loading-screen temple logo (navy on light) */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/landing/siim-logo.png" alt="SIIM logo" className="h-16 w-16 object-contain drop-shadow-sm" />
       <div className="leading-tight">

@@ -9,10 +9,10 @@ export default async function AssistantPage() {
   if (!company) {
     return (
       <>
-        <PageHeader title="AI Assistant" />
+        <PageHeader title="SIIM Assistant" />
         <EmptyState
           title="No company yet"
-          message="Complete Company Setup and upload documents — the assistant answers only from your own data, so it needs something to read first."
+          message="Complete Company Setup and upload documents, the assistant answers only from your own data, so it needs something to read first."
         />
       </>
     );
@@ -20,7 +20,7 @@ export default async function AssistantPage() {
   const gaps = (analysis?.gaps ?? []).filter((g) => g.status !== "Resolved");
   return (
     <>
-      <PageHeader title="AI Assistant" subtitle="Grounded in your own documents, facts, gaps and draft." />
+      <PageHeader title="SIIM Assistant" subtitle="Grounded in your own documents, facts, gaps and draft." />
       <AssistantChat
         companyName={company.name}
         context={{

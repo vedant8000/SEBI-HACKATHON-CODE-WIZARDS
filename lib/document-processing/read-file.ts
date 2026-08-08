@@ -1,7 +1,7 @@
 // Extract text PAGE-WISE from an uploaded file buffer.
 // PDF: pdfjs-dist (robust, line-aware) with pdf-parse fallback (single page).
 // TXT/CSV/MD/JSON: one logical page per ~3500 words.
-// DOCX/XLSX/scanned PDFs: empty result — the record is still created, marked
+// DOCX/XLSX/scanned PDFs: empty result, the record is still created, marked
 // "OCR / manual entry required", and the promoter can paste text or enter
 // facts manually. Never crash on unreadable files.
 

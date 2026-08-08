@@ -3,9 +3,9 @@
  *
  * Layers two cropped photo assets (served from /public/landing) over a warm
  * cream wash, matching the approved reference mock:
- *  - hero-skyline.jpg — SEBI tower + warehouse band, seated in the gap
+ *  - hero-skyline.jpg, SEBI tower + warehouse band, seated in the gap
  *    between the pitch column and the auth card.
- *  - hero-desk.jpg    — promoter's desk (laptop dashboard, ICDR regulations,
+ *  - hero-desk.jpg   , promoter's desk (laptop dashboard, ICDR regulations,
  *    draft prospectus, export cartons) anchored along the bottom.
  *
  * Every photo layer is feathered with CSS mask gradients so it melts into the

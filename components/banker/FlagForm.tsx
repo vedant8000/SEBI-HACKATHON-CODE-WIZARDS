@@ -72,7 +72,7 @@ export default function FlagForm({
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             rows={3}
-            placeholder="What must the promoter correct, and how? e.g. 'Litigation declaration says NIL but the GST demand of ₹0.18 Cr must be disclosed — re-execute the declaration and add the matter to Outstanding Litigation.'"
+            placeholder="What must the promoter correct, and how? e.g. 'Litigation declaration says NIL but the GST demand of ₹0.18 Cr must be disclosed, re-execute the declaration and add the matter to Outstanding Litigation.'"
             className="w-full px-3 py-2 text-[13px] border border-amber-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-amber-400/40"
           />
           <div className="flex items-center gap-2">

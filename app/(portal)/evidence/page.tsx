@@ -12,7 +12,7 @@ export default async function EvidencePage() {
     return (
       <>
         <PageHeader title="Extraction & Evidence" />
-        <EmptyState title="No company yet" message="Create your company and upload documents — every extracted fact appears here with its source document, page and confidence." />
+        <EmptyState title="No company yet" message="Create your company and upload documents, every extracted fact appears here with its source document, page and confidence." />
       </>
     );
   }
@@ -25,7 +25,7 @@ export default async function EvidencePage() {
     <>
       <PageHeader
         title="Evidence & Extraction"
-        subtitle="Every fact the platform uses, with its source document, page reference, extraction method and confidence. Accept, reject or correct anything — edits are flagged for merchant banker verification, and all downstream analysis updates instantly."
+        subtitle="Every fact the platform uses, with its source document, page reference, extraction method and confidence. Accept, reject or correct anything, edits are flagged for merchant banker verification, and all downstream analysis updates instantly."
         actions={<RunIntelligenceButton />}
       />
       <BankerFlagsCard flags={flags.filter((f) => f.targetType === "fact" || f.targetType === "general")} />

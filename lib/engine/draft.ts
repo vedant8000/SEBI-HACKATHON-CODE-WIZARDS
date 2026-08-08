@@ -18,11 +18,11 @@ import { aiAvailable, generateSectionAI, paceAI } from "../ai/provider";
  *     blueprint says this section needs,
  *  2. gather open gaps / rule failures affecting the section,
  *  3. send ONLY that context to the AI with strict no-invention rules,
- *  4. omit missing data — never hallucinated text.
+ *  4. omit missing data, never hallucinated text.
  *
  * When no AI provider is configured, or every key is rate-limited (the AI call
  * returns null), the deterministic rule-based generator (lib/engine/draft-template.ts)
- * composes the same sections from the extracted facts — so a draft is always
+ * composes the same sections from the extracted facts, so a draft is always
  * produced. Each section records which engine produced it (generatedBy).
  */
 
@@ -42,7 +42,7 @@ function factsContext(list: ExtractedFact[]): string {
     .slice(0, 40)
     .map(
       (f) =>
-        `- ${f.factLabel}${f.financialYear ? ` (${f.financialYear})` : ""}: ${f.normalizedValue}${f.unit ? ` ${f.unit}` : ""} [source: ${f.sourceFileName}${f.pageStart ? `, p.${f.pageStart}${f.pageEnd && f.pageEnd !== f.pageStart ? `-${f.pageEnd}` : ""}` : ""}; confidence ${f.confidence}%${f.status === "PROMOTER_EDITED" ? "; PROMOTER EDITED — verification required" : ""}]`
+        `- ${f.factLabel}${f.financialYear ? ` (${f.financialYear})` : ""}: ${f.normalizedValue}${f.unit ? ` ${f.unit}` : ""} [source: ${f.sourceFileName}${f.pageStart ? `, p.${f.pageStart}${f.pageEnd && f.pageEnd !== f.pageStart ? `-${f.pageEnd}` : ""}` : ""}; confidence ${f.confidence}%${f.status === "PROMOTER_EDITED" ? "; PROMOTER EDITED, verification required" : ""}]`
     )
     .join("\n");
 }
@@ -105,7 +105,7 @@ export async function generateBlueprintSection(
   const factConf = sf.length ? sf.reduce((x, f) => x + f.confidence, 0) / sf.length : 50;
   const detCtx: DetCtx = { company, docs, facts, objects, analysis, row };
 
-  /** Deterministic rule-based section — the offline / rate-limit fallback. */
+  /** Deterministic rule-based section, the offline / rate-limit fallback. */
   const composeDeterministic = (): DraftSection => {
     const text = generateSectionDeterministic(s, detCtx);
     if (!text) {
@@ -123,7 +123,7 @@ export async function generateBlueprintSection(
   };
 
   // Standard-language sections and the no-key case use the deterministic
-  // generator directly — AI calls are reserved for company-specific sections.
+  // generator directly, AI calls are reserved for company-specific sections.
   if (!preferAi || !aiAvailable()) return composeDeterministic();
 
   const text = await generateSectionAI({
@@ -150,7 +150,7 @@ export async function generateBlueprintSection(
  * Generate the FULL blueprint (all sections) or a named subset.
  *
  * AI calls are spent only on the priority (company-specific) sections; the
- * standard/boilerplate sections are composed deterministically — so a complete
+ * standard/boilerplate sections are composed deterministically, so a complete
  * offer document is produced in both AI and fallback modes, and generation
  * stays fast and within free-tier limits.
  */

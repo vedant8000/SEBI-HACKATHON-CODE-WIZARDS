@@ -29,7 +29,7 @@ export default function SettingsPanel({
     <Card className="p-5">
       <h3 className="text-sm font-semibold text-slate-800 mb-2">Companies</h3>
       {companies.length === 0 ? (
-        <p className="text-sm text-slate-400 mb-4">No companies yet — create one in Company Setup.</p>
+        <p className="text-sm text-slate-400 mb-4">No companies yet, create one in Company Setup.</p>
       ) : (
         <div className="space-y-2 mb-4">
           {companies.map((c) => (

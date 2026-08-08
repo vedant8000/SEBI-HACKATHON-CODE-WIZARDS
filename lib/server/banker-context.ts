@@ -8,7 +8,7 @@ export interface BankerContext extends AppContext {
 
 /**
  * Context for the merchant banker workspace. A banker only sees companies they
- * have linked to by entering the company's share code — never the promoter's
+ * have linked to by entering the company's share code, never the promoter's
  * global "active company". `companyId` selects among multiple links.
  */
 export async function getBankerContext(

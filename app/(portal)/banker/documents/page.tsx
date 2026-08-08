@@ -23,7 +23,7 @@ export default async function BankerDocumentsPage() {
     <>
       <PageHeader
         title="Filing Documents"
-        subtitle={`Every document ${company.name} has uploaded for the IPO filing — classification, extracted values and detected issues. Open the original file, and flag anything that must be corrected or re-submitted.`}
+        subtitle={`Every document ${company.name} has uploaded for the IPO filing, classification, extracted values and detected issues. Open the original file, and flag anything that must be corrected or re-submitted.`}
       />
       <BankerDocsTable docs={docs} flags={flags} companyId={company.id} />
     </>

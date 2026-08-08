@@ -6,13 +6,13 @@ import type { BlueprintSection } from "../ipo-blueprint/sme-prospectus-blueprint
 import { benchmarkCompany } from "./peers";
 
 /**
- * Deterministic, fact-driven draft generator — the fallback for lib/engine/draft.ts.
+ * Deterministic, fact-driven draft generator, the fallback for lib/engine/draft.ts.
  *
  * When no AI provider is configured, or every key is rate-limited, the AI call
  * returns null and the draft would otherwise fail. This module composes the
  * SAME prospectus-style sections (prose + markdown tables) directly from the
  * extracted facts, the company profile, the objects plan and the rule-engine
- * analysis — using only the markdown subset lib/utils/markdown.ts renders.
+ * analysis, using only the markdown subset lib/utils/markdown.ts renders.
  *
  * Same discipline as the AI path: state only what the data supports, present
  * figures as tables, never invent names/numbers, no bracketed placeholders —
@@ -258,7 +258,7 @@ function basisForPrice(ctx: DetCtx): string {
   const rows = finRows(ctx);
   const l = latestFin(rows);
 
-  // Per-year RoNW & margins (no share count needed — honest, fully computable).
+  // Per-year RoNW & margins (no share count needed, honest, fully computable).
   const last3 = rows.filter((r) => r.patCr != null && r.netWorthCr != null).slice(-3);
   const ronwOf = (f: FinancialYear) => (f.patCr != null && f.netWorthCr ? Number(((f.patCr / f.netWorthCr) * 100).toFixed(2)) : null);
   const marginOf = (f: FinancialYear) => (f.ebitdaCr != null && f.revenueCr ? Number(((f.ebitdaCr / f.revenueCr) * 100).toFixed(2)) : null);
@@ -274,7 +274,7 @@ function basisForPrice(ctx: DetCtx): string {
       marginOf(f) != null ? `${marginOf(f)}%` : "—",
     ]);
 
-  // Weighted-average RoNW — ICDR convention: most recent year weighted highest (1:2:3).
+  // Weighted-average RoNW, ICDR convention: most recent year weighted highest (1:2:3).
   let weightedRonw: number | null = null;
   if (last3.length) {
     let wsum = 0, w = 0;
@@ -298,7 +298,7 @@ function basisForPrice(ctx: DetCtx): string {
         ]))
     : "";
 
-  // Qualitative factors — only claims the data supports.
+  // Qualitative factors, only claims the data supports.
   const quals: string[] = [];
   if (c.yearOfIncorporation) quals.push(`An operating track record since ${c.yearOfIncorporation}${c.promoterExperienceYears ? `, led by a promoter with approximately ${c.promoterExperienceYears} years of industry experience` : ""}.`);
   const marginRow = bm?.rows.find((r) => r.metric === "EBITDA margin");
@@ -310,7 +310,7 @@ function basisForPrice(ctx: DetCtx): string {
   if (c.top3CustomerPct != null && c.top3CustomerPct < 40) quals.push(`A diversified customer base (top three customers ${c.top3CustomerPct}% of revenue).`);
 
   const indicative = bm?.indicativeValuationCr != null
-    ? `Applying the comparable-company median price-to-earnings multiple of ${bm.suggestedPe}x to the most recent restated profit after tax of ${cr(l?.patCr ?? null)} implies an indicative equity value of the order of ${cr(bm.indicativeValuationCr)}. This is an indicative reference only — it is not the issue price, assumes no primary dilution, and the merchant banker will determine the final price band.`
+    ? `Applying the comparable-company median price-to-earnings multiple of ${bm.suggestedPe}x to the most recent restated profit after tax of ${cr(l?.patCr ?? null)} implies an indicative equity value of the order of ${cr(bm.indicativeValuationCr)}. This is an indicative reference only, it is not the issue price, assumes no primary dilution, and the merchant banker will determine the final price band.`
     : "";
 
   // Reviewer-lens note when metrics diverge from peers.
@@ -328,7 +328,7 @@ function basisForPrice(ctx: DetCtx): string {
       : "Year-wise financial parameters will be presented once the restated financials are available.",
     weightedRonw != null ? `Weighted average return on net worth for the periods above (most recent year weighted highest) is approximately **${weightedRonw}%**.` : "",
     `Basic and diluted earnings per share, net asset value per share and the price-to-earnings multiple at the offer price will be computed on the final post-issue share capital by the merchant banker.`,
-    bm ? `**Comparison with listed industry peers — ${bm.sector}**` : "",
+    bm ? `**Comparison with listed industry peers, ${bm.sector}**` : "",
     compTbl,
     peerTbl,
     indicative,
@@ -498,22 +498,22 @@ function tableOfContents(ctx: DetCtx): string {
   return para(
     `The offer document is organised as follows:`,
     [
-      "- Front Matter — cover page, issue programme, responsibility statements, listing details and general risks",
-      "- Section I — General: definitions, conventions and forward-looking statements",
-      "- Section II — Summary of the offer document",
-      "- Section III — Risk Factors",
-      "- Section IV — Introduction: the issue, general information, capital structure, objects, basis for issue price and tax benefits",
-      "- Section V — About the Company: industry, business, regulations, history, management, promoters, group companies, related-party transactions and dividend policy",
-      "- Section VI — Financial Information: restated financial statements, other financial information, indebtedness, MD&A, capitalisation and KPIs",
-      "- Section VII — Legal and Other Information: litigation, approvals and statutory disclosures",
-      "- Section VIII — Issue-related Information: terms, structure, procedure and market making",
-      "- Section IX — Main Provisions of the Articles of Association",
-      "- Section X — Other Information: material contracts, documents for inspection and declaration",
+      "- Front Matter, cover page, issue programme, responsibility statements, listing details and general risks",
+      "- Section I, General: definitions, conventions and forward-looking statements",
+      "- Section II, Summary of the offer document",
+      "- Section III, Risk Factors",
+      "- Section IV, Introduction: the issue, general information, capital structure, objects, basis for issue price and tax benefits",
+      "- Section V, About the Company: industry, business, regulations, history, management, promoters, group companies, related-party transactions and dividend policy",
+      "- Section VI, Financial Information: restated financial statements, other financial information, indebtedness, MD&A, capitalisation and KPIs",
+      "- Section VII, Legal and Other Information: litigation, approvals and statutory disclosures",
+      "- Section VIII, Issue-related Information: terms, structure, procedure and market making",
+      "- Section IX, Main Provisions of the Articles of Association",
+      "- Section X, Other Information: material contracts, documents for inspection and declaration",
     ].join("\n")
   );
 }
 
-// ── Section I — General ──────────────────────────────────────────────────────
+// ── Section I, General ──────────────────────────────────────────────────────
 
 function definitions(ctx: DetCtx): string {
   const c = ctx.company;
@@ -533,7 +533,7 @@ function definitions(ctx: DetCtx): string {
       [`"Issue Price"`, "The price at which equity shares are allotted, determined with the lead manager"],
       [`"SME Platform"`, c.proposedListingExchange || "NSE Emerge / BSE SME"],
     ]),
-    `**Conventional / general terms** — "SEBI" means the Securities and Exchange Board of India; "SEBI ICDR Regulations" means the SEBI (Issue of Capital and Disclosure Requirements) Regulations, 2018, as amended; "Companies Act" means the Companies Act, 2013; "RoC" means the jurisdictional Registrar of Companies; "FY / Fiscal" means the financial year ending March 31.`
+    `**Conventional / general terms**, "SEBI" means the Securities and Exchange Board of India; "SEBI ICDR Regulations" means the SEBI (Issue of Capital and Disclosure Requirements) Regulations, 2018, as amended; "Companies Act" means the Companies Act, 2013; "RoC" means the jurisdictional Registrar of Companies; "FY / Fiscal" means the financial year ending March 31.`
   );
 }
 
@@ -552,7 +552,7 @@ function forwardLooking(): string {
   );
 }
 
-// ── Section II — Summary ─────────────────────────────────────────────────────
+// ── Section II, Summary ─────────────────────────────────────────────────────
 
 function summaryIndustry(ctx: DetCtx): string {
   const c = ctx.company;
@@ -616,7 +616,7 @@ function summaryRisks(ctx: DetCtx): string {
   );
 }
 
-// ── Section III — Risk Factors (external / issue / engine-derived) ──────────
+// ── Section III, Risk Factors (external / issue / engine-derived) ──────────
 
 function externalRisks(ctx: DetCtx): string {
   const ind = ctx.company.industry || "the industry in which we operate";
@@ -652,11 +652,11 @@ function engineRisks(ctx: DetCtx): string {
     return `No additional High or Critical findings are currently open in the rule engine. Candidate risk factors surfaced by the analysis will appear here as the record evolves.`;
   return para(
     `The following candidate risk factors are derived from open findings of the deterministic rule engine over the company's own record. Each requires professional review before inclusion:`,
-    gaps.slice(0, 8).map((g, i) => `${i + 1}. **${g.title}** (${g.severity}) — ${g.explanation}`).join("\n\n")
+    gaps.slice(0, 8).map((g, i) => `${i + 1}. **${g.title}** (${g.severity}), ${g.explanation}`).join("\n\n")
   );
 }
 
-// ── Section IV — Introduction (general info / tax benefits) ─────────────────
+// ── Section IV, Introduction (general info / tax benefits) ─────────────────
 
 function generalInformation(ctx: DetCtx): string {
   const c = ctx.company;
@@ -684,7 +684,7 @@ function taxBenefits(ctx: DetCtx): string {
   );
 }
 
-// ── Section V — About the Company ────────────────────────────────────────────
+// ── Section V, About the Company ────────────────────────────────────────────
 
 function industryOverview(ctx: DetCtx): string {
   const c = ctx.company;
@@ -708,10 +708,10 @@ function keyRegulations(ctx: DetCtx): string {
     `The company's operations are governed, inter alia, by the following key statutes and regulations, in addition to industry-specific requirements:`,
     [
       "- Companies Act, 2013 and rules thereunder",
-      "- Goods and Services Tax framework (CGST/SGST/IGST Acts)" + (gstin ? ` — GST registration ${gstin} on record` : ""),
+      "- Goods and Services Tax framework (CGST/SGST/IGST Acts)" + (gstin ? `, GST registration ${gstin} on record` : ""),
       "- Income-tax Act, 1961",
       "- Factories Act, 1948 and state factory rules (where manufacturing operations are carried on)",
-      "- Environmental statutes — Water (Prevention & Control of Pollution) Act, Air (Prevention & Control of Pollution) Act and consents thereunder",
+      "- Environmental statutes, Water (Prevention & Control of Pollution) Act, Air (Prevention & Control of Pollution) Act and consents thereunder",
       "- Labour and employment legislation (EPF, ESI, gratuity, minimum wages and allied laws)",
       "- Micro, Small and Medium Enterprises Development Act, 2006 (Udyam registration, where applicable)",
     ].join("\n"),
@@ -772,7 +772,7 @@ function dividendPolicy(ctx: DetCtx): string {
   );
 }
 
-// ── Section VI — Financial Information ───────────────────────────────────────
+// ── Section VI, Financial Information ───────────────────────────────────────
 
 function restatedFinancials(ctx: DetCtx): string {
   const restated = ctx.docs.filter((d) => d.category === "Restated Financials");
@@ -899,7 +899,7 @@ function kpis(ctx: DetCtx): string {
   );
 }
 
-// ── Section VII — Legal (other statutory disclosures) ───────────────────────
+// ── Section VII, Legal (other statutory disclosures) ───────────────────────
 
 function otherRegulatory(ctx: DetCtx): string {
   const brDate = factStr(ctx.facts, "boardResolutionDate");
@@ -914,7 +914,7 @@ function otherRegulatory(ctx: DetCtx): string {
   );
 }
 
-// ── Section VIII — Issue Information ─────────────────────────────────────────
+// ── Section VIII, Issue Information ─────────────────────────────────────────
 
 function termsOfIssue(ctx: DetCtx): string {
   const c = ctx.company;
@@ -938,8 +938,8 @@ function issueStructure(ctx: DetCtx): string {
     `The issue is structured in accordance with the requirements applicable to SME issues:`,
     mdTable(["Component", "Allocation"], [
       ["Market maker reservation", "As prescribed for SME issues (typically up to 5% of the issue)"],
-      ["Net issue — retail individual investors", "Not less than 50% of the net issue"],
-      ["Net issue — other investors (including QIB/NII)", "Balance of the net issue"],
+      ["Net issue, retail individual investors", "Not less than 50% of the net issue"],
+      ["Net issue, other investors (including QIB/NII)", "Balance of the net issue"],
     ]),
     c.issueSizeCr != null ? `The total issue aggregates up to ${cr(c.issueSizeCr)}${c.freshIssueCr != null ? `, of which the fresh issue is up to ${cr(c.freshIssueCr)}` : ""}${c.ofsCr ? ` and the offer for sale is up to ${cr(c.ofsCr)}` : ""}.` : "",
     `The final structure, minimum application size and lot size will be set out in the final offer document as per the exchange's requirements.`
@@ -1008,7 +1008,7 @@ function utilisationOfProceeds(ctx: DetCtx): string {
   );
 }
 
-// ── Section IX — AoA ────────────────────────────────────────────────────────
+// ── Section IX, AoA ────────────────────────────────────────────────────────
 
 function aoaProvisions(ctx: DetCtx): string {
   const authCap = factStr(ctx.facts, "authorisedCapitalCr");
@@ -1016,7 +1016,7 @@ function aoaProvisions(ctx: DetCtx): string {
   return para(
     constDocs.length
       ? `The articles of association are on record (${constDocs.map((d) => d.fileName).join("; ")}). The main provisions relevant to shareholders include those relating to share capital and variation of rights, transfer and transmission of shares, general meetings and voting rights, dividends, borrowing powers and the appointment and rotation of directors.`
-      : `The main provisions of the articles of association — relating to share capital, transfer of shares, general meetings, voting rights, dividends, borrowing powers and directors — will be summarised here once the articles are on record.`,
+      : `The main provisions of the articles of association, relating to share capital, transfer of shares, general meetings, voting rights, dividends, borrowing powers and directors, will be summarised here once the articles are on record.`,
     authCap ? `The authorised share capital as per the record is ${cr(parseFloat(authCap))}.` : "",
     `A clause-wise summary of the articles must be prepared by legal counsel prior to filing.`
   );
@@ -1047,11 +1047,11 @@ const COMPOSERS: Record<string, (ctx: DetCtx) => string> = {
   "fm-5": generalRisk,
   "fm-6": intermediaries,
   "fm-7": tableOfContents,
-  // Section I — General
+  // Section I, General
   "g-1": definitions,
   "g-2": conventions,
   "g-3": forwardLooking,
-  // Section II — Summary
+  // Section II, Summary
   "s-1": summaryOffer,
   "s-2": summaryIndustry,
   "s-3": summaryBusiness,
@@ -1059,12 +1059,12 @@ const COMPOSERS: Record<string, (ctx: DetCtx) => string> = {
   "s-5": summaryObjects,
   "s-6": summaryLitigation,
   "s-7": summaryRisks,
-  // Section III — Risk Factors
+  // Section III, Risk Factors
   "r-1": riskFactors,
   "r-2": externalRisks,
   "r-3": issueRisks,
   "r-4": engineRisks,
-  // Section IV — Introduction
+  // Section IV, Introduction
   "i-1": theIssue,
   "i-2": summaryFinancials,
   "i-3": generalInformation,
@@ -1072,7 +1072,7 @@ const COMPOSERS: Record<string, (ctx: DetCtx) => string> = {
   "i-5": objectsOfIssue,
   "i-6": basisForPrice,
   "i-7": taxBenefits,
-  // Section V — About the Company
+  // Section V, About the Company
   "c-1": industryOverview,
   "c-2": ourBusiness,
   "c-3": keyRegulations,
@@ -1083,18 +1083,18 @@ const COMPOSERS: Record<string, (ctx: DetCtx) => string> = {
   "c-8": groupCompanies,
   "c-9": relatedParty,
   "c-10": dividendPolicy,
-  // Section VI — Financial Information
+  // Section VI, Financial Information
   "f-1": restatedFinancials,
   "f-2": otherFinancialInfo,
   "f-3": indebtedness,
   "f-4": mdAndA,
   "f-5": capitalisation,
   "f-6": kpis,
-  // Section VII — Legal
+  // Section VII, Legal
   "l-1": litigation,
   "l-2": approvals,
   "l-3": otherRegulatory,
-  // Section VIII — Issue Information
+  // Section VIII, Issue Information
   "x-1": termsOfIssue,
   "x-2": issueStructure,
   "x-3": issueProcedure,

@@ -14,7 +14,7 @@ export function Card({ children, className = "" }: { children: ReactNode; classN
 
 // ── Immersive "hero" surface (gradient backdrop + glass panels) ────────────
 // Shared visual language for pages given the glassmorphism treatment
-// (Assistant, Company Setup, …) — a soft gradient stage with a faint
+// (Assistant, Company Setup, …), a soft gradient stage with a faint
 // capital-markets scene in the idle corner, echoing the sidebar's brand
 // illustration, with translucent frosted panels floating on top.
 
@@ -45,7 +45,7 @@ export function HeroScene() {
   );
 }
 
-/** Gradient stage — wrap page content that should get the immersive hero treatment. */
+/** Gradient stage, wrap page content that should get the immersive hero treatment. */
 export function HeroBackdrop({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
     <div className={`relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#7fb0ea] via-[#9dc4ef] to-[#4f80c9] border border-white/60 shadow-[0_10px_36px_rgba(20,45,80,0.28)] ${className}`}>
@@ -70,7 +70,7 @@ export function GlassPanel({ children, className = "" }: { children: ReactNode; 
   );
 }
 
-/** Glass stat tile — the StatCard equivalent for HeroBackdrop pages. Tinted by tone so good/bad reads at a glance. */
+/** Glass stat tile, the StatCard equivalent for HeroBackdrop pages. Tinted by tone so good/bad reads at a glance. */
 export function GlassStat({
   label, value, sub, tone = "default",
 }: { label: string; value: ReactNode; sub?: string; tone?: "default" | "good" | "warn" | "bad" }) {
@@ -249,7 +249,7 @@ export function DisclaimerBar() {
       <strong>Disclaimer:</strong> SIIM is an AI-assisted draft preparation tool. It does not constitute legal,
       investment, accounting or regulatory advice, and does not replace SEBI-registered merchant bankers, legal counsel,
       auditors or regulatory filing processes. All generated content requires professional review. Estimates are
-      illustrative, not guarantees. Nothing here means &ldquo;ready to file with SEBI&rdquo; — at best it means
+      illustrative, not guarantees. Nothing here means &ldquo;ready to file with SEBI&rdquo;, at best it means
       &ldquo;ready for merchant banker review&rdquo;.
     </p>
   );

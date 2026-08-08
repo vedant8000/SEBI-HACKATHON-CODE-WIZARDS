@@ -14,7 +14,7 @@ export default async function IntelligencePage() {
         <PageHeader title="IPO Intelligence" />
         <EmptyState
           title="No company yet"
-          message="Complete Company Setup and upload documents — this page then shows your readiness score, missing data, inconsistencies, related-party risks, fund-use plan and the questions reviewers are likely to ask."
+          message="Complete Company Setup and upload documents, this page then shows your readiness score, missing data, inconsistencies, related-party risks, fund-use plan and the questions reviewers are likely to ask."
         />
       </>
     );
@@ -23,7 +23,7 @@ export default async function IntelligencePage() {
     <>
       <PageHeader
         title="IPO Intelligence"
-        subtitle="Everything the rule engine found in your data — readiness, missing data, inconsistencies, related-party & fund-use risk, your objects plan, and likely reviewer questions. All computed live from extracted facts; nothing is pre-set."
+        subtitle="Everything the rule engine found in your data, readiness, missing data, inconsistencies, related-party & fund-use risk, your objects plan, and likely reviewer questions. All computed live from extracted facts; nothing is pre-set."
       />
       <BankerFlagsCard flags={flags.filter((f) => f.targetType === "gap")} title="Gaps your merchant banker has flagged" />
       <IntelligenceTabs

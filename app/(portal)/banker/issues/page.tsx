@@ -24,7 +24,7 @@ export default async function BankerIssuesPage() {
       <>
         <PageHeader title="Issues & Corrections" />
         <Card className="p-8 text-center text-sm text-slate-400">
-          The rule engine has not run for {company.name} yet — the promoter needs to complete Company
+          The rule engine has not run for {company.name} yet, the promoter needs to complete Company
           Setup and upload documents first.
         </Card>
       </>
@@ -35,7 +35,7 @@ export default async function BankerIssuesPage() {
     <>
       <PageHeader
         title="Issues & Corrections"
-        subtitle={`What is missing, inconsistent or risky in ${company.name}'s filing, straight from the deterministic rule engine. Flag any item to tell the promoter exactly what to correct — your flags appear on their workspace instantly.`}
+        subtitle={`What is missing, inconsistent or risky in ${company.name}'s filing, straight from the deterministic rule engine. Flag any item to tell the promoter exactly what to correct, your flags appear on their workspace instantly.`}
       />
       <BankerIssues
         companyId={company.id}

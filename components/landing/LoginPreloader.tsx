@@ -93,7 +93,7 @@ export default function LoginPreloader({
         <div className="absolute inset-0" style={{ background: CREAM }} />
       </div>
 
-      {/* giant logo — white-on-transparent render of the brand mark, so
+      {/* giant logo, white-on-transparent render of the brand mark, so
           mix-blend-difference inverts it as the liquid passes through it */}
       <div className="pointer-events-none absolute inset-0 grid place-items-center">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -109,7 +109,7 @@ export default function LoginPreloader({
         />
       </div>
 
-      {/* status line — top left */}
+      {/* status line, top left */}
       <div className="absolute left-6 top-6 md:left-10 md:top-9 flex items-center gap-3 text-white mix-blend-difference">
         <span className="h-2 w-2 rounded-full bg-current animate-pulse" />
         <span className="text-[11px] md:text-xs font-semibold uppercase tracking-[0.35em]">
@@ -117,7 +117,7 @@ export default function LoginPreloader({
         </span>
       </div>
 
-      {/* percentage counter — bottom right */}
+      {/* percentage counter, bottom right */}
       <div className="absolute bottom-2 right-6 md:right-10 flex items-baseline text-white mix-blend-difference">
         <span
           className="font-serif font-black tabular-nums leading-none"

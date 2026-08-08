@@ -24,10 +24,10 @@ export interface HeroGap {
 }
 
 const STEPS = [
-  { icon: Upload, title: "Upload what you have", body: "Financials, KYC, approvals and contracts — in any order. No fixed bundle required." },
+  { icon: Upload, title: "Upload what you have", body: "Financials, KYC, approvals and contracts, in any order. No fixed bundle required." },
   { icon: FileSearch, title: "We extract & source-link", body: "Every figure is read from your files with page-level provenance and a confidence score." },
   { icon: BrainCircuit, title: "See your IPO readiness", body: "A readiness score, SME-framework checks and the questions an exchange will likely ask." },
-  { icon: FileText, title: "Generate a review-ready draft", body: "A 57-section SME offer-document draft grounded in your data, never invented." },
+  { icon: FileText, title: "Generate a review-ready draft", body: "A 57-section SME offer-document draft, grounded entirely in your own data." },
   { icon: UserCheck, title: "Your banker reviews & certifies", body: "The draft goes to your merchant banker. SIIM prepares; intermediaries certify." },
 ];
 
@@ -63,14 +63,14 @@ export default function PromoterHero({
       <Card className="mb-6 border-blue-100 bg-gradient-to-br from-blue-50/80 to-white p-6">
         <div className="mb-5 flex flex-wrap items-start gap-3">
           <div>
-            <h2 className="font-serif text-xl font-bold text-[#1e3a5f]">Welcome — let&rsquo;s get you IPO-ready</h2>
+            <h2 className="font-serif text-xl font-bold text-[#1e3a5f]">Welcome, let&rsquo;s get you IPO-ready</h2>
             <p className="mt-1 max-w-2xl text-sm text-slate-600">
               SIIM turns your scattered documents into a review-ready SME IPO offer-document draft. Fill your company
-              profile below and upload whatever documents you have — here&rsquo;s the whole journey:
+              profile below and upload whatever documents you have, here&rsquo;s the whole journey:
             </p>
           </div>
           <span className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
-            <ShieldCheck size={13} /> Nothing is invented — every line is traceable to your files
+            <ShieldCheck size={13} /> Everything is traceable to your documents
           </span>
         </div>
         <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">

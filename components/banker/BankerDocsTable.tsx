@@ -8,7 +8,7 @@ import FlagForm from "./FlagForm";
 
 /**
  * Read-only view of the promoter's filing documents for the merchant banker:
- * classification, extraction results, detected issues — plus "view file" and
+ * classification, extraction results, detected issues, plus "view file" and
  * a flag composer to pinpoint corrections. No upload, no delete, no editing.
  */
 export default function BankerDocsTable({

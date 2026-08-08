@@ -6,7 +6,7 @@ const esc = (s: string) =>
   (s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 /**
- * Merchant Banker Review Pack — printable HTML (print → Save as PDF):
+ * Merchant Banker Review Pack, printable HTML (print → Save as PDF):
  * draft sections with source references, review statuses, comments,
  * unresolved gaps and the standard disclaimer.
  */
@@ -15,7 +15,7 @@ export async function GET() {
   const gaps = (analysis?.gaps ?? []).filter((g) => g.status !== "Resolved");
   const name = company?.name ?? "Company";
   const html = `<!doctype html><html><head><meta charset="utf-8">
-<title>Merchant Banker Review Pack — ${esc(name)}</title>
+<title>Merchant Banker Review Pack, ${esc(name)}</title>
 <style>
   body{font-family:system-ui,sans-serif;max-width:900px;margin:40px auto;padding:0 24px;color:#111;line-height:1.55}
   h1{color:#1e3a5f} h2{color:#1e3a5f;margin-top:30px;border-bottom:1px solid #cbd5e1;padding-bottom:5px}
@@ -35,7 +35,7 @@ export async function GET() {
   .body table.md-table th.num,.body table.md-table td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
   @media print {.noprint{display:none}}
 </style></head><body>
-<div class="banner"><b>MERCHANT BANKER REVIEW PACK — AI-ASSISTED DRAFT.</b> Prepared by SIIM for review by SEBI-registered
+<div class="banner"><b>MERCHANT BANKER REVIEW PACK, AI-ASSISTED DRAFT.</b> Prepared by SIIM for review by SEBI-registered
 intermediaries. Not a filing; not legal, investment, accounting or regulatory advice. Facts carry source references to
 the issuer's uploaded documents; placeholders mark data awaiting promoter confirmation.</div>
 <h1>Merchant Banker Review Pack<br><span style="font-size:17px">${esc(name)}</span></h1>
@@ -55,7 +55,7 @@ ${s.sources.length ? `<div class="src"><b>Source evidence:</b> ${s.sources.map((
 ${s.missingData.length ? `<div class="warn"><b>Missing data:</b> ${s.missingData.map(esc).join(" · ")}</div>` : ""}
 ${s.comments.map((c) => `<div class="cmt"><b>${esc(c.author)}</b> (${esc(c.role.replaceAll("_", " ").toLowerCase())}, ${new Date(c.createdAt).toLocaleString("en-IN")}): ${esc(c.comment)}</div>`).join("")}
 `).join("")}
-<hr><p class="meta">© SIIM — AI-assisted preparation. Final responsibility rests with the issuer and its authorised intermediaries.</p>
+<hr><p class="meta">© SIIM, AI-assisted preparation. Final responsibility rests with the issuer and its authorised intermediaries.</p>
 </body></html>`;
   return new NextResponse(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });
 }

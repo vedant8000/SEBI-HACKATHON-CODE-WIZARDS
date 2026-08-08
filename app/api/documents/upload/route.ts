@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
   const created: DocumentRecord[] = [];
   const warnings: string[] = [];
 
-  // The company's established identity — profile CIN, else the CIN most of its
+  // The company's established identity, profile CIN, else the CIN most of its
   // existing documents already carry. A new upload with a DIFFERENT CIN almost
   // certainly belongs to another company and gets flagged (not silently mixed).
   const establishedCin = (() => {
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
 
   for (const file of files) {
     if (file.size > MAX_FILE_MB * 1024 * 1024) {
-      warnings.push(`${file.name}: larger than ${MAX_FILE_MB} MB — please split the file and re-upload.`);
+      warnings.push(`${file.name}: larger than ${MAX_FILE_MB} MB, please split the file and re-upload.`);
       continue;
     }
     const buf = Buffer.from(await file.arrayBuffer());
@@ -99,8 +99,8 @@ export async function POST(req: NextRequest) {
       issues.push("Quotation appears to be missing the vendor GSTIN.");
     const docCin = (fields.cin as string | undefined)?.trim().toUpperCase();
     if (establishedCin && docCin && docCin !== establishedCin) {
-      issues.push(`This document carries CIN ${docCin}, but this company's CIN is ${establishedCin} — it appears to belong to a different company. Delete it here if it was uploaded by mistake.`);
-      warnings.push(`${file.name}: CIN ${docCin} does not match this company (${establishedCin}) — flagged as possibly belonging to another company.`);
+      issues.push(`This document carries CIN ${docCin}, but this company's CIN is ${establishedCin}, it appears to belong to a different company. Delete it here if it was uploaded by mistake.`);
+      warnings.push(`${file.name}: CIN ${docCin} does not match this company (${establishedCin}), flagged as possibly belonging to another company.`);
     }
 
     const doc: DocumentRecord = {
@@ -125,7 +125,7 @@ export async function POST(req: NextRequest) {
     };
 
     // Re-uploading the same file REPLACES the previous version rather than
-    // stacking a duplicate — duplicates produce phantom "same fact, two values"
+    // stacking a duplicate, duplicates produce phantom "same fact, two values"
     // conflicts. Drop the prior document, its chunks and its facts first.
     const priorIds = db.documents
       .filter((d) => d.companyId === company.id && d.fileName === file.name)
@@ -152,7 +152,7 @@ export async function POST(req: NextRequest) {
       facts = mergeFacts([...facts, ...aiFacts]);
     } else {
       for (const c of chunks) c.processingStatus = aiAvailable() ? "skipped" : "pending";
-      if (!aiAvailable()) warnings.push("AI provider not configured — pattern extraction only. Configure GEMINI_API_KEY for full fact extraction.");
+      if (!aiAvailable()) warnings.push("AI provider not configured, pattern extraction only. Configure GEMINI_API_KEY for full fact extraction.");
     }
     db.chunks.push(...chunks);
     db.facts.push(...facts);
@@ -164,7 +164,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (aiAvailable() && aiCoolingDown())
-    warnings.push("AI provider is rate-limited right now — pattern extraction was used. Re-upload or re-run analysis later (or add more GEMINI_API_KEY_2/3 keys) for full AI fact extraction.");
+    warnings.push("AI provider is rate-limited right now, pattern extraction was used. Re-upload or re-run analysis later (or add more GEMINI_API_KEY_2/3 keys) for full AI fact extraction.");
 
   // conflicts recomputed company-wide
   db.conflicts = db.conflicts.filter((c) => c.companyId !== company.id);

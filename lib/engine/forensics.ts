@@ -8,13 +8,13 @@ import type { IntegritySignal, IntegrityScore } from "../types";
  *
  * This does NOT detect fraud and makes no accusation. It scores the INTERNAL
  * CONSISTENCY and earnings-quality of the numbers the promoter has themselves
- * reported — the same sniff-test a merchant banker or exchange reviewer applies
+ * reported, the same sniff-test a merchant banker or exchange reviewer applies
  * to a first-time SME before a DRHP is filed. Every signal is derived from data
  * the rule engine already computed (cash-flow conversion, receivable spikes,
  * margin jumps, RPT concentration, use-of-proceeds) plus a light Benford
  * first-digit check. The output tells the promoter what a reviewer will most
  * likely question, so they can prepare the explanation (or fix the disclosure)
- * BEFORE filing — never a verdict of wrongdoing.
+ * BEFORE filing, never a verdict of wrongdoing.
  */
 
 const r1 = (n: number) => Math.round(n * 10) / 10;
@@ -34,8 +34,8 @@ function firstDigit(n: number): number | null {
 const benfordExpected = (d: number) => Math.log10(1 + 1 / d);
 
 /**
- * Collect every reported magnitude we can see — audited figures, objects
- * amounts and numbers extracted from uploaded documents — and measure how far
+ * Collect every reported magnitude we can see, audited figures, objects
+ * amounts and numbers extracted from uploaded documents, and measure how far
  * the leading-digit distribution sits from Benford's law. With a small sample
  * this is only indicative, so we say so and never deduct hard on it.
  */
@@ -58,7 +58,7 @@ function benfordCheck(company: Company, objects: ObjectOfIssue[], docs: Document
   const n = digits.length;
   if (n < 20) {
     return { checked: false, sampleSize: n, madPct: null as number | null,
-      note: `Only ${n} reported figures available — too few for a reliable leading-digit test. Upload more financial documents to enable it.` };
+      note: `Only ${n} reported figures available, too few for a reliable leading-digit test. Upload more financial documents to enable it.` };
   }
   const counts = new Array(10).fill(0);
   for (const d of digits) counts[d]++;
@@ -68,7 +68,7 @@ function benfordCheck(company: Company, objects: ObjectOfIssue[], docs: Document
   const madPct = r1(mad * 100);
   const note =
     mad < 0.012 ? `Leading-digit spread of the reported figures tracks the natural (Benford) distribution (deviation ${madPct}%).`
-      : mad < 0.02 ? `Leading-digit spread deviates modestly from the natural distribution (deviation ${madPct}%) — usually benign for a small sample, worth an eye.`
+      : mad < 0.02 ? `Leading-digit spread deviates modestly from the natural distribution (deviation ${madPct}%), usually benign for a small sample, worth an eye.`
         : `Leading-digit spread deviates from the natural distribution (deviation ${madPct}%). With ${n} figures this is only indicative, but reviewers do look for over-rounded numbers.`;
   return { checked: true, sampleSize: n, madPct, note };
 }
@@ -104,7 +104,7 @@ export function computeIntegrityScore(
     const status = q < 60 ? "flag" : q < 85 ? "watch" : "clean";
     sig("cfo-pat", "Cash-flow conversion", 18, status, status === "flag" ? 1 : status === "watch" ? 0.5 : 0,
       `${latest.fy} operating cash flow ₹${latest.cfoCr} Cr is ${q}% of reported profit ₹${latest.patCr} Cr.`,
-      "Profit not backed by cash is the first thing a reviewer questions — it can signal aggressive revenue recognition or uncollected sales.",
+      "Profit not backed by cash is the first thing a reviewer questions, it can signal aggressive revenue recognition or uncollected sales.",
       "Prepare a receivables ageing schedule and a collection plan; an auditor comfort note on cash conversion helps.");
   } else {
     sig("cfo-pat", "Cash-flow conversion", 18, "na", 0,
@@ -152,12 +152,12 @@ export function computeIntegrityScore(
     const status = max > 60 ? "flag" : max > 30 ? "watch" : "clean";
     const top = ctx.rptRisks.slice().sort((a, b) => b.riskScore - a.riskScore)[0];
     sig("rpt", "Related-party concentration", 20, status, status === "flag" ? 1 : status === "watch" ? 0.5 : 0,
-      `${ctx.rptRisks.length} related-party signal(s); highest risk ${max}/100 — ${top.entityName} (${top.relationship}).`,
+      `${ctx.rptRisks.length} related-party signal(s); highest risk ${max}/100, ${top.entityName} (${top.relationship}).`,
       "Undisclosed or unpriced promoter-group dealings are the costliest SME disclosure defect and the strongest fund-diversion signal.",
       "Disclose each RPT with year-wise amounts, arm's-length pricing basis and audit-committee ratification.");
   } else {
     sig("rpt", "Related-party concentration", 20, "na", 0,
-      "No related-party register uploaded, so this cannot be assessed — non-detection is not clearance.",
+      "No related-party register uploaded, so this cannot be assessed, non-detection is not clearance.",
       "Unpriced promoter-group dealings are the strongest fund-diversion signal.",
       "Upload the related-party transaction register so this can be evaluated.");
   }
@@ -225,7 +225,7 @@ export function computeIntegrityScore(
     sig("benford", "Leading-digit (Benford) pattern", 8, status, status === "flag" ? 1 : status === "watch" ? 0.5 : 0,
       benford.note,
       "Naturally occurring financial figures follow a predictable leading-digit spread; heavy deviation can indicate manually set or over-rounded numbers.",
-      status === "clean" ? "—" : "No action needed on its own — this only adds weight when other signals also point the same way.");
+      status === "clean" ? "—" : "No action needed on its own, this only adds weight when other signals also point the same way.");
   } else {
     sig("benford", "Leading-digit (Benford) pattern", 8, "na", 0,
       benford.note,
@@ -246,14 +246,14 @@ export function computeIntegrityScore(
   const summary =
     flags === 0 && watches === 0
       ? naCount >= 4
-        ? "Too little data to assess earnings quality yet — upload financials, the RPT register and objects evidence to compute a meaningful score."
-        : "Your reported numbers hang together well — no earnings-quality signals a reviewer would typically flag."
+        ? "Too little data to assess earnings quality yet, upload financials, the RPT register and objects evidence to compute a meaningful score."
+        : "Your reported numbers hang together well, no earnings-quality signals a reviewer would typically flag."
       : `${flags} item(s) a reviewer will likely question and ${watches} to keep an eye on. Prepare the explanations below before the merchant banker review.`;
 
   return {
     score, band, summary, signals,
     benford,
     disclaimer:
-      "This is an internal-consistency and earnings-quality indicator computed from your own reported figures. It is NOT fraud detection and implies no wrongdoing — it surfaces what an exchange reviewer or merchant banker is most likely to question, so you can prepare in advance.",
+      "This is an internal-consistency and earnings-quality indicator computed from your own reported figures. It is NOT fraud detection and implies no wrongdoing, it surfaces what an exchange reviewer or merchant banker is most likely to question, so you can prepare in advance.",
   };
 }

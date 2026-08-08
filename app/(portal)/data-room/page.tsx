@@ -11,7 +11,7 @@ export default async function DataRoomPage() {
     return (
       <>
         <PageHeader title="Smart Data Room" />
-        <EmptyState title="No company yet" message="Create your company profile first — then upload your documents here." />
+        <EmptyState title="No company yet" message="Create your company profile first, then upload your documents here." />
       </>
     );
   }
@@ -19,7 +19,7 @@ export default async function DataRoomPage() {
     <>
       <PageHeader
         title="Upload & Data Room"
-        subtitle="Upload any IPO-related documents you currently have. SIIM will classify them, extract facts, generate available sections, and show what is missing. Nothing is mandatory — start with what you have."
+        subtitle="Upload any IPO-related documents you currently have. SIIM will classify them, extract facts, generate available sections, and show what is missing. Nothing is mandatory, start with what you have."
       />
       <BankerFlagsCard flags={flags.filter((f) => f.targetType === "document")} title="Document corrections from your merchant banker" />
       <DataRoom docs={docs} />

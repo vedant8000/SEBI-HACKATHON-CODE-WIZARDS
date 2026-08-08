@@ -22,7 +22,7 @@ export interface AppContext {
   flags: BankerFlag[];
 }
 
-/** Everything the app knows about ONE company — shared by promoter & banker views. */
+/** Everything the app knows about ONE company, shared by promoter & banker views. */
 export function composeCompanyContext(db: Db, company: Company | null): AppContext {
   if (!company)
     return {
@@ -48,7 +48,7 @@ export function composeCompanyContext(db: Db, company: Company | null): AppConte
 }
 
 /**
- * One-stop context for server components & routes — always fresh from MongoDB
+ * One-stop context for server components & routes, always fresh from MongoDB
  * and ALWAYS scoped to the logged-in user: a promoter sees only their own
  * companies, a banker only code-linked ones. No session → no company.
  */

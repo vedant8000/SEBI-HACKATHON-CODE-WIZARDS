@@ -2,7 +2,7 @@ import type { FinancialYear } from "../types";
 import type { ParsedProfile } from "../document-processing/profile-parser";
 
 /**
- * India-Stack auto-population — SIMULATED connectors.
+ * India-Stack auto-population, SIMULATED connectors.
  *
  * In production these map to real rails: MCA21 V3 (company master + AOC-4 / XBRL
  * financials), GSTN (turnover), DigiLocker / CKYC (promoter KYC), and the Udyam

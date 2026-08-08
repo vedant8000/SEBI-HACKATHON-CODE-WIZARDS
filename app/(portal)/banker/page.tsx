@@ -16,7 +16,7 @@ export default async function BankerOverviewPage() {
       <>
         <PageHeader
           title="Merchant Banker Workspace"
-          subtitle="Review an SME's IPO filing: their uploaded documents, extracted facts, gaps, inconsistencies and draft — and pinpoint exactly what must be corrected before the DRHP can proceed."
+          subtitle="Review an SME's IPO filing: their uploaded documents, extracted facts, gaps, inconsistencies and draft, and pinpoint exactly what must be corrected before the DRHP can proceed."
         />
         <LinkCompanyForm />
       </>
@@ -35,7 +35,7 @@ export default async function BankerOverviewPage() {
     <>
       <PageHeader
         title={`Reviewing: ${company.name}`}
-        subtitle={`Everything below is computed from the promoter's own uploads and profile. Inspect the filing documents, pinpoint corrections, and review the draft section-by-section.${ctx.linkedCompanies.length > 1 ? ` (You are linked to ${ctx.linkedCompanies.length} companies — the first is shown.)` : ""}`}
+        subtitle={`Everything below is computed from the promoter's own uploads and profile. Inspect the filing documents, pinpoint corrections, and review the draft section-by-section.${ctx.linkedCompanies.length > 1 ? ` (You are linked to ${ctx.linkedCompanies.length} companies, the first is shown.)` : ""}`}
         actions={<Badge tone="navy">Code {company.companyCode ?? "—"}</Badge>}
       />
 
@@ -44,7 +44,7 @@ export default async function BankerOverviewPage() {
           <ScoreDonut score={analysis?.scores.overall ?? 0} />
           <div>
             <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">IPO Readiness</div>
-            <div className="text-sm text-slate-700 mt-1 max-w-[240px]">{analysis?.scores.statusLine ?? "Analysis not run yet — ask the promoter to complete setup."}</div>
+            <div className="text-sm text-slate-700 mt-1 max-w-[240px]">{analysis?.scores.statusLine ?? "Analysis not run yet, ask the promoter to complete setup."}</div>
           </div>
         </Card>
         <StatCard label="Critical / High Gaps" value={`${critical} / ${high}`} tone={critical ? "bad" : high ? "warn" : "good"} sub="Open items blocking the filing" />
@@ -63,7 +63,7 @@ export default async function BankerOverviewPage() {
         <Link href="/banker/issues" className="block">
           <Card className="p-4 h-full hover:border-amber-300">
             <div className="text-sm font-semibold text-slate-800">2 · Pinpoint Issues & Corrections →</div>
-            <p className="text-xs text-slate-500 mt-1">Missing data, inconsistencies and RPT risks — flag exactly what the promoter must fix.</p>
+            <p className="text-xs text-slate-500 mt-1">Missing data, inconsistencies and RPT risks, flag exactly what the promoter must fix.</p>
           </Card>
         </Link>
         <Link href="/banker/draft-review" className="block">

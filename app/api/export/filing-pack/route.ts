@@ -7,16 +7,16 @@ import { appendExportLedger, companyExportLedger, saveDb } from "@/lib/store";
 import { getSessionUser } from "@/lib/auth/session";
 
 /**
- * Machine-readable filing pack — the "SIIM Disclosure Data Model".
+ * Machine-readable filing pack, the "SIIM Disclosure Data Model".
  *
  * Alongside the human-readable DRHP (see /api/export/draft), this endpoint emits
  * a structured JSON representation of the entire offer document: issuer, issue,
  * financials, readiness scores, SME-framework obligations, every drafted section
- * and every extracted fact WITH its source-file/page provenance — plus a
+ * and every extracted fact WITH its source-file/page provenance, plus a
  * SHA-256 content hash for tamper-evidence.
  *
  * Purpose: straight-through, comparable, source-linked data for the merchant
- * banker's systems and for regulatory supervision — structured data, not a PDF.
+ * banker's systems and for regulatory supervision, structured data, not a PDF.
  * It is explicitly a preparation artefact, never a regulatory submission.
  */
 export async function GET() {
@@ -87,7 +87,7 @@ export async function GET() {
     disclaimer:
       "AI-assisted preparation artefact produced by SIIM. NOT an offer document, NOT filed with SEBI or any stock exchange, and NOT to be used to invite subscription. Final responsibility rests with the issuer and its SEBI-registered intermediaries.",
     framework: {
-      regulation: "SEBI (ICDR) Regulations, 2018 — Chapter IX (SME), as amended (Dec-2024 board decision / Mar-2025)",
+      regulation: "SEBI (ICDR) Regulations, 2018, Chapter IX (SME), as amended (Dec-2024 board decision / Mar-2025)",
       platform: company.proposedListingExchange || "SME platform (NSE Emerge / BSE SME)",
     },
     issuer: {

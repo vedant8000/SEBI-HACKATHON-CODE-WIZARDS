@@ -3,7 +3,7 @@ import { loadDb, promoterCompanies, purgeCompanyIds, saveDb } from "@/lib/store"
 import { getSessionUser } from "@/lib/auth/session";
 
 /**
- * Reset — fresh start for THIS promoter only. Deletes the caller's companies
+ * Reset, fresh start for THIS promoter only. Deletes the caller's companies
  * and everything attached to them; other promoters' data is untouched.
  */
 export async function DELETE() {

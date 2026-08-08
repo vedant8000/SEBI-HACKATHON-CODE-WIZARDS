@@ -28,7 +28,7 @@ export default async function PortalLayout({ children }: { children: React.React
                 ? analysis
                   ? `Readiness ${analysis.scores.overall}/100 · ${analysis.scores.statusLine}`
                   : "Analysis not run yet"
-                : "No company linked yet — enter the promoter's company code"
+                : "No company linked yet, enter the promoter's company code"
             }
             aiReady={aiAvailable()}
           />

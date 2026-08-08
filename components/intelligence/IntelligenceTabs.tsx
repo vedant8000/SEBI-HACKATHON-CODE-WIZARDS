@@ -19,7 +19,7 @@ import {
   XCircle,
 } from "lucide-react";
 import type {
-  AnalysisResult, CheckStatus, CoverageRow, FactConflict, FinancialYear, ObjectOfIssue, ReadinessCheck,
+  AnalysisResult, CheckStatus, CoverageRow, FactConflict, FinancialCheck, FinancialYear, Gap, ObjectOfIssue, ReadinessCheck, Severity,
 } from "@/lib/types";
 import {
   Badge, GlassPanel, GlassStat, HeroBackdrop, ProgressBar, ScoreDonut, SeverityBadge,
@@ -31,7 +31,7 @@ import { prettyLabel } from "@/lib/utils/labels";
 import type { PeerBenchmark } from "@/lib/engine/peers";
 
 const TABS = [
-  "Overview", "Disclosure Integrity", "SME Framework", "Missing Data", "Inconsistencies",
+  "Overview", "Disclosure Integrity", "SME Framework", "Gaps & Inconsistencies",
   "RPT & Fund Use Risk", "Objects of Issue", "Valuation & Peers", "Exchange Observations",
 ] as const;
 
@@ -67,14 +67,16 @@ const riskTone: Record<string, string> = {
 
 const riskExplain: Record<string, string> = {
   Ready: "Enough sourced facts are available to generate this section in full.",
-  "Needs Clarification": "Some facts are missing or low-confidence — review before drafting.",
+  "Needs Clarification": "Some facts are missing or low-confidence, review before drafting.",
   "Critical Issue": "Key facts are missing or conflicting, blocking a reliable draft here.",
-  "Missing Data": "No extracted facts yet — upload supporting documents for this section.",
+  "Missing Data": "No extracted facts yet, upload supporting documents for this section.",
 };
 
 type RuleView = "attention" | "all" | CheckStatus;
 type ObservationView = "all" | "Critical" | "High" | "Medium" | "Low";
 type HeatmapView = "All" | CoverageRow["riskLevel"];
+type IssueView = "all" | "gaps" | "conflicts" | "financial";
+type IssueSeverity = "All" | Severity;
 
 export default function IntelligenceTabs({
   analysis, coverage, conflicts, objects, evidenceDocs, freshIssueCr, benchmark,
@@ -97,6 +99,8 @@ export default function IntelligenceTabs({
   const [observationView, setObservationView] = useState<ObservationView>("all");
   const [heatmapView, setHeatmapView] = useState<HeatmapView>("All");
   const [selectedHeatmapSection, setSelectedHeatmapSection] = useState<string | null>(null);
+  const [issueView, setIssueView] = useState<IssueView>("all");
+  const [issueSeverity, setIssueSeverity] = useState<IssueSeverity>("All");
 
   const rerun = async () => {
     setRunning(true);
@@ -112,6 +116,17 @@ export default function IntelligenceTabs({
   const finChecks = [...(analysis?.financialChecks ?? [])].sort(
     (a, b) => sevOrder[a.severity] - sevOrder[b.severity]);
   const finIssues = finChecks.filter((c) => c.severity !== "Low");
+  const severityMatches = (severity: Severity) => issueSeverity === "All" || severity === issueSeverity;
+  const visibleGaps = sortedGaps.filter((gap) => severityMatches(gap.severity));
+  const visibleConflicts = openConflicts.filter((conflict) => severityMatches(conflict.severity));
+  const visibleFinancialChecks = finChecks.filter((check) => severityMatches(check.severity));
+  const visibleIssueCount = (issueView === "all" || issueView === "gaps" ? visibleGaps.length : 0)
+    + (issueView === "all" || issueView === "conflicts" ? visibleConflicts.length : 0)
+    + (issueView === "all" || issueView === "financial" ? visibleFinancialChecks.length : 0);
+  const criticalIssueCount = sortedGaps.filter((gap) => gap.severity === "Critical").length
+    + openConflicts.filter((conflict) => conflict.severity === "Critical").length
+    + finIssues.filter((check) => check.severity === "Critical").length;
+  const resolvedGapCount = analysis?.gaps.filter((gap) => gap.status === "Resolved").length ?? 0;
   const rpt = analysis?.rptRisks ?? [];
   const observations = analysis?.observations ?? [];
   const observationOrder = { Critical: 0, High: 1, Medium: 2, Low: 3 } as const;
@@ -156,7 +171,7 @@ export default function IntelligenceTabs({
     fundUseWarnings.push(`Objects total ₹${objectsTotal.toFixed(1)} Cr does not match the fresh issue of ₹${freshIssueCr} Cr.`);
   const gcp = objects.filter((o) => /general corporate/i.test(o.category)).reduce((x, o) => x + o.amountCr, 0);
   if (objectsTotal > 0 && gcp / objectsTotal > 0.25)
-    fundUseWarnings.push(`General corporate purposes is ${Math.round((gcp / objectsTotal) * 100)}% of the plan — above the typical 25% ceiling.`);
+    fundUseWarnings.push(`General corporate purposes is ${Math.round((gcp / objectsTotal) * 100)}% of the plan, above the typical 25% ceiling.`);
 
   if (!analysis) {
     return (
@@ -181,10 +196,9 @@ export default function IntelligenceTabs({
           {TABS.map((t) => {
             const count = t === "Disclosure Integrity" ? integrityFlags
               : t === "SME Framework" ? obAttention
-                : t === "Missing Data" ? gaps.length
-                  : t === "Inconsistencies" ? finIssues.length + openConflicts.length
-                    : t === "Exchange Observations" ? observations.length
-                      : 0;
+                : t === "Gaps & Inconsistencies" ? gaps.length + finIssues.length + openConflicts.length
+                  : t === "Exchange Observations" ? observations.length
+                    : 0;
             return (
               <button key={t} onClick={() => setTab(t)}
                 className={`inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-center text-xs font-semibold leading-4 transition-all ${tab === t ? "bg-gradient-to-r from-[#174376] to-blue-600 text-white shadow-md shadow-blue-900/20" : "border border-transparent bg-white/45 text-slate-600 hover:border-blue-100 hover:bg-blue-50 hover:text-blue-700"}`}>
@@ -241,7 +255,7 @@ export default function IntelligenceTabs({
 
           <GlassPanel className="overflow-hidden">
             <div className="grid divide-y divide-slate-100 md:grid-cols-3 md:divide-x md:divide-y-0">
-              <SignalStrip icon={XCircle} label="Evidence conflicts" value={openConflicts.length} note="Values disagree across documents" tone={openConflicts.length ? "red" : "green"} onClick={() => setTab("Inconsistencies")} />
+              <SignalStrip icon={XCircle} label="Evidence conflicts" value={openConflicts.length} note="Values disagree across documents" tone={openConflicts.length ? "red" : "green"} onClick={() => setTab("Gaps & Inconsistencies")} />
               <SignalStrip icon={Sparkles} label="Disclosure integrity" value={integrity ? `${integrity.score}/100` : "Pending"} note={integrity ? `${integrityFlags} signal${integrityFlags === 1 ? "" : "s"} to prepare for` : "Run analysis to calculate"} tone={integrity && integrity.score < 70 ? "amber" : "green"} onClick={() => setTab("Disclosure Integrity")} />
               <SignalStrip icon={FileSearch} label="Predicted observations" value={observations.length} note="Likely exchange reviewer queries" tone={observations.length ? "amber" : "green"} onClick={() => setTab("Exchange Observations")} />
             </div>
@@ -312,7 +326,7 @@ export default function IntelligenceTabs({
                 <h3 className="text-sm font-semibold text-[#15345b]">Priority remediation queue</h3>
                 <p className="mt-0.5 text-xs text-slate-500">The five issues with the greatest impact on readiness and draft quality</p>
               </div>
-              {sortedGaps.length > 0 && <button type="button" onClick={() => setTab("Missing Data")} className="inline-flex items-center gap-1 text-xs font-semibold text-blue-700 hover:text-blue-900">View all {sortedGaps.length} gaps <ArrowRight size={13} /></button>}
+              {sortedGaps.length > 0 && <button type="button" onClick={() => setTab("Gaps & Inconsistencies")} className="inline-flex items-center gap-1 text-xs font-semibold text-blue-700 hover:text-blue-900">View all {sortedGaps.length} gaps <ArrowRight size={13} /></button>}
             </div>
             {sortedGaps.length === 0 ? (
               <div className="px-5 py-10 text-center">
@@ -408,7 +422,7 @@ export default function IntelligenceTabs({
               Eligibility and structural obligations under the current SME framework, computed from your profile and
               objects where the data allows. <span className="font-medium text-slate-600">Pending</span> items are
               process obligations ensured at the RHP stage with your merchant banker. This is a preparation aid, not
-              legal advice — your merchant banker and legal counsel confirm final compliance.
+              legal advice, your merchant banker and legal counsel confirm final compliance.
             </p>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-5">
               <GlassStat label="Met" value={obligations.filter((o) => o.status === "Met").length} tone="good" sub="Data confirms compliance" />
@@ -451,64 +465,107 @@ export default function IntelligenceTabs({
         </div>
       )}
 
-      {/* ── Tab 2: Missing Data ─────────────────────────────────────────── */}
-      {tab === "Missing Data" && (
-        <div className="space-y-3">
-          {sortedGaps.length === 0 && <GlassPanel className="p-8 text-center text-sm text-slate-400">No missing data or open gaps.</GlassPanel>}
-          {sortedGaps.map((g) => (
-            <GlassPanel key={g.id} className="p-5">
-              <div className="flex flex-wrap items-center gap-2 mb-2">
-                <SeverityBadge severity={g.severity} />
-                <h3 className="text-sm font-semibold text-slate-800">{g.title}</h3>
-                <span className="text-xs text-slate-400">· {g.affectedSection}</span>
-                <span className="ml-auto flex items-center gap-2">
-                  <Badge tone="blue">Owner: {g.owner}</Badge>
-                  <Badge tone={g.status === "In Progress" ? "yellow" : "grey"}>{g.status}</Badge>
-                </span>
-              </div>
-              <p className="text-sm text-slate-600">{g.explanation}</p>
-              <div className="grid md:grid-cols-2 gap-3 mt-3 text-[13px]">
-                <div className="bg-slate-50 rounded-lg px-3 py-2"><span className="font-medium text-slate-700">Missing fact/document:</span> <span className="text-slate-600">{g.requiredDocument}</span></div>
-                <div className="bg-blue-50 rounded-lg px-3 py-2"><span className="font-medium text-blue-800">Suggested fix:</span> <span className="text-blue-900">{g.suggestedFix}</span></div>
+      {/* ── Tab: Gaps & Inconsistencies (merged) ────────────────────────── */}
+      {tab === "Gaps & Inconsistencies" && (
+        <div className="space-y-5">
+          <section className="grid gap-4 xl:grid-cols-[1.25fr_1fr]">
+            <GlassPanel className="relative overflow-hidden !border-blue-400/40 !bg-gradient-to-br !from-[#102b4d] !via-[#174376] !to-blue-700 p-5 text-white md:p-6">
+              <div className="pointer-events-none absolute -right-12 -top-16 h-56 w-56 rounded-full bg-cyan-300/15 blur-3xl" />
+              <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center">
+                <span className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl border border-white/15 bg-white/10 text-cyan-100 shadow-lg"><AlertTriangle size={28} /></span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-200">Remediation control centre</p>
+                  <h2 className="mt-2 text-2xl font-semibold">Resolve the exceptions that weaken your draft</h2>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-blue-100">Separate missing evidence from conflicting values and financial cross-checks, then route every issue to the person who can close it.</p>
+                  <div className="mt-4 flex flex-wrap gap-2 text-[10px] font-semibold">
+                    <span className="rounded-lg bg-white/10 px-2.5 py-1.5">{sortedGaps.length + openConflicts.length + finIssues.length} actionable exceptions</span>
+                    <span className="rounded-lg bg-white/10 px-2.5 py-1.5">{resolvedGapCount} gaps resolved</span>
+                    <span className="rounded-lg bg-white/10 px-2.5 py-1.5">Evidence-linked findings</span>
+                  </div>
+                </div>
               </div>
             </GlassPanel>
-          ))}
-        </div>
-      )}
 
-      {/* ── Tab 3: Inconsistencies ──────────────────────────────────────── */}
-      {tab === "Inconsistencies" && (
-        <div className="space-y-3">
-          {openConflicts.length > 0 && (
-            <GlassPanel className="p-4 !border-red-300/80 !bg-red-100/80">
-              <h3 className="text-sm font-semibold text-red-800 mb-2">Fact conflicts across documents</h3>
-              <ul className="space-y-1.5 text-[13px] text-red-900">
-                {openConflicts.map((c) => (
-                  <li key={c.id}>⚠ <strong>{prettyLabel(c.factKey)}</strong>: {c.valueA} ({c.sourceA}) vs {c.valueB} ({c.sourceB})</li>
-                ))}
-              </ul>
+            <div className="grid grid-cols-2 gap-3">
+              <IssueMetric icon={XCircle} label="Critical items" value={criticalIssueCount} note="Resolve before draft reliance" tone={criticalIssueCount ? "red" : "green"} />
+              <IssueMetric icon={FileSearch} label="Open gaps" value={sortedGaps.length} note={`${sortedGaps.filter((gap) => gap.severity === "High").length} high priority`} tone={sortedGaps.length ? "amber" : "green"} />
+              <IssueMetric icon={AlertTriangle} label="Fact conflicts" value={openConflicts.length} note="Values disagree across sources" tone={openConflicts.length ? "red" : "green"} />
+              <IssueMetric icon={BarChart3} label="Financial exceptions" value={finIssues.length} note={`${finChecks.length} cross-checks completed`} tone={finIssues.length ? "amber" : "green"} />
+            </div>
+          </section>
+
+          <GlassPanel className="p-4">
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-[#15345b]">Issue workspace</h3>
+                <p className="mt-0.5 text-xs text-slate-500">Choose an issue type and severity to focus the remediation queue.</p>
+              </div>
+              <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
+                <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Issue type filters">
+                  <IssueFilter active={issueView === "all"} label="All results" count={sortedGaps.length + openConflicts.length + finChecks.length} onClick={() => setIssueView("all")} />
+                  <IssueFilter active={issueView === "gaps"} label="Missing data" count={sortedGaps.length} onClick={() => setIssueView("gaps")} />
+                  <IssueFilter active={issueView === "conflicts"} label="Document conflicts" count={openConflicts.length} onClick={() => setIssueView("conflicts")} />
+                  <IssueFilter active={issueView === "financial"} label="Financial checks" count={finChecks.length} onClick={() => setIssueView("financial")} />
+                </div>
+                <span className="hidden h-6 w-px bg-slate-200 lg:block" />
+                <div className="flex flex-wrap gap-1" aria-label="Severity filters">
+                  {(["All", "Critical", "High", "Medium", "Low"] as IssueSeverity[]).map((severity) => (
+                    <button key={severity} type="button" aria-pressed={issueSeverity === severity} onClick={() => setIssueSeverity(severity)} className={`rounded-lg px-2.5 py-1.5 text-[10px] font-semibold transition ${issueSeverity === severity ? "bg-slate-800 text-white shadow-sm" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>{severity}</button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </GlassPanel>
+
+          {visibleIssueCount === 0 && (
+            <GlassPanel className="px-6 py-12 text-center">
+              <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-emerald-50 text-emerald-600"><CheckCircle2 size={22} /></span>
+              <h3 className="mt-3 text-sm font-semibold text-slate-800">No matching exceptions</h3>
+              <p className="mx-auto mt-1 max-w-md text-xs leading-5 text-slate-500">No results match the selected type and severity. Change the filters to inspect the complete audit.</p>
             </GlassPanel>
           )}
-          {finChecks.length === 0 && openConflicts.length === 0 && (
-            <GlassPanel className="p-8 text-center text-sm text-slate-400">
-              No cross-document inconsistencies detected. Upload audited financials AND GST returns (plus the RPT register and quotations) so numbers can be compared across sources.
-            </GlassPanel>
+
+          {(issueView === "all" || issueView === "conflicts") && visibleConflicts.length > 0 && (
+            <IssueSection
+              icon={AlertTriangle}
+              title="Cross-document fact conflicts"
+              description="The same disclosure appears with different values. Confirm the authoritative source before accepting either value."
+              count={visibleConflicts.length}
+              tone="red"
+            >
+              <div className="grid gap-3 lg:grid-cols-2">
+                {visibleConflicts.map((conflict) => <ConflictIssueCard key={conflict.id} conflict={conflict} />)}
+              </div>
+            </IssueSection>
           )}
-          {finChecks.map((c) => (
-            <GlassPanel key={c.id} className="p-5">
-              <div className="flex flex-wrap items-center gap-2 mb-2">
-                <SeverityBadge severity={c.severity} />
-                <h3 className="text-sm font-semibold text-slate-800">{c.checkName}</h3>
+
+          {(issueView === "all" || issueView === "gaps") && visibleGaps.length > 0 && (
+            <IssueSection
+              icon={FileSearch}
+              title="Missing data and disclosure gaps"
+              description="Collect the required evidence, follow the suggested action and keep ownership explicit."
+              count={visibleGaps.length}
+              tone="amber"
+            >
+              <div className="grid gap-3 lg:grid-cols-2">
+                {visibleGaps.map((gap) => <GapIssueCard key={gap.id} gap={gap} />)}
               </div>
-              <div className="grid md:grid-cols-3 gap-3 text-[13px] mb-2">
-                <div className="bg-slate-50 rounded-lg px-3 py-2"><div className="text-slate-400 text-xs">Expected</div><div className="font-medium text-slate-700">{c.expectedValue}</div></div>
-                <div className="bg-slate-50 rounded-lg px-3 py-2"><div className="text-slate-400 text-xs">Found</div><div className="font-medium text-slate-700">{c.foundValue}</div></div>
-                <div className={`rounded-lg px-3 py-2 ${c.severity === "Low" ? "bg-emerald-50" : "bg-red-50"}`}><div className="text-slate-400 text-xs">Difference</div><div className={`font-medium ${c.severity === "Low" ? "text-emerald-700" : "text-red-700"}`}>{c.difference}</div></div>
+            </IssueSection>
+          )}
+
+          {(issueView === "all" || issueView === "financial") && visibleFinancialChecks.length > 0 && (
+            <IssueSection
+              icon={BarChart3}
+              title="Financial consistency checks"
+              description="Compare expected and reported values, then prepare a reconciliation wherever the difference is material."
+              count={visibleFinancialChecks.length}
+              tone={visibleFinancialChecks.some((check) => check.severity !== "Low") ? "blue" : "green"}
+            >
+              <div className="grid gap-3 lg:grid-cols-2">
+                {visibleFinancialChecks.map((check) => <FinancialIssueCard key={check.id} check={check} />)}
               </div>
-              <p className="text-sm text-slate-600">{c.explanation}</p>
-              {c.suggestedFix !== "—" && <p className="text-[13px] text-blue-800 bg-blue-50 rounded-lg px-3 py-2 mt-2"><span className="font-medium">Suggested fix:</span> {c.suggestedFix}</p>}
-            </GlassPanel>
-          ))}
+            </IssueSection>
+          )}
         </div>
       )}
 
@@ -523,8 +580,8 @@ export default function IntelligenceTabs({
               </div>
               <p className="text-sm text-slate-600 mt-1 max-w-2xl">
                 {rpt.length
-                  ? `${rpt.length} related-party signal(s) detected in your documents. Undisclosed, these are the costliest IPO mistake — disclose early, evidence thoroughly.`
-                  : "No related-party signals detected in current uploads. If your business transacts with promoter-connected entities, upload the RPT register — non-detection is not clearance."}
+                  ? `${rpt.length} related-party signal(s) detected in your documents. Undisclosed, these are the costliest IPO mistake, disclose early, evidence thoroughly.`
+                  : "No related-party signals detected in current uploads. If your business transacts with promoter-connected entities, upload the RPT register, non-detection is not clearance."}
               </p>
             </div>
           </GlassPanel>
@@ -551,9 +608,9 @@ export default function IntelligenceTabs({
           <GlassPanel className="p-5">
             <h3 className="text-sm font-semibold text-slate-800 mb-2">Fund-use warnings (from your Objects plan)</h3>
             {objects.length === 0 ? (
-              <p className="text-sm text-slate-400">No objects plan yet — build it in the &ldquo;Objects of Issue&rdquo; tab.</p>
+              <p className="text-sm text-slate-400">No objects plan yet, build it in the &ldquo;Objects of Issue&rdquo; tab.</p>
             ) : fundUseWarnings.length === 0 ? (
-              <p className="text-sm text-emerald-700">No fund-use warnings — objects reconcile with the fresh issue and carry evidence.</p>
+              <p className="text-sm text-emerald-700">No fund-use warnings, objects reconcile with the fresh issue and carry evidence.</p>
             ) : (
               <ul className="text-[13px] text-amber-900 space-y-1.5">
                 {fundUseWarnings.map((w, i) => <li key={i} className="bg-amber-50 border border-amber-200 rounded px-3 py-1.5">⚠ {w}</li>)}
@@ -579,7 +636,7 @@ export default function IntelligenceTabs({
             <p className="text-xs text-slate-500 max-w-3xl">
               Your fundamentals against a sector-matched set of comparable listed SMEs. Divergences are exactly what an
               exchange reviewer probes in the <em>Basis for Issue Price</em>. Peer figures are illustrative reference
-              values — your merchant banker substitutes the actual peer set and pricing for the filing.
+              values, your merchant banker substitutes the actual peer set and pricing for the filing.
             </p>
           </GlassPanel>
 
@@ -654,7 +711,7 @@ export default function IntelligenceTabs({
                     </tbody>
                   </table>
                 </div>
-                <p className="mt-3 text-[11px] text-slate-400">Illustrative reference peers for benchmarking — not live market data and not a valuation opinion. The merchant banker finalises the peer set and issue price.</p>
+                <p className="mt-3 text-[11px] text-slate-400">Illustrative reference peers for benchmarking, not live market data and not a valuation opinion. The merchant banker finalises the peer set and issue price.</p>
               </GlassPanel>
             </>
           )}
@@ -675,7 +732,7 @@ export default function IntelligenceTabs({
                 </div>
                 <h2 className="mt-4 max-w-xl text-2xl font-semibold leading-tight">See your draft through an exchange reviewer&apos;s eyes</h2>
                 <p className="mt-3 max-w-2xl text-sm leading-6 text-blue-100">
-                  SIIM converts your gaps, RPT signals, financial inconsistencies and framework breaches into the clarifications most likely to be raised—then prepares the response and evidence trail before filing.
+                  SIIM converts your gaps, RPT signals, financial inconsistencies and framework breaches into the clarifications most likely to be raised, then prepares the response and evidence trail before filing.
                 </p>
                 <div className="mt-5 flex flex-wrap items-center gap-2 text-[11px]">
                   <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/10 px-2.5 py-1.5 text-blue-50"><ShieldCheck size={13} /> Evidence-linked</span>
@@ -775,6 +832,144 @@ export default function IntelligenceTabs({
     </div>
     </HeroBackdrop>
   );
+}
+
+function IssueMetric({
+  icon: Icon,
+  label,
+  value,
+  note,
+  tone,
+}: {
+  icon: typeof FileSearch;
+  label: string;
+  value: number;
+  note: string;
+  tone: "green" | "amber" | "red";
+}) {
+  const styles = {
+    green: { panel: "!border-emerald-200 !bg-gradient-to-br !from-emerald-50 !to-white", icon: "bg-emerald-100 text-emerald-700" },
+    amber: { panel: "!border-amber-200 !bg-gradient-to-br !from-amber-50 !to-white", icon: "bg-amber-100 text-amber-700" },
+    red: { panel: "!border-red-200 !bg-gradient-to-br !from-red-50 !to-white", icon: "bg-red-100 text-red-700" },
+  }[tone];
+  return (
+    <GlassPanel className={`p-4 ${styles.panel}`}>
+      <div className="flex items-start justify-between gap-2">
+        <div><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">{label}</p><p className="mt-1 text-2xl font-bold text-[#15345b]">{value}</p></div>
+        <span className={`grid h-8 w-8 place-items-center rounded-lg ${styles.icon}`}><Icon size={16} /></span>
+      </div>
+      <p className="mt-2 truncate text-[11px] text-slate-500" title={note}>{note}</p>
+    </GlassPanel>
+  );
+}
+
+function IssueFilter({ active, label, count, onClick }: { active: boolean; label: string; count: number; onClick: () => void }) {
+  return (
+    <button type="button" role="tab" aria-selected={active} onClick={onClick} className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[10px] font-semibold transition ${active ? "border-[#15345b] bg-[#15345b] text-white shadow-sm" : "border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:text-blue-700"}`}>
+      {label}<span className={`rounded px-1 py-0.5 text-[9px] ${active ? "bg-white/15" : "bg-slate-100"}`}>{count}</span>
+    </button>
+  );
+}
+
+function IssueSection({
+  icon: Icon,
+  title,
+  description,
+  count,
+  tone,
+  children,
+}: {
+  icon: typeof FileSearch;
+  title: string;
+  description: string;
+  count: number;
+  tone: "red" | "amber" | "blue" | "green";
+  children: React.ReactNode;
+}) {
+  const styles = {
+    red: "bg-red-100 text-red-700",
+    amber: "bg-amber-100 text-amber-700",
+    blue: "bg-blue-100 text-blue-700",
+    green: "bg-emerald-100 text-emerald-700",
+  }[tone];
+  return (
+    <GlassPanel className="overflow-hidden">
+      <div className="flex items-start gap-3 border-b border-slate-100 bg-white/55 px-5 py-4">
+        <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${styles}`}><Icon size={18} /></span>
+        <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h3 className="text-sm font-semibold text-[#15345b]">{title}</h3><Badge tone={tone === "red" ? "red" : tone === "amber" ? "yellow" : tone === "green" ? "green" : "blue"}>{count} result{count === 1 ? "" : "s"}</Badge></div><p className="mt-1 text-xs leading-5 text-slate-500">{description}</p></div>
+      </div>
+      <div className="bg-slate-50/60 p-4">{children}</div>
+    </GlassPanel>
+  );
+}
+
+function ConflictIssueCard({ conflict }: { conflict: FactConflict }) {
+  return (
+    <article className="relative overflow-hidden rounded-xl border border-red-200 bg-white p-4 shadow-sm">
+      <span className="absolute inset-y-0 left-0 w-1 bg-red-500" />
+      <div className="flex items-start justify-between gap-3 pl-1">
+        <div><p className="text-[9px] font-bold uppercase tracking-[0.13em] text-red-600">Reconciliation required</p><h4 className="mt-1 text-sm font-semibold text-slate-800">{prettyLabel(conflict.factKey)}</h4></div>
+        <SeverityBadge severity={conflict.severity} />
+      </div>
+      <div className="mt-3 grid grid-cols-[1fr_auto_1fr] items-stretch gap-2 pl-1">
+        <ComparisonValue label="Source A" value={conflict.valueA} source={conflict.sourceA} tone="slate" />
+        <span className="self-center text-[9px] font-bold uppercase text-red-400">vs</span>
+        <ComparisonValue label="Source B" value={conflict.valueB} source={conflict.sourceB} tone="red" />
+      </div>
+      <p className="mt-3 pl-1 text-xs leading-5 text-slate-600">{conflict.explanation}</p>
+      <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3 pl-1"><span className="text-[10px] text-slate-400">Confirm the authoritative document</span><Link href="/evidence" className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-700 hover:text-blue-900">Open evidence <ArrowRight size={11} /></Link></div>
+    </article>
+  );
+}
+
+function ComparisonValue({ label, value, source, tone }: { label: string; value: string; source: string; tone: "slate" | "red" }) {
+  return (
+    <div className={`min-w-0 rounded-lg border p-2.5 ${tone === "red" ? "border-red-100 bg-red-50/70" : "border-slate-200 bg-slate-50"}`}>
+      <p className="text-[9px] font-bold uppercase tracking-wide text-slate-400">{label}</p><p className="mt-1 break-words text-sm font-semibold text-slate-800">{value}</p><p className="mt-1 truncate text-[9px] text-slate-500" title={source}>{source}</p>
+    </div>
+  );
+}
+
+function GapIssueCard({ gap }: { gap: Gap }) {
+  const accent = gap.severity === "Critical" ? "bg-red-500" : gap.severity === "High" ? "bg-amber-500" : "bg-blue-500";
+  const border = gap.severity === "Critical" ? "border-red-200" : gap.severity === "High" ? "border-amber-200" : "border-blue-100";
+  return (
+    <article className={`relative overflow-hidden rounded-xl border bg-white p-4 shadow-sm ${border}`}>
+      <span className={`absolute inset-y-0 left-0 w-1 ${accent}`} />
+      <div className="pl-1">
+        <div className="flex flex-wrap items-start gap-2"><SeverityBadge severity={gap.severity} /><Badge tone={gap.status === "In Progress" ? "yellow" : "grey"}>{gap.status}</Badge><Badge tone="blue">Owner: {gap.owner}</Badge></div>
+        <h4 className="mt-3 text-sm font-semibold text-slate-800">{gap.title}</h4>
+        <p className="mt-0.5 text-[10px] font-medium text-slate-400">Affected section · {gap.affectedSection}</p>
+        <p className="mt-2 text-xs leading-5 text-slate-600">{gap.explanation}</p>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          <div className="rounded-lg border border-amber-100 bg-amber-50/70 p-3"><p className="text-[9px] font-bold uppercase tracking-[0.12em] text-amber-700">Evidence needed</p><p className="mt-1 text-xs leading-5 text-amber-950">{gap.requiredDocument}</p></div>
+          <div className="rounded-lg border border-blue-100 bg-blue-50/70 p-3"><p className="text-[9px] font-bold uppercase tracking-[0.12em] text-blue-700">Recommended next action</p><p className="mt-1 text-xs leading-5 text-blue-950">{gap.suggestedFix}</p></div>
+        </div>
+        <div className="mt-3 flex justify-end border-t border-slate-100 pt-3"><Link href="/onboarding" className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-700 hover:text-blue-900">Add supporting evidence <ArrowRight size={11} /></Link></div>
+      </div>
+    </article>
+  );
+}
+
+function FinancialIssueCard({ check }: { check: FinancialCheck }) {
+  const consistent = check.severity === "Low";
+  return (
+    <article className={`relative overflow-hidden rounded-xl border bg-white p-4 shadow-sm ${consistent ? "border-emerald-200" : check.severity === "Critical" ? "border-red-200" : "border-amber-200"}`}>
+      <span className={`absolute inset-y-0 left-0 w-1 ${consistent ? "bg-emerald-500" : check.severity === "Critical" ? "bg-red-500" : "bg-amber-500"}`} />
+      <div className="flex items-start justify-between gap-3 pl-1"><div><p className={`text-[9px] font-bold uppercase tracking-[0.13em] ${consistent ? "text-emerald-600" : "text-amber-600"}`}>{consistent ? "Consistency check passed" : "Reconciliation required"}</p><h4 className="mt-1 text-sm font-semibold text-slate-800">{check.checkName}</h4></div><SeverityBadge severity={check.severity} /></div>
+      <div className="mt-3 grid grid-cols-3 gap-2 pl-1">
+        <FinancialValue label="Expected" value={check.expectedValue} />
+        <FinancialValue label="Found" value={check.foundValue} />
+        <FinancialValue label="Difference" value={check.difference} highlight={!consistent} />
+      </div>
+      <p className="mt-3 pl-1 text-xs leading-5 text-slate-600">{check.explanation}</p>
+      {check.suggestedFix !== "—" && <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50/70 p-3 text-xs leading-5 text-blue-900"><span className="font-semibold">Recommended action:</span> {check.suggestedFix}</div>}
+    </article>
+  );
+}
+
+function FinancialValue({ label, value, highlight = false }: { label: string; value: string; highlight?: boolean }) {
+  return <div className={`min-w-0 rounded-lg border p-2.5 ${highlight ? "border-red-100 bg-red-50" : "border-slate-100 bg-slate-50"}`}><p className="text-[9px] font-bold uppercase tracking-wide text-slate-400">{label}</p><p className={`mt-1 break-words text-xs font-semibold ${highlight ? "text-red-700" : "text-slate-700"}`}>{value}</p></div>;
 }
 
 function RuleOutcome({ label, value, tone }: { label: string; value: number; tone: "green" | "amber" | "red" | "slate" }) {
@@ -1033,7 +1228,7 @@ function HeatmapSectionCard({ row, selected, onClick }: { row: CoverageRow; sele
       onClick={onClick}
       aria-pressed={selected}
       className={`group relative w-full overflow-hidden rounded-xl border bg-white p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${riskTone[row.riskLevel]} ${selected ? selectedRing : ""}`}
-      title={`${row.sectionName} — ${row.completionPct}%\n${riskExplain[row.riskLevel]}`}
+      title={`${row.sectionName}, ${row.completionPct}%\n${riskExplain[row.riskLevel]}`}
     >
       <span className={`absolute inset-y-0 left-0 w-1 ${accent}`} />
       <div className="flex items-start justify-between gap-2 pl-1">

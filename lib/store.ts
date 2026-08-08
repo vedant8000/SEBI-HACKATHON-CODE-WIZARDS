@@ -25,7 +25,7 @@ import { computeChainHash } from "./utils/hash-chain";
  * top-level keys that actually changed since load (diffed via JSON snapshot).
  *
  * Collections: one per array key (companies, documents, chunks, facts,
- * conflicts, draftSections, objects, auditLog — array order preserved via an
+ * conflicts, draftSections, objects, auditLog, array order preserved via an
  * internal `_i` field), `objectsByCompany` / `analysis` as one doc per
  * company, and `meta` for the activeCompanyId singleton. Auth users live in
  * a separate `users` collection managed by lib/auth.ts.
@@ -213,7 +213,7 @@ export function genCompanyCode(taken: Set<string>): string {
 }
 
 /**
- * @deprecated Session-blind — returns the global active company regardless of
+ * @deprecated Session-blind, returns the global active company regardless of
  * who is asking, which leaks one promoter's data into another's session.
  * Use getActiveCompanyFor(db, sessionUser) instead.
  */
@@ -225,7 +225,7 @@ export function getActiveCompany(db: Db): Company | null {
 /**
  * The reserved testing account. It must ALWAYS start empty and is wiped on every
  * login (see the login route), so it strictly sees only its own companies —
- * never ownerless/sample data — and never accumulates state across sessions.
+ * never ownerless/sample data, and never accumulates state across sessions.
  */
 export const DEMO_PROMOTER_EMAIL = "promoter@siim.demo";
 export const isDemoPromoter = (email: string) => email.trim().toLowerCase() === DEMO_PROMOTER_EMAIL;
@@ -272,7 +272,7 @@ export function purgeCompanyIds(db: Db, ids: Set<string>): number {
 /**
  * The company THIS session should see: the promoter's own companies, or the
  * banker's code-linked companies. The global activeCompanyId only picks among
- * companies already in the caller's scope — never someone else's.
+ * companies already in the caller's scope, never someone else's.
  */
 export function getActiveCompanyFor(
   db: Db,

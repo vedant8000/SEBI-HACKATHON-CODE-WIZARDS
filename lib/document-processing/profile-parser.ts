@@ -6,13 +6,13 @@ import type { Company, FinancialYear } from "../types";
  * Reads the promoter's uploaded documents (Certificate of Incorporation, MOA,
  * KYC, board resolution, audited financials, GST summary, licenses, litigation
  * declaration, governance consents…) and fills the Company Profile fields that
- * are otherwise typed by hand in onboarding — including the year-wise financial
+ * are otherwise typed by hand in onboarding, including the year-wise financial
  * snapshot.
  *
  * Deterministic and AI-free: everything here is regex + context windows over
  * the document text, so it works without any API key. Every value carries
  * provenance (source file + confidence) so the promoter can review before
- * saving — the parser suggests, the promoter confirms.
+ * saving, the parser suggests, the promoter confirms.
  */
 
 // ── public shapes ────────────────────────────────────────────────────────────
@@ -97,7 +97,7 @@ const titleCase = (s: string) =>
 
 const CIN_RE = /\b[UL]\d{5}[A-Z]{2}\d{4}[A-Z]{3}\d{6}\b/;
 
-// state code (chars 7-8 of a CIN) → state name — fallback when the registered
+// state code (chars 7-8 of a CIN) → state name, fallback when the registered
 // office line isn't parseable
 const STATE_CODES: Record<string, string> = {
   AP: "Andhra Pradesh", AR: "Arunachal Pradesh", AS: "Assam", BR: "Bihar",
@@ -344,7 +344,7 @@ function parseLitigation(
   set: <K extends ProfileScalarKey>(k: K, v: Company[K], f: string, c: number) => void
 ) {
   // Prefer surfacing an actual demand/notice from ANY document over a bare NIL:
-  // a declaration may say "NIL" while a tax summary discloses a demand — the
+  // a declaration may say "NIL" while a tax summary discloses a demand, the
   // safer suggestion (and what a promoter must disclose) is the demand itself.
   const rank = (s: ParseSource) => (s.category === "Legal" ? 3 : s.category === "Tax Returns" ? 2 : 0);
   const ranked = [...readable].sort((a, b) => rank(b) - rank(a));

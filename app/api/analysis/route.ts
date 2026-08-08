@@ -17,7 +17,7 @@ export async function POST() {
   const user = await getSessionUser();
   const company = user ? getActiveCompanyFor(db, user) : null;
   if (!company) return NextResponse.json({ error: "Create a company profile first." }, { status: 400 });
-  // conflicts are part of the analysis — recompute with current facts & rules
+  // conflicts are part of the analysis, recompute with current facts & rules
   db.conflicts = db.conflicts.filter((c) => c.companyId !== company.id);
   db.conflicts.push(...detectConflicts(company.id, companyFacts(db, company.id)));
   const analysis = runAnalysis(company, companyDocuments(db, company.id), companyObjects(db, company.id));

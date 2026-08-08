@@ -9,7 +9,7 @@ import type { ExportLedgerEntry } from "../types";
  * to the previous entry's chainHash, so any alteration, reordering or deletion
  * of a prior export makes every later chainHash fail to recompute.
  *
- * This proves integrity + sequence, NOT signer identity — non-repudiation would
+ * This proves integrity + sequence, NOT signer identity, non-repudiation would
  * require cryptographic signing with a promoter/banker key (a natural next step).
  */
 
@@ -40,12 +40,12 @@ export function verifyLedger(entries: ExportLedgerEntry[]): LedgerVerification {
   for (let i = 0; i < entries.length; i++) {
     const e = entries[i];
     if (e.seq !== i + 1)
-      return { intact: false, count: entries.length, brokenAt: e.seq, reason: `Sequence gap at entry ${e.seq} — an export appears inserted or removed.` };
+      return { intact: false, count: entries.length, brokenAt: e.seq, reason: `Sequence gap at entry ${e.seq}, an export appears inserted or removed.` };
     if (e.prevHash !== prevHash)
-      return { intact: false, count: entries.length, brokenAt: e.seq, reason: `Broken linkage at entry ${e.seq} — it does not chain to the previous export.` };
+      return { intact: false, count: entries.length, brokenAt: e.seq, reason: `Broken linkage at entry ${e.seq}, it does not chain to the previous export.` };
     const recomputed = computeChainHash({ seq: e.seq, artefact: e.artefact, contentHash: e.contentHash, prevHash: e.prevHash, timestamp: e.timestamp });
     if (recomputed !== e.chainHash)
-      return { intact: false, count: entries.length, brokenAt: e.seq, reason: `Hash mismatch at entry ${e.seq} — its recorded fields were altered after export.` };
+      return { intact: false, count: entries.length, brokenAt: e.seq, reason: `Hash mismatch at entry ${e.seq}, its recorded fields were altered after export.` };
     prevHash = e.chainHash;
   }
   return { intact: true, count: entries.length, brokenAt: null, reason: null };

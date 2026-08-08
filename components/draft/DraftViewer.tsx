@@ -1,7 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { FileCheck, Loader2, MessageSquarePlus, Pencil, RefreshCw, Sparkles } from "lucide-react";
 import type { DraftSection } from "@/lib/types";
 import { AiNote, Card, ReviewStatusBadge } from "@/components/shared/ui";
@@ -19,6 +19,7 @@ export default function DraftViewer({
   sections, aiReady = true, meta = {},
 }: { sections: DraftSection[]; aiReady?: boolean; meta?: Record<string, SectionMeta> }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [busy, setBusy] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
@@ -39,6 +40,20 @@ export default function DraftViewer({
   const review = (sectionId: string, action: string, comment?: string) =>
     call(sectionId + action, () => fetch("/api/review", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sectionId, action, comment, user: "Promoter", role: "PROMOTER" }) }));
 
+  // When arriving from the top-bar "Generate Draft" (which navigates here with
+  // ?generate=1), kick off generation on this page so the processing state shows
+  // right here in the draft view instead of silently on the top bar.
+  const autoRan = useRef(false);
+  useEffect(() => {
+    if (autoRan.current || busy) return;
+    if (searchParams.get("generate") === "1") {
+      autoRan.current = true;
+      router.replace("/draft");
+      void generateAll();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
   if (!sections.length) {
     return (
       <Card className="p-10 text-center">
@@ -46,7 +61,7 @@ export default function DraftViewer({
         <h3 className="text-base font-semibold text-slate-800">No draft yet</h3>
         <p className="text-sm text-slate-500 mt-1 max-w-md mx-auto">
           Generate the priority sections of the SME prospectus blueprint from your extracted facts.
-          Sections without enough data are created with explicit placeholders — never invented content.
+          Sections without enough data are created with explicit placeholders instead of assumed content.
           Generation takes a minute or two (one AI call per section).
         </p>
         <button onClick={generateAll} disabled={!!busy}
@@ -54,7 +69,7 @@ export default function DraftViewer({
           {busy === "all" ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
           {busy === "all" ? "Generating…" : "Generate Draft"}
         </button>
-        {!aiReady && <p className="text-[11px] text-slate-400 mt-2">No AI key detected — sections are composed by the built-in rule-based generator from your extracted facts.</p>}
+        {!aiReady && <p className="text-[11px] text-slate-400 mt-2">No AI key detected, sections are composed by the built-in rule-based generator from your extracted facts.</p>}
       </Card>
     );
   }
@@ -119,7 +134,7 @@ export default function DraftViewer({
             )}
             {s.missingData.length > 0 && (
               <div className="mt-2 bg-amber-50 border-l-2 border-amber-500 rounded-r-lg px-3 py-2">
-                <div className="text-[11px] font-semibold text-amber-800 mb-0.5">SOURCE MISSING — PROMOTER CONFIRMATION REQUIRED</div>
+                <div className="text-[11px] font-semibold text-amber-800 mb-0.5">SOURCE MISSING, PROMOTER CONFIRMATION REQUIRED</div>
                 <ul className="text-[12px] text-amber-900">{s.missingData.map((m) => <li key={m}>• {m}</li>)}</ul>
               </div>
             )}

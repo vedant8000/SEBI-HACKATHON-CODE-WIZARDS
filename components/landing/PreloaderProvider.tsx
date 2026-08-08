@@ -21,7 +21,7 @@ interface StartArgs {
 
 const PreloaderContext = createContext<{ start: (args: StartArgs) => void } | null>(null);
 
-/** Null outside the provider — callers should fall back to a plain push. */
+/** Null outside the provider, callers should fall back to a plain push. */
 export function usePreloader() {
   return useContext(PreloaderContext);
 }

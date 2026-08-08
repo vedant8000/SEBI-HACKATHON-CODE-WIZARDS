@@ -5,7 +5,7 @@ import { mdToHtml } from "@/lib/utils/markdown";
 /**
  * Renders an assistant reply inside a chat bubble. The model is instructed to
  * answer in plain prose, but anything that still arrives as markdown (bold,
- * bullet lists, tables — including the deterministic fallback answers) is
+ * bullet lists, tables, including the deterministic fallback answers) is
  * rendered properly instead of showing raw asterisks and dashes.
  * mdToHtml escapes HTML before converting, so this is safe to inject.
  */

@@ -24,7 +24,7 @@ export default async function BankerDraftReviewPage() {
     <>
       <PageHeader
         title="Draft Review"
-        subtitle="SIIM prepares; professionals decide. Review each drafted section against its source evidence, approve or request changes — every action lands in the audit trail."
+        subtitle="SIIM prepares; professionals decide. Review each drafted section against its source evidence, approve or request changes, every action lands in the audit trail."
         actions={<a href="/api/export/review-pack" target="_blank" className="px-3 py-1.5 text-xs font-medium bg-slate-800 text-white rounded-lg hover:bg-slate-700">Export Review Pack</a>}
       />
       <ReviewRoom

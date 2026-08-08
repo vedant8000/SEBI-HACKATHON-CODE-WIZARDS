@@ -62,12 +62,12 @@ export default function ReviewRoom({
         <p className="text-sm font-medium text-slate-800">
           {finalBlocked
             ? `Final Draft Ready is BLOCKED: ${criticalOpen} critical + ${highRiskOpen} high-risk gaps open, ${sections.length - approved} section(s) not yet approved. High-risk items must be resolved or expressly waived before the draft can be marked final.`
-            : "All sections approved and no high-risk gaps open — the draft can be marked Final Draft Ready."}
+            : "All sections approved and no high-risk gaps open, the draft can be marked Final Draft Ready."}
         </p>
       </Card>
 
       {sections.length === 0 ? (
-        <Card className="p-8 text-center text-sm text-slate-400">No draft sections yet — the promoter must generate the draft first.</Card>
+        <Card className="p-8 text-center text-sm text-slate-400">No draft sections yet, the promoter must generate the draft first.</Card>
       ) : (
         sections.map((s) => (
           <Card key={s.id} className="p-5">
@@ -128,7 +128,7 @@ export default function ReviewRoom({
       <Card className="overflow-hidden">
         <div className="px-5 py-3 border-b border-slate-100">
           <h3 className="text-sm font-semibold text-slate-800">Audit Trail</h3>
-          <p className="text-xs text-slate-400">Who changed what, when — visible to all roles.</p>
+          <p className="text-xs text-slate-400">Who changed what, when, visible to all roles.</p>
         </div>
         {auditLog.length === 0 ? (
           <p className="p-6 text-sm text-slate-400 text-center">No activity yet.</p>

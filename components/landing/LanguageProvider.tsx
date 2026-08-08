@@ -12,7 +12,7 @@ export type Lang = "en" | "hi";
 
 const LanguageContext = createContext<{ lang: Lang; setLang: (l: Lang) => void } | null>(null);
 
-/** Null outside the provider — callers should fall back to local state. */
+/** Null outside the provider, callers should fall back to local state. */
 export function useLanguage() {
   return useContext(LanguageContext);
 }

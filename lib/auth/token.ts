@@ -1,7 +1,7 @@
 import { SignJWT, jwtVerify } from "jose";
 
 /**
- * Pure JWT helpers — no Next.js or Node-only imports so the root proxy.ts
+ * Pure JWT helpers, no Next.js or Node-only imports so the root proxy.ts
  * can verify sessions in the edge runtime.
  */
 

@@ -57,7 +57,7 @@ export default function FlagsPanel({ flags }: { flags: BankerFlag[] }) {
                   onClick={() => setStatus(f.id, "OPEN")}
                   disabled={busy === f.id}
                   className="inline-flex items-center gap-1 text-xs text-amber-700 hover:underline disabled:opacity-50"
-                  title="Not fixed properly — reopen"
+                  title="Not fixed properly, reopen"
                 >
                   <RotateCcw size={12} /> Reopen
                 </button>
@@ -66,7 +66,7 @@ export default function FlagsPanel({ flags }: { flags: BankerFlag[] }) {
                   onClick={() => setStatus(f.id, "ADDRESSED")}
                   disabled={busy === f.id}
                   className="inline-flex items-center gap-1 text-xs text-emerald-700 hover:underline disabled:opacity-50"
-                  title="Verified fixed — close this flag"
+                  title="Verified fixed, close this flag"
                 >
                   <CheckCircle2 size={12} /> Mark resolved
                 </button>

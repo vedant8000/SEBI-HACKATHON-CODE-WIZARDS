@@ -10,7 +10,7 @@ export async function GET() {
   return NextResponse.json({ documents: company ? companyDocuments(db, company.id) : [] });
 }
 
-/** Manual correction of extracted fields — vital for scanned documents. */
+/** Manual correction of extracted fields, vital for scanned documents. */
 export async function PATCH(req: NextRequest) {
   const body = await req.json();
   const db = await loadDb();

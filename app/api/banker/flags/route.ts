@@ -4,7 +4,7 @@ import { getSessionUser } from "@/lib/auth/session";
 import type { BankerFlag, FlagTargetType, Severity } from "@/lib/types";
 
 /**
- * Merchant banker correction flags — the "pinpoint what to fix" channel.
+ * Merchant banker correction flags, the "pinpoint what to fix" channel.
  *
  * GET → flags visible to the caller (banker: linked companies; promoter: active company).
  * POST { companyId, targetType, targetId?, targetLabel, message, severity? } → banker creates a flag.

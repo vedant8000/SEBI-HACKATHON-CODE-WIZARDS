@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   Building2, FileSearch, BrainCircuit, FileText, UserCheck, Bot,
-  UserRound, HelpCircle, Settings, LogOut, LayoutDashboard, Flag,
+  UserRound, HelpCircle, LogOut, LayoutDashboard, Flag,
 } from "lucide-react";
 import LearnAboutSiimModal from "@/components/shared/LearnAboutSiimModal";
 
@@ -16,7 +16,7 @@ const promoterNav = [
   { href: "/evidence", label: "Evidence & Extraction", icon: FileSearch, step: 2, tile: "bg-cyan-50 text-cyan-700 border-cyan-100" },
   { href: "/intelligence", label: "IPO Intelligence", icon: BrainCircuit, step: 3, tile: "bg-indigo-50 text-indigo-600 border-indigo-100" },
   { href: "/draft", label: "Draft Offer Document", icon: FileText, step: 4, tile: "bg-violet-50 text-violet-600 border-violet-100" },
-  { href: "/assistant", label: "AI Assistant", icon: Bot, step: 5, tile: "bg-teal-50 text-teal-700 border-teal-100" },
+  { href: "/assistant", label: "SIIM Assistant", icon: Bot, step: 5, tile: "bg-teal-50 text-teal-700 border-teal-100" },
 ];
 
 // Banker flow: link company by code → inspect filing → pinpoint corrections → review draft.
@@ -29,7 +29,7 @@ const bankerNav = [
 
 /**
  * Capital-markets scene for the sidebar's idle space: a financial-district
- * skyline, candlestick cluster and a rising growth curve — the world an SME
+ * skyline, candlestick cluster and a rising growth curve, the world an SME
  * IPO lives in.
  */
 function SidebarScene() {
@@ -98,7 +98,7 @@ export default function Sidebar({ role = "PROMOTER" }: { role?: "PROMOTER" | "ME
           role: localStorage.getItem("siim.roleLabel") || (isBanker ? "Merchant Banker" : "SME Promoter"),
         });
       } catch {
-        /* localStorage unavailable — keep defaults */
+        /* localStorage unavailable, keep defaults */
       }
     }, 0);
     return () => window.clearTimeout(timer);
@@ -110,7 +110,7 @@ export default function Sidebar({ role = "PROMOTER" }: { role?: "PROMOTER" | "ME
     } catch {
       /* ignore */
     }
-    // clear the session cookie too — role gating depends on it
+    // clear the session cookie too, role gating depends on it
     try { await fetch("/api/auth/logout", { method: "POST" }); } catch { /* ignore */ }
     router.push("/");
   };
@@ -185,14 +185,11 @@ export default function Sidebar({ role = "PROMOTER" }: { role?: "PROMOTER" | "ME
         <button type="button" onClick={openLearn} className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left text-[12px] text-sky-100/75 transition hover:bg-white/10 hover:text-white">
           <HelpCircle size={14} className="text-sky-300" /> Learn about SIIM
         </button>
-        <Link href="/settings" className="flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[12px] text-sky-100/75 hover:bg-white/10 hover:text-white">
-          <Settings size={14} className="text-sky-300/60" /> Settings
-        </Link>
         <button onClick={logout} className="w-full flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[12px] text-sky-100/75 hover:bg-red-500/15 hover:text-red-200 text-left">
           <LogOut size={14} className="text-red-300/80" /> Log out
         </button>
       </div>
-      <LearnAboutSiimModal open={learnOpen} onClose={() => setLearnOpen(false)} lang={learnLang} />
+      <LearnAboutSiimModal key={learnLang} open={learnOpen} onClose={() => setLearnOpen(false)} lang={learnLang} />
     </aside>
   );
 }

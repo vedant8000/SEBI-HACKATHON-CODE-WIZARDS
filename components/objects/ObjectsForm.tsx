@@ -30,13 +30,13 @@ export default function ObjectsForm({
 
   const warnings: string[] = [];
   if (freshIssueCr != null && Math.abs(total - freshIssueCr) > 0.01)
-    warnings.push(`Objects total ₹${total.toFixed(1)} Cr ≠ fresh issue ₹${freshIssueCr} Cr — reconcile before drafting.`);
+    warnings.push(`Objects total ₹${total.toFixed(1)} Cr ≠ fresh issue ₹${freshIssueCr} Cr, reconcile before drafting.`);
   if (total > 0 && gcp / total > 0.25)
-    warnings.push(`General corporate purposes is ${Math.round((gcp / total) * 100)}% of the plan — above the typical 25% ceiling.`);
+    warnings.push(`General corporate purposes is ${Math.round((gcp / total) * 100)}% of the plan, above the typical 25% ceiling.`);
   if (relatedPartyRepayment)
-    warnings.push("Debt repayment includes promoter/related-party loans — regulatory & legal review required; expect prominent disclosure.");
+    warnings.push("Debt repayment includes promoter/related-party loans, regulatory & legal review required; expect prominent disclosure.");
   rows.forEach((r) => {
-    if (/capex|machin/i.test(r.category) && !r.evidence) warnings.push(`"${r.category}" has no supporting quotation — upload one in the Data Room.`);
+    if (/capex|machin/i.test(r.category) && !r.evidence) warnings.push(`"${r.category}" has no supporting quotation, upload one in the Data Room.`);
     if (/working capital/i.test(r.category) && !r.evidence) warnings.push("Working capital object should reference a detailed computation.");
     if (r.amountCr > 0 && !r.deploymentTimeline) warnings.push(`"${r.category}": add a deployment timeline (e.g. "FY2027 H1").`);
   });
@@ -49,7 +49,7 @@ export default function ObjectsForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ objects: rows, relatedPartyRepayment }),
       });
-      setSavedMsg("Saved — analysis and draft inputs updated ✓");
+      setSavedMsg("Saved, analysis and draft inputs updated ✓");
       router.refresh();
       setTimeout(() => setSavedMsg(""), 2500);
     } finally { setSaving(false); }
@@ -119,7 +119,7 @@ export default function ObjectsForm({
 
       {/* Live preview table */}
       <Card className="p-5">
-        <h3 className="text-sm font-semibold text-slate-800 mb-3">Objects of the Issue — preview</h3>
+        <h3 className="text-sm font-semibold text-slate-800 mb-3">Objects of the Issue, preview</h3>
         <table className="w-full text-sm">
           <thead><tr className="text-left text-xs text-slate-500 border-b border-slate-200"><th className="py-2">Object</th><th>Amount (₹ Cr)</th><th>% of total</th><th>Timeline</th><th>Evidence</th></tr></thead>
           <tbody>
@@ -134,7 +134,7 @@ export default function ObjectsForm({
             ))}
           </tbody>
         </table>
-        <p className="text-xs text-slate-400 mt-3">Means of finance: fresh issue proceeds. Any shortfall must be met from internal accruals — discuss with your merchant banker.</p>
+        <p className="text-xs text-slate-400 mt-3">Means of finance: fresh issue proceeds. Any shortfall must be met from internal accruals, discuss with your merchant banker.</p>
       </Card>
 
       <div className="flex items-center gap-3">

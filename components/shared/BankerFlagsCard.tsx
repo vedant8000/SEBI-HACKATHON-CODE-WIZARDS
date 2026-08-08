@@ -43,7 +43,7 @@ export default function BankerFlagsCard({ flags, title }: { flags: BankerFlag[];
         {addressed.length > 0 && <Badge tone="green">{addressed.length} addressed</Badge>}
       </div>
       {open.length === 0 ? (
-        <p className="text-[13px] text-emerald-700">All corrections here are marked addressed — awaiting banker verification.</p>
+        <p className="text-[13px] text-emerald-700">All corrections here are marked addressed, awaiting banker verification.</p>
       ) : (
         <div className="space-y-2.5">
           {open.map((f) => (

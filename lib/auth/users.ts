@@ -4,7 +4,7 @@ import { getMongoDb } from "../mongodb";
 import { uid } from "../store";
 import type { SessionUser, UserRole } from "./session";
 
-/** MongoDB `users` collection — registration and credential checks. */
+/** MongoDB `users` collection, registration and credential checks. */
 
 export interface UserRecord extends SessionUser {
   passwordHash: string;

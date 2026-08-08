@@ -21,8 +21,8 @@ export async function GET() {
 
 /**
  * PATCH { id, action: "accept" | "reject" | "needs-review" | "edit", value? }
- * — promoter review of extracted facts. Edits are flagged for MB verification.
- * POST { factKey, factLabel?, value, financialYear? } — manual fact entry.
+ *, promoter review of extracted facts. Edits are flagged for MB verification.
+ * POST { factKey, factLabel?, value, financialYear? }, manual fact entry.
  */
 export async function PATCH(req: NextRequest) {
   const body = await req.json();
@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
     financialYear: body.financialYear ?? null,
     unit: /Cr$/.test(body.factKey) ? "INR crore" : null,
     confidence: 50,
-    sourceFileName: "Manual promoter input — evidence pending",
+    sourceFileName: "Manual promoter input, evidence pending",
     pageStart: null,
     pageEnd: null,
     linkedProspectusSections: FACT_META[body.factKey]?.sections ?? [],

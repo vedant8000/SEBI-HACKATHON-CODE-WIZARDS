@@ -19,7 +19,7 @@ export async function GET() {
 /**
  * Generate the blueprint-driven, source-linked draft (priority sections).
  * Uses the AI provider when available; otherwise the deterministic rule-based
- * generator produces the same sections from extracted facts — so a draft is
+ * generator produces the same sections from extracted facts, so a draft is
  * always produced, even without an API key or when keys are rate-limited.
  */
 export async function POST(req: NextRequest) {

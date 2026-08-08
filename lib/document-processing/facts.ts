@@ -218,7 +218,7 @@ export function detectConflicts(companyId: string, facts: ExtractedFact[]): Fact
   const distinctCins = [...filesByCin.keys()];
   if (distinctCins.length > 1) {
     const summary = [...filesByCin.entries()]
-      .map(([cin, files]) => `${cin} — ${[...files].slice(0, 3).join(", ")}${files.size > 3 ? ", …" : ""}`)
+      .map(([cin, files]) => `${cin}, ${[...files].slice(0, 3).join(", ")}${files.size > 3 ? ", …" : ""}`)
       .join("   |   ");
     conflicts.push({
       id: uid("cf"),
@@ -254,7 +254,7 @@ export function detectConflicts(companyId: string, facts: ExtractedFact[]): Fact
     const arr = [...byDoc.values()];
     for (let i = 0; i < arr.length; i++) {
       for (let j = i + 1; j < arr.length; j++) {
-        // skip cross-company comparisons — covered by the headline above
+        // skip cross-company comparisons, covered by the headline above
         if (differentEntities(arr[i], arr[j])) continue;
         const a = parseFloat(arr[i].normalizedValue);
         const b = parseFloat(arr[j].normalizedValue);

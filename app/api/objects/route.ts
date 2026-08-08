@@ -32,9 +32,9 @@ export async function POST(req: NextRequest) {
   const total = items.reduce((s, o) => s + o.amountCr, 0);
   for (const o of items) {
     if (/general corporate/i.test(o.category) && total > 0 && o.amountCr / total > 0.25)
-      o.warning = "General corporate purposes exceeds 25% of the issue — regulatory ceiling concern.";
+      o.warning = "General corporate purposes exceeds 25% of the issue, regulatory ceiling concern.";
     if (/debt|repayment/i.test(o.category) && body.relatedPartyRepayment)
-      o.warning = "Repayment includes promoter/related-party debt — regulatory & legal review required.";
+      o.warning = "Repayment includes promoter/related-party debt, regulatory & legal review required.";
   }
 
   db.objectsByCompany[company.id] = items;

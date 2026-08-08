@@ -1,7 +1,7 @@
 import type { Company } from "../types";
 
 /**
- * Peer benchmarking — calibrates the issuer's fundamentals and an indicative
+ * Peer benchmarking, calibrates the issuer's fundamentals and an indicative
  * valuation band against a small, sector-matched set of comparable listed SMEs.
  * The peer figures are illustrative reference values (not live market data); the
  * merchant banker substitutes the actual peer set for the "Basis for Issue Price".
@@ -140,8 +140,8 @@ export function benchmarkCompany(company: Company): PeerBenchmark | null {
 
   const outliers = rows.filter((row) => row.verdict === "Above peers" || row.verdict === "Below peers").length;
   const summary = revGrowth != null
-    ? `Revenue grew ${revGrowth}% in ${latest.fy}. ${outliers === 0 ? "Fundamentals track the peer set closely." : `${outliers} metric(s) diverge from peers — expect the exchange to probe these.`}`
-    : `${outliers === 0 ? "Fundamentals track the peer set closely." : `${outliers} metric(s) diverge from peers — expect the exchange to probe these.`}`;
+    ? `Revenue grew ${revGrowth}% in ${latest.fy}. ${outliers === 0 ? "Fundamentals track the peer set closely." : `${outliers} metric(s) diverge from peers, expect the exchange to probe these.`}`
+    : `${outliers === 0 ? "Fundamentals track the peer set closely." : `${outliers} metric(s) diverge from peers, expect the exchange to probe these.`}`;
 
   return { sector: bucket.sector, peers, rows, suggestedPe, indicativeValuationCr, summary };
 }

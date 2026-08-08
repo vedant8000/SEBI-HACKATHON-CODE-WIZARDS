@@ -18,7 +18,7 @@ const ROLES: { key: RoleKey; route: string; icon: typeof UserCog }[] = [
   { key: "MERCHANT_BANKER", route: "/banker", icon: Briefcase },
 ];
 
-/** All card copy in both languages — the EN | हिन्दी toggle swaps this. */
+/** All card copy in both languages, the EN | हिन्दी toggle swaps this. */
 const T: Record<Lang, {
   welcome: string; createAccount: string; tagline: string;
   registeringAs: string; fullName: string; fullNamePh: string;
@@ -148,7 +148,7 @@ export default function AuthCard() {
       localStorage.setItem("siim.roleLabel", T.en.roles[r.key].label);
       if (displayName) localStorage.setItem("siim.userName", displayName);
     } catch {
-      /* localStorage may be unavailable — routing still works */
+      /* localStorage may be unavailable, routing still works */
     }
     // Preloader covers the screen until the workspace route has committed,
     // then slides up. Fallback to a plain push if the provider is absent.
@@ -187,7 +187,7 @@ export default function AuthCard() {
 
   return (
     <div className="w-full max-w-md rounded-3xl bg-white/95 backdrop-blur-xl border border-white/60 shadow-2xl shadow-[#1e3a5f]/10 p-7 md:p-9">
-      {/* language toggle — one pill switch: English (left) ⇄ हिन्दी (right) */}
+      {/* language toggle, one pill switch: English (left) ⇄ हिन्दी (right) */}
       <div className="flex justify-end mb-4">
         <button
           type="button"
@@ -227,7 +227,7 @@ export default function AuthCard() {
       <p className="text-sm text-slate-500 mt-1.5">{t.tagline}</p>
 
       <form onSubmit={onSubmit} className="mt-6 space-y-4">
-        {/* Role dropdown — only when registering */}
+        {/* Role dropdown, only when registering */}
         {mode === "register" && (
           <div>
             <label className="block text-sm font-semibold text-[#1e3a5f] mb-1.5">
@@ -391,7 +391,7 @@ export default function AuthCard() {
         </div>
         <ChevronRight size={18} className="text-slate-400" />
       </button>
-      <LearnAboutSiimModal open={learnOpen} onClose={() => setLearnOpen(false)} lang={lang} />
+      <LearnAboutSiimModal key={lang} open={learnOpen} onClose={() => setLearnOpen(false)} lang={lang} />
     </div>
   );
 }

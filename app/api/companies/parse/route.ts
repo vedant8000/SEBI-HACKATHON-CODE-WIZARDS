@@ -13,12 +13,12 @@ const MAX_FILE_MB = 40;
  *
  * Stateless by design: it reads the files to fill the onboarding form (name,
  * CIN, industry, promoter, issue, governance, year-wise financials…) and
- * returns suggestions with provenance — it does NOT create a company or store
+ * returns suggestions with provenance, it does NOT create a company or store
  * the files. The promoter reviews the pre-filled form and saves through the
  * normal flow; formal document upload (with fact extraction + analysis) still
  * happens in the Data Room.
  *
- * Deterministic and AI-free — works without any API key.
+ * Deterministic and AI-free, works without any API key.
  */
 export async function POST(req: NextRequest) {
   const form = await req.formData();

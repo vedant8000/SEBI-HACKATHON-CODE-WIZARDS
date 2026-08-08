@@ -23,7 +23,7 @@ import { computeIntegrityScore } from "./forensics";
  * Nothing here is pre-baked: upload different documents, get different results.
  *
  * Where data is missing the engine says so honestly ("missing") instead of
- * guessing — an SME promoter should always know what we could not read.
+ * guessing, an SME promoter should always know what we could not read.
  */
 
 // ── helpers ─────────────────────────────────────────────────────────────────
@@ -106,7 +106,7 @@ export function runAnalysis(
       postCap <= 25 ? "—" : "Confirm post-issue paid-up capital with the merchant banker before proceeding on the SME platform.");
   } else {
     addCheck("Eligibility", "Post-issue paid-up capital within SME platform threshold", "missing", "Critical",
-      "Net worth or fresh-issue amount not available yet — cannot estimate post-issue capital.",
+      "Net worth or fresh-issue amount not available yet, cannot estimate post-issue capital.",
       "Fill issue size in Company Profile and upload latest audited financials.");
   }
 
@@ -125,7 +125,7 @@ export function runAnalysis(
   if (latest?.netWorthCr != null) {
     addCheck("Eligibility", "Positive net worth", latest.netWorthCr > 0 ? "pass" : "fail", "Critical",
       `Net worth ₹${latest.netWorthCr} Cr in ${latest.fy}.`,
-      latest.netWorthCr > 0 ? "—" : "Negative net worth is a hard blocker for SME listing — consult your merchant banker.");
+      latest.netWorthCr > 0 ? "—" : "Negative net worth is a hard blocker for SME listing, consult your merchant banker.");
   } else {
     addCheck("Eligibility", "Positive net worth", "missing", "Critical", "Net worth not found in profile or uploads.", "Upload audited balance sheet or enter net worth in Company Profile.");
   }
@@ -134,7 +134,7 @@ export function runAnalysis(
     const weak = latest.cfoCr < latest.patCr * 0.6;
     addCheck("Eligibility", "Free cash flow quality", weak ? "warning" : "pass", "High",
       weak
-        ? `${latest.fy} operating cash flow ₹${latest.cfoCr} Cr is only ${Math.round((latest.cfoCr / latest.patCr) * 100)}% of PAT ₹${latest.patCr} Cr — FCFE trend weakening.`
+        ? `${latest.fy} operating cash flow ₹${latest.cfoCr} Cr is only ${Math.round((latest.cfoCr / latest.patCr) * 100)}% of PAT ₹${latest.patCr} Cr, FCFE trend weakening.`
         : `Operating cash flow ₹${latest.cfoCr} Cr adequately backs PAT ₹${latest.patCr} Cr.`,
       weak ? "Prepare a cash-flow bridge and receivable collection plan for merchant banker assessment." : "—");
   } else {
@@ -143,7 +143,7 @@ export function runAnalysis(
 
   if (opYears != null) {
     addCheck("Eligibility", "Minimum operating track record", opYears >= 3 ? "pass" : "fail", "Critical",
-      `Operating since ${company.yearOfIncorporation} — ${opYears} years of track record.`,
+      `Operating since ${company.yearOfIncorporation}, ${opYears} years of track record.`,
       opYears >= 3 ? "—" : "SME platforms generally expect a 3-year track record.");
   } else {
     addCheck("Eligibility", "Minimum operating track record", "missing", "Critical", "Year of incorporation not provided.", "Fill it in Company Profile or upload Certificate of Incorporation.");
@@ -178,7 +178,7 @@ export function runAnalysis(
       ofsPct > 20 ? "Reduce the OFS to ≤ 20% of the issue size (SEBI ICDR 2025) and confirm per-holder dilution ≤ 50% from the shareholding pattern." : "—");
     if (ofsPct > 20) {
       addObs({
-        observation: `Restructure the Offer for Sale — ${ofsPct}% exceeds the 20% SME cap.`,
+        observation: `Restructure the Offer for Sale, ${ofsPct}% exceeds the 20% SME cap.`,
         affectedSection: "The Offer / Capital Structure", severity: "High",
         whyItMayBeAsked: "SEBI ICDR (2025) caps SME OFS at 20% of the issue; an OFS above this is a hard eligibility defect the exchange will not clear.",
         suggestedResponse: "Reduce the OFS component to ≤ 20% of the issue and confirm no selling shareholder offloads more than 50% of their pre-issue holding.",
@@ -187,7 +187,7 @@ export function runAnalysis(
     }
   }
 
-  // Net tangible assets floor (₹1 Cr) — net worth used as a proxy.
+  // Net tangible assets floor (₹1 Cr), net worth used as a proxy.
   if (latest?.netWorthCr != null) {
     addCheck("Eligibility", "Net tangible assets ≥ ₹1 Cr",
       latest.netWorthCr >= 1 ? "pass" : "fail", "Critical",
@@ -198,7 +198,7 @@ export function runAnalysis(
       "Net worth / NTA not available in profile or uploads.", "Upload the audited balance sheet or enter net worth in Company Profile.");
   }
 
-  // General Corporate Purpose cap — ≤ 15% of proceeds or ₹10 Cr, whichever lower.
+  // General Corporate Purpose cap, ≤ 15% of proceeds or ₹10 Cr, whichever lower.
   const gcpObjAmt = objects.filter((o) => /general corporate|gcp/i.test(o.category)).reduce((s, o) => s + o.amountCr, 0);
   if (company.issueSizeCr != null && objects.length) {
     const gcpCap = r1(Math.min(0.15 * company.issueSizeCr, 10));
@@ -212,7 +212,7 @@ export function runAnalysis(
       addObs({
         observation: `Justify or cap the General Corporate Purpose allocation of ₹${r1(gcpObjAmt)} Cr.`,
         affectedSection: "Objects of the Issue", severity: "High",
-        whyItMayBeAsked: `GCP is capped at 15% of proceeds or ₹10 Cr (whichever is lower) — here ₹${gcpCap} Cr. Amounts above the cap are routinely questioned as vague deployment.`,
+        whyItMayBeAsked: `GCP is capped at 15% of proceeds or ₹10 Cr (whichever is lower), here ₹${gcpCap} Cr. Amounts above the cap are routinely questioned as vague deployment.`,
         suggestedResponse: `Re-allocate the excess to specific, evidenced objects and bring GCP within ₹${gcpCap} Cr.`,
         requiredEvidence: "Revised objects table with itemised deployment and evidence",
       });
@@ -275,7 +275,7 @@ export function runAnalysis(
   if (latest?.borrowingsCr != null && latest?.netWorthCr) {
     const de = r1(latest.borrowingsCr / latest.netWorthCr);
     addCheck("Financial Health", "Debt-equity ratio", de <= 1 ? (de > 0.6 ? "warning" : "pass") : "fail", "Medium",
-      `D/E of ${de}x (₹${latest.borrowingsCr} Cr / ₹${latest.netWorthCr} Cr)${de > 0.6 ? " — above the ~0.6x SME peer median." : "."}`,
+      `D/E of ${de}x (₹${latest.borrowingsCr} Cr / ₹${latest.netWorthCr} Cr)${de > 0.6 ? ", above the ~0.6x SME peer median." : "."}`,
       de > 0.6 ? "Explain leverage strategy; a debt-repayment object can mitigate." : "—");
   } else {
     addCheck("Financial Health", "Debt-equity ratio", "missing", "Medium", "Borrowings or net worth unavailable.", "Upload balance sheet or complete the profile.");
@@ -385,7 +385,7 @@ export function runAnalysis(
           foundValue: `≈ ₹${impliedInterest} Cr implied from P&L`,
           difference: `₹${r1(expected - impliedInterest)} Cr lower than expected`,
           severity: "Medium",
-          explanation: "Implied interest cost appears low relative to reported borrowings — could indicate year-end loan draw-down, interest capitalisation, or unrecorded liabilities.",
+          explanation: "Implied interest cost appears low relative to reported borrowings, could indicate year-end loan draw-down, interest capitalisation, or unrecorded liabilities.",
           suggestedFix: "Verify loan schedules and interest ledger against sanction letters.",
         });
       }
@@ -402,7 +402,7 @@ export function runAnalysis(
         foundValue: `₹${latest.netWorthCr} Cr reported`,
         difference: `₹${diff} Cr`,
         severity: "Medium",
-        explanation: "Net worth movement does not equal prior net worth plus PAT — dividends, capital infusion or adjustments should explain the difference.",
+        explanation: "Net worth movement does not equal prior net worth plus PAT, dividends, capital infusion or adjustments should explain the difference.",
         suggestedFix: "Provide a statement of changes in equity reconciling the movement.",
       });
     } else {
@@ -425,7 +425,7 @@ export function runAnalysis(
         foundValue: `₹${wcNeed} Cr requested`,
         difference: `₹${r1(wcNeed - impliedGrowthWc)} Cr above trend`,
         severity: "Medium",
-        explanation: "The working-capital object materially exceeds what the historical operating cycle implies — a detailed month-wise computation is expected.",
+        explanation: "The working-capital object materially exceeds what the historical operating cycle implies, a detailed month-wise computation is expected.",
         suggestedFix: "Prepare a holding-period based working capital computation consistent with the historical cycle.",
       });
     }
@@ -472,7 +472,7 @@ export function runAnalysis(
   if (promoterLoan != null) {
     const score = 74;
     rptRisks.push({
-      id: nid("r"), entityName: "Promoter group (unsecured loan)", relationship: "Promoter group — lender",
+      id: nid("r"), entityName: "Promoter group (unsecured loan)", relationship: "Promoter group, lender",
       amountCr: promoterLoan,
       pctOfBase: latest?.borrowingsCr ? `${r1((promoterLoan / latest.borrowingsCr) * 100)}% of total borrowings` : "share of borrowings unknown",
       riskScore: score, severity: "High",
@@ -525,7 +525,7 @@ export function runAnalysis(
     (() => {
       const demand = field<number>([...taxDocs, ...legalDocs], "demandNoticeCr");
       if (declaredLitigation === "NIL" && demand)
-        return `Litigation declaration states NIL, but a demand/penalty of ₹${demand} Cr was detected in uploaded records — inconsistent.`;
+        return `Litigation declaration states NIL, but a demand/penalty of ₹${demand} Cr was detected in uploaded records, inconsistent.`;
       if (!legalDocs.length) return "No litigation declaration uploaded.";
       return "Litigation declaration on record and consistent with other uploads.";
     })(),
@@ -712,7 +712,7 @@ export function runAnalysis(
   addCheck("Governance", "Conflict-of-interest declarations",
     suspectEntities.length || rptAmount != null ? "warning" : has(kycDocs) ? "pass" : "missing", "Medium",
     suspectEntities.length || rptAmount != null
-      ? "Related-party interests detected — a signed conflict-of-interest declaration covering group entities is needed."
+      ? "Related-party interests detected, a signed conflict-of-interest declaration covering group entities is needed."
       : has(kycDocs) ? "No conflicting interests detected in available records." : "KYC/declarations not uploaded.",
     suspectEntities.length || rptAmount != null ? "Obtain signed conflict-of-interest declarations from promoter and directors." : "—");
 
@@ -729,7 +729,7 @@ export function runAnalysis(
   addCheck("Document Quality", "Extraction confidence",
     !docs.length ? "missing" : avgConf >= 75 ? "pass" : avgConf >= 50 ? "warning" : "fail", "Low",
     docs.length ? `Average AI extraction confidence ${avgConf}% across ${docs.length} documents.` : "No documents uploaded yet.",
-    avgConf >= 75 || !docs.length ? (docs.length ? "—" : "Upload documents to begin.") : "Low-confidence files are likely scans — review and correct extracted values manually in the Data Room.");
+    avgConf >= 75 || !docs.length ? (docs.length ? "—" : "Upload documents to begin.") : "Low-confidence files are likely scans, review and correct extracted values manually in the Data Room.");
 
   const inconsistent = docs.filter((d) => d.status === "Inconsistent").length + financialChecks.filter((f) => f.severity === "High").length;
   addCheck("Document Quality", "Cross-document consistency",
@@ -768,12 +768,12 @@ export function runAnalysis(
     owner: "Merchant Banker",
   });
 
-  // ════ SME FRAMEWORK OBLIGATIONS (SEBI ICDR — Dec-2024 / Mar-2025) ═════════
+  // ════ SME FRAMEWORK OBLIGATIONS (SEBI ICDR, Dec-2024 / Mar-2025) ═════════
   // A regulator-facing checklist: computed from data where possible, else a
   // "Pending" obligation to be ensured at the RHP stage. This is the promoter's
   // (and banker's) at-a-glance proof of current-framework compliance.
   const complianceObligations: ComplianceObligation[] = [];
-  const BASIS = "SEBI ICDR — Dec-2024 board decision / Mar-2025 amendments";
+  const BASIS = "SEBI ICDR, Dec-2024 board decision / Mar-2025 amendments";
   const ob = (
     rule: string, requirement: string, status: ComplianceObligation["status"],
     detail: string, basis = BASIS
@@ -826,7 +826,7 @@ export function runAnalysis(
   ob("Use of proceeds", "No repayment of promoter / related-party loans",
     promoterLoan != null && debtObject ? "Attention" : promoterLoan != null || objects.length ? "Met" : "Pending",
     promoterLoan != null && debtObject
-      ? `Related-party loan of ₹${promoterLoan} Cr on record alongside a debt-repayment object — ensure no IPO proceeds repay promoter/related-party loans (prohibited).`
+      ? `Related-party loan of ₹${promoterLoan} Cr on record alongside a debt-repayment object, ensure no IPO proceeds repay promoter/related-party loans (prohibited).`
       : promoterLoan != null ? `Related-party loan of ₹${promoterLoan} Cr on record but not proposed for repayment from proceeds.`
         : objects.length ? "No related-party loan detected in the objects / borrowings." : "Objects plan not defined yet.");
 
@@ -841,7 +841,7 @@ export function runAnalysis(
   }
 
   ob("Minimum application size", "₹2 lakh per application", "Pending",
-    "Set in the RHP by the merchant banker — SEBI raised the SME minimum application to ₹2 lakh.");
+    "Set in the RHP by the merchant banker, SEBI raised the SME minimum application to ₹2 lakh.");
   ob("Public comment period", "DRHP hosted 21 days + newspaper advertisement", "Pending",
     "The lead manager hosts the DRHP for 21 days for public comments and issues a newspaper advertisement before filing.");
   ob("Allottees & allocation", "≥ 50 allottees; NII allocation aligned to Main Board", "Pending",
@@ -875,8 +875,8 @@ export function runAnalysis(
     overall >= 85 && critical === 0
       ? "Ready for merchant banker review."
       : overall >= 60
-        ? "Partially ready — merchant banker review recommended before draft finalisation."
-        : "Early stage — resolve critical gaps before draft finalisation.";
+        ? "Partially ready, merchant banker review recommended before draft finalisation."
+        : "Early stage, resolve critical gaps before draft finalisation.";
 
   const integrity = computeIntegrityScore(company, docs, objects, { financialChecks, rptRisks });
 

@@ -2,7 +2,7 @@ import { SME_PROSPECTUS_BLUEPRINT, type BlueprintSection } from "../ipo-blueprin
 import type { Company, CoverageRow, DocumentRecord, ExtractedFact, Gap, ObjectOfIssue } from "../types";
 
 /**
- * IPO Coverage Matrix — for every section of the real SME prospectus
+ * IPO Coverage Matrix, for every section of the real SME prospectus
  * blueprint, computes what facts/documents are available vs missing.
  * Powers the dashboard, heatmap, draft-readiness and gap prioritisation.
  */

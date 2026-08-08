@@ -1,4 +1,4 @@
-// Modular scoring configuration — tune weights/rules here without touching the engine.
+// Modular scoring configuration, tune weights/rules here without touching the engine.
 
 export const SCORING_WEIGHTS = {
   Eligibility: 0.3,

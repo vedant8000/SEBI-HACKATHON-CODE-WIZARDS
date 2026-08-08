@@ -135,7 +135,7 @@ ${sources}`;
   }).join("\n");
 
   const html = `<!doctype html><html><head><meta charset="utf-8">
-<title>Draft Offer Document — ${esc(name)}</title>
+<title>Draft Offer Document, ${esc(name)}</title>
 <style>
   @page {
     size: A4; margin: 17mm 15mm;
@@ -196,7 +196,7 @@ ${cover}
   ${toc}
 </div>
 ${body}
-<p class="footer-note">${esc(name)} — Draft Offer Document (AI-assisted preparation by SIIM, ${esc(dateStr)}). ${PH} denotes information to be finalised with the merchant banker prior to filing. This draft is for professional review only; final responsibility rests with the issuer and its authorised intermediaries.</p>
+<p class="footer-note">${esc(name)}, Draft Offer Document (AI-assisted preparation by SIIM, ${esc(dateStr)}). ${PH} denotes information to be finalised with the merchant banker prior to filing. This draft is for professional review only; final responsibility rests with the issuer and its authorised intermediaries.</p>
 <script>
 /* Fill the table of contents with page numbers by simulating A4 pagination.
    The on-screen layout is locked to the print content width (180mm), so
@@ -225,7 +225,7 @@ window.addEventListener("load", function () {
     if (breakBefore && y > 0) { page++; y = 0; }
     var isHeading = el.matches("h2.part,h3.sec-title");
     if (isHeading) {
-      // page-break-after:avoid — the heading needs room for itself + a couple
+      // page-break-after:avoid, the heading needs room for itself + a couple
       // of lines of the following block, else it moves to the next page
       if (y + el.offsetHeight + 30 > PAGE) { page++; y = 0; }
       pages[el.id] = page;

@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
   const db = await loadDb();
   const user = await getSessionUser();
   const company = user ? getActiveCompanyFor(db, user) : null;
-  if (!company) return NextResponse.json({ answer: "Create or select a company first — then I can answer questions grounded in your own documents." });
+  if (!company) return NextResponse.json({ answer: "Create or select a company first, then I can answer questions grounded in your own documents." });
   const answer = await answerPromoterQuestion(
     question ?? "", company,
     db.analysis[company.id] ?? null,

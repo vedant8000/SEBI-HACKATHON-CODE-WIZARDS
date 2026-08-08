@@ -7,7 +7,7 @@ import type { DocStatus, ExtractedFields } from "../types";
  * keywords, and extracts structured fields (CIN, GSTIN, revenue, PAT,
  * receivables, demand notices, quotations…) with regex + context windows.
  * When an AI provider key is configured, lib/ai/provider.ts can enrich these
- * results — but the platform never depends on it.
+ * results, but the platform never depends on it.
  *
  * SME reality check: many uploads are scans with no text layer. Every result
  * carries a confidence score, and the promoter can review & correct extracted
@@ -211,8 +211,8 @@ export function summarize(fileName: string, text: string, category: string, f: E
   if (f.cin) bits.push(`CIN ${f.cin}`);
   if (bits.length) return `Classified as ${category}. Detected: ${bits.join(", ")}.`;
   if (text.trim().length < 100)
-    return `Classified as ${category} from the file name. We could not read text from this file (it may be a scan) — please review and enter key details manually.`;
-  return `Classified as ${category}. No structured financial fields detected — please verify.`;
+    return `Classified as ${category} from the file name. We could not read text from this file (it may be a scan), please review and enter key details manually.`;
+  return `Classified as ${category}. No structured financial fields detected, please verify.`;
 }
 
 export function keyNumberBadges(f: ExtractedFields): string[] {

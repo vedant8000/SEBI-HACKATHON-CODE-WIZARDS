@@ -89,7 +89,7 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
   /**
    * When a company already exists the form EDITS it. Typing a different
    * company's data over it would silently rename the old company and mix both
-   * companies' documents — the "Start a new company" mode prevents exactly
+   * companies' documents, the "Start a new company" mode prevents exactly
    * that by forcing a fresh create with a blank form.
    */
   const [createNew, setCreateNew] = useState(false);
@@ -126,7 +126,7 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
   const [parsed, setParsed] = useState<ParsedProfile | null>(null);
   const [filled, setFilled] = useState<Set<string>>(new Set());
   // Files dropped here are retained so they can be persisted + analysed for the
-  // company when the promoter saves — the single upload point for the app.
+  // company when the promoter saves, the single upload point for the app.
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
 
   const autofill = async (files: FileList | File[]) => {
@@ -146,7 +146,7 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
         return [...prev, ...[...files].filter((f) => !seen.has(`${f.name}:${f.size}`))];
       });
     } catch {
-      setParseErr("Parsing failed — please try again.");
+      setParseErr("Parsing failed, please try again.");
     } finally {
       setParsing(false);
     }
@@ -173,7 +173,7 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
       applyParsed(data as ParsedProfile, { summary: false });
       setConnectors(data.connectors ?? []);
     } catch {
-      setStackErr("Auto-population failed — please try again.");
+      setStackErr("Auto-population failed, please try again.");
     } finally {
       setStackLoading(false);
     }
@@ -231,7 +231,7 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
 
   const glow = (key: string) => (filled.has(key) ? " ring-2 ring-emerald-400/60 border-emerald-400 bg-emerald-50/40" : "");
 
-  /** Blank everything for a brand-new company — never mutate the current one. */
+  /** Blank everything for a brand-new company, never mutate the current one. */
   const startNewCompany = () => {
     setCreateNew(true);
     setF({ ...BLANK_FORM });
@@ -298,7 +298,7 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
         });
       }
       // Persist the uploaded documents to this (now active) company and let the
-      // upload pipeline extract facts + run analysis — so every tab reflects it.
+      // upload pipeline extract facts + run analysis, so every tab reflects it.
       if (pendingFiles.length) {
         const fd = new FormData();
         pendingFiles.forEach((file) => fd.append("files", file));
@@ -340,7 +340,7 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
     </div>
   );
 
-  // Table inputs get their own class — no `w-full` conflict with fixed widths,
+  // Table inputs get their own class, no `w-full` conflict with fixed widths,
   // and number-input spinners hidden so figures don't get clipped.
   const tableInput =
     "px-2 py-1.5 text-sm border rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-600 transition-colors " +
@@ -363,11 +363,11 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
           {createNew ? (
             <>
               <p className="text-sm font-semibold text-emerald-800">
-                Creating a new company <span className="font-normal text-emerald-700">— a fresh profile, separate from “{existing.name}”. Its documents and analysis stay independent.</span>
+                Creating a new company <span className="font-normal text-emerald-700">is a fresh profile, separate from “{existing.name}”. Its documents and analysis stay independent.</span>
               </p>
               <button type="button" onClick={cancelNewCompany}
                 className="ml-auto px-3 py-1.5 text-xs font-medium border border-slate-300 rounded-lg bg-white hover:bg-slate-50 text-slate-600">
-                Cancel — back to {existing.name}
+                Cancel, back to {existing.name}
               </button>
             </>
           ) : (
@@ -392,7 +392,7 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
             <h3 className="text-[15px] font-bold text-[#1e3a5f]">Auto-fill from your documents</h3>
             <p className="text-xs text-slate-500">
               Have a Certificate of Incorporation, KYC, board resolution or audited financials? Drop them here and we&rsquo;ll
-              read the fields below for you. You review and edit before saving — nothing is submitted automatically.
+              read the fields below for you. You review and edit before saving, nothing is submitted automatically.
             </p>
           </div>
         </div>
@@ -446,7 +446,7 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
             )}
             {parsed.unreadable.length > 0 && (
               <p className="mt-2 text-[11px] text-amber-700">
-                Could not read (likely scans — enter these manually): {parsed.unreadable.join(", ")}
+                Could not read (likely scans, enter these manually): {parsed.unreadable.join(", ")}
               </p>
             )}
           </div>
@@ -464,7 +464,7 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
             </div>
             <p className="text-xs text-slate-500">
               Pull your company master, financials, promoter KYC and MSME status straight from
-              <span className="font-medium text-slate-600"> MCA21 V3, GSTN, DigiLocker/CKYC and the Udyam registry</span> — no manual typing.
+              <span className="font-medium text-slate-600"> MCA21 V3, GSTN, DigiLocker/CKYC and the Udyam registry</span>, no manual typing.
               Every field is source-tagged and editable before you save.
             </p>
           </div>
@@ -488,7 +488,7 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
         {connectors && !stackLoading && (
           <div className="mt-3 rounded-xl border border-emerald-200/70 bg-white/80 p-3.5">
             <div className="flex items-center gap-2 text-sm font-semibold text-emerald-700 mb-2">
-              <CheckCircle2 size={16} /> Retrieved from {connectors.filter((c) => c.status === "connected").length} government systems — review the highlighted fields below, then save.
+              <CheckCircle2 size={16} /> Retrieved from {connectors.filter((c) => c.status === "connected").length} government systems, review the highlighted fields below, then save.
             </div>
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {connectors.map((c) => (
@@ -502,7 +502,7 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
               ))}
             </div>
             <p className="mt-2 text-[11px] text-amber-700">
-              Simulated for demonstration — figures are fictional. In production these are live, consent-based API calls; the promoter always reviews before saving.
+              Simulated for demonstration, figures are fictional. In production these are live, consent-based API calls; the promoter always reviews before saving.
             </p>
           </div>
         )}
@@ -515,10 +515,10 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
             <Field label="Company name" help="As per your Certificate of Incorporation">
               <input className={inputCls + glow("name")} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
             </Field>
-            <Field label="CIN" help="21-character number on your incorporation certificate — we'll verify it against uploads">
+            <Field label="CIN" help="21-character number on your incorporation certificate, we'll verify it against uploads">
               <input className={inputCls + glow("cin")} value={f.cin} onChange={(e) => setF({ ...f, cin: e.target.value })} />
             </Field>
-            <Field label="Industry / what the business does" help="In your own words — e.g. 'auto components manufacturing'">
+            <Field label="Industry / what the business does" help="In your own words, e.g. 'auto components manufacturing'">
               <input className={inputCls + glow("industry")} value={f.industry} onChange={(e) => setF({ ...f, industry: e.target.value })} />
             </Field>
             <Field label="Year of incorporation" help="SME platforms generally expect a 3-year track record">
@@ -540,7 +540,7 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
           <SectionCard
             icon={Target}
             title="2 · The issue you're planning"
-            sub="Rough numbers are fine to start — your merchant banker will finalise them."
+            sub="Rough numbers are fine to start, your merchant banker will finalise them."
           >
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <Field label="Total issue size (₹ Cr)"><input className={inputCls + glow("issueSizeCr")} type="number" value={f.issueSizeCr} onChange={(e) => setF({ ...f, issueSizeCr: e.target.value })} /></Field>
@@ -557,7 +557,7 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
           <SectionCard
             icon={BarChart3}
             title="3 · Three-year financial snapshot (₹ crore)"
-            sub="Enter what you know — uploaded audited financials cross-check these numbers. Leave blank if unsure."
+            sub="Enter what you know, uploaded audited financials cross-check these numbers. Leave blank if unsure."
             accent
           >
             <div className="overflow-x-auto">
@@ -592,13 +592,13 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
       {/* ── Governance, full width ── */}
       <SectionCard icon={ShieldCheck} title="4 · Governance & honesty checks">
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-          <Field label="Have you appointed independent directors?" help="Required for listing — 'No' or 'Not sure' creates a tracked gap, which is fine at this stage">
+          <Field label="Have you appointed independent directors?" help="Required for listing, 'No' or 'Not sure' creates a tracked gap, which is fine at this stage">
             {triState(f.independentDirectorsAppointed, (v) => setF({ ...f, independentDirectorsAppointed: v }))}
           </Field>
           <Field label="Is an audit committee constituted?">
             {triState(f.auditCommitteeConstituted, (v) => setF({ ...f, auditCommitteeConstituted: v }))}
           </Field>
-          <Field label="Top 3 customers — % of revenue" help="Above 40% is a disclosure-worthy concentration; better to surface it now">
+          <Field label="Top 3 customers, % of revenue" help="Above 40% is a disclosure-worthy concentration; better to surface it now">
             <input className={inputCls + glow("top3CustomerPct")} type="number" value={f.top3CustomerPct} onChange={(e) => setF({ ...f, top3CustomerPct: e.target.value })} />
           </Field>
           <Field label="Any pending cases, notices or demands you know of?" help="Tax notices count too. Declaring them early avoids the most damaging kind of inconsistency later.">
@@ -619,7 +619,7 @@ export default function OnboardingForm({ existing }: { existing: Company | null 
             : existing && !createNew ? "Save & Re-analyse"
             : pendingFiles.length ? "Create Company, Upload & Analyse" : "Create Company & Analyse"}
         </button>
-        {saved && <span className="text-sm text-emerald-600 font-medium">Saved — analysis updated ✓</span>}
+        {saved && <span className="text-sm text-emerald-600 font-medium">Saved, analysis updated ✓</span>}
         {(saved || existing) && (
           <a
             href="/evidence"

@@ -17,7 +17,7 @@ const CONTENT_TYPES: Record<string, string> = {
 };
 
 /**
- * GET ?id=<documentId> — stream the stored upload for in-browser viewing.
+ * GET ?id=<documentId>, stream the stored upload for in-browser viewing.
  * Promoters can open any document of theirs; merchant bankers only documents
  * of companies they have linked to via the company code.
  */

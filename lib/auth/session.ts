@@ -15,7 +15,7 @@ import {
 export { SESSION_COOKIE, createSessionToken, verifySessionToken };
 export type { SessionUser, UserRole } from "./token";
 
-/** Current user from the request cookie — server components & route handlers. */
+/** Current user from the request cookie, server components & route handlers. */
 export async function getSessionUser(): Promise<SessionUser | null> {
   const store = await cookies();
   const token = store.get(SESSION_COOKIE)?.value;

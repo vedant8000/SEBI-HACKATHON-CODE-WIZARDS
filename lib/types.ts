@@ -189,7 +189,7 @@ export interface DraftSection {
   missingData: string[];
   comments: ReviewComment[];
   updatedAt: string;
-  /** Which engine produced the text — AI when available, else the deterministic
+  /** Which engine produced the text, AI when available, else the deterministic
    *  rule-based generator (fallback when no key / rate-limited). */
   generatedBy?: "ai" | "rule-based";
 }
@@ -207,9 +207,9 @@ export interface AuditLogEntry {
 /**
  * One entry in a company's tamper-evident export ledger. Each machine-readable
  * filing pack that is exported appends an entry whose `chainHash` binds its
- * `contentHash` to the previous entry's `chainHash` — so altering, reordering
+ * `contentHash` to the previous entry's `chainHash`, so altering, reordering
  * or deleting any past export breaks every subsequent hash. Proves integrity
- * and sequence of the export history (not signer identity — that needs signing).
+ * and sequence of the export history (not signer identity, that needs signing).
  */
 export interface ExportLedgerEntry {
   id: string;
@@ -306,7 +306,7 @@ export interface ComplianceObligation {
 
 /**
  * One earnings-quality / internal-consistency signal behind the Disclosure
- * Integrity Score. Derived from the promoter's OWN reported figures — never an
+ * Integrity Score. Derived from the promoter's OWN reported figures, never an
  * accusation, only a heads-up on what a reviewer will likely probe.
  */
 export interface IntegritySignal {
@@ -323,7 +323,7 @@ export interface IntegritySignal {
 /**
  * The Disclosure Integrity Score: a 0-100 read on how well the reported numbers
  * hang together, aggregated from the individual signals. Explicitly NOT fraud
- * detection — a pre-filing readiness indicator.
+ * detection, a pre-filing readiness indicator.
  */
 export interface IntegrityScore {
   score: number;
@@ -344,7 +344,7 @@ export interface AnalysisResult {
   observations: ExchangeObservation[];
   complianceObligations: ComplianceObligation[];
   /** Earnings-quality / internal-consistency read (optional: absent on analyses
-   *  produced before this engine existed — callers should guard). */
+   *  produced before this engine existed, callers should guard). */
   integrity?: IntegrityScore;
   scores: {
     overall: number;

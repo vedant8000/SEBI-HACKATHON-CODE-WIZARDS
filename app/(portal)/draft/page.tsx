@@ -15,7 +15,7 @@ export default async function DraftPage() {
     return (
       <>
         <PageHeader title="Draft Offer Document" />
-        <EmptyState title="No company yet" message="Complete Company Setup and upload documents — then generate a blueprint-based, source-linked draft here." />
+        <EmptyState title="No company yet" message="Complete Company Setup and upload documents, then generate a blueprint-based, source-linked draft here." />
       </>
     );
   }
@@ -40,11 +40,11 @@ export default async function DraftPage() {
     <>
       <PageHeader
         title="Draft Offer Document"
-        subtitle={`The complete SME offer-document blueprint (${coverage.length} sections), generated only from your extracted facts and evidence — AI drafts the company-specific sections, the rule engine composes the standard ones (${generatable} sections currently have enough data). Missing information is omitted or flagged — never invented. Every section requires authorised intermediary review.`}
+        subtitle={`The complete SME offer-document blueprint (${coverage.length} sections), generated only from your extracted facts and evidence, AI drafts the company-specific sections, the rule engine composes the standard ones (${generatable} sections currently have enough data). Missing information is omitted or flagged rather than assumed. Every section requires authorised intermediary review.`}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <a href="/api/export/draft" target="_blank" className="px-3 py-1.5 text-xs font-medium bg-slate-800 text-white rounded-lg hover:bg-slate-700">Export Draft Offer Document</a>
-            <a href="/api/export/filing-pack" target="_blank" className="px-3 py-1.5 text-xs font-medium border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50" title="Structured, source-linked JSON disclosure data model with a tamper-evident hash-chain — for the merchant banker's systems and supervisory use.">Export Machine-Readable Pack (JSON)</a>
+            <a href="/api/export/filing-pack" target="_blank" className="px-3 py-1.5 text-xs font-medium border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50" title="Structured, source-linked JSON disclosure data model with a tamper-evident hash-chain, for the merchant banker's systems and supervisory use.">Export Machine-Readable Pack (JSON)</a>
             <a href="/api/export/verify-ledger" target="_blank" className="px-3 py-1.5 text-xs font-medium border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50" title="Recompute and verify the tamper-evident hash-chain over this company's export history.">Verify Export Ledger</a>
           </div>
         }
@@ -54,7 +54,7 @@ export default async function DraftPage() {
       {!aiAvailable() && (
         <Card className="p-4 mb-5 border-sky-300 bg-sky-50">
           <p className="text-sm text-sky-800">
-            No AI provider is configured, so the draft is composed by the built-in <strong>rule-based generator</strong> — the
+            No AI provider is configured, so the draft is composed by the built-in <strong>rule-based generator</strong>, the
             same blueprint sections, tables and source-linking, built deterministically from your extracted facts. Configure an
             AI key (GEMINI/ANTHROPIC/OPENAI) for richer prose; the rule-based draft is always available as a fallback, including
             when AI keys are rate-limited.

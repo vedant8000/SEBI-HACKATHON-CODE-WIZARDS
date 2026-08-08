@@ -1,7 +1,7 @@
 import type { AnalysisResult, Company, DocumentChunk, DraftSection, ExtractedFact } from "../types";
 
 /**
- * AI provider layer — real API-backed.
+ * AI provider layer, real API-backed.
  *
  * AI_PROVIDER = gemini | anthropic | openai   (keys via env)
  *
@@ -9,7 +9,7 @@ import type { AnalysisResult, Company, DocumentChunk, DraftSection, ExtractedFac
  *  - The LLM classifies documents, extracts structured facts from chunks and
  *    drafts prospectus language from those facts.
  *  - The deterministic rule engine (lib/engine) decides scores, gaps,
- *    warnings and red flags from extracted facts — never the LLM.
+ *    warnings and red flags from extracted facts, never the LLM.
  *
  * If no API key is configured, extraction falls back to pattern-based only,
  * AI generation is DISABLED with a clear setup message, and the app never
@@ -33,7 +33,7 @@ export function activeProvider(): AiProviderName {
 export const aiAvailable = () => activeProvider() !== "none";
 
 export const AI_SETUP_MESSAGE =
-  "AI provider not configured. Set AI_PROVIDER and the matching API key (GEMINI_API_KEY / ANTHROPIC_API_KEY / OPENAI_API_KEY) in .env.local, then restart. Pattern-based extraction still runs, but AI classification, fact extraction and draft generation are disabled — the app will not fabricate AI output.";
+  "AI provider not configured. Set AI_PROVIDER and the matching API key (GEMINI_API_KEY / ANTHROPIC_API_KEY / OPENAI_API_KEY) in .env.local, then restart. Pattern-based extraction still runs, but AI classification, fact extraction and draft generation are disabled, the app will not fabricate AI output.";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -61,7 +61,7 @@ let geminiKeyCursor = 0;
  * Circuit breaker: when every configured key is rate-limited (e.g. daily
  * free-tier quota exhausted), AI calls short-circuit for a cooldown window
  * instead of stalling uploads/pages with long backoffs. The app degrades to
- * pattern extraction and deterministic rules — never hangs.
+ * pattern extraction and deterministic rules, never hangs.
  */
 let aiCooldownUntil = 0;
 export const aiCoolingDown = () => Date.now() < aiCooldownUntil;
@@ -102,7 +102,7 @@ export async function callAI(prompt: string, opts: { json?: boolean; maxTokens?:
             console.warn(`[ai] gemini ${res.status} on key #${(geminiKeyCursor - 1) % keys.length + 1}, rotating to next key`);
             continue; // try next key immediately
           }
-          if (attempt >= maxAttempts - 1) break; // exhausted — trip the breaker below
+          if (attempt >= maxAttempts - 1) break; // exhausted, trip the breaker below
           console.warn(`[ai] gemini ${res.status} on all ${keys.length} key(s), backing off ${backoff}ms`);
           await sleep(backoff); continue;
         }
@@ -152,7 +152,7 @@ export async function callAI(prompt: string, opts: { json?: boolean; maxTokens?:
   }
   if (provider === "gemini" && sawRateLimit) {
     aiCooldownUntil = Date.now() + 120_000;
-    console.warn("[ai] all gemini keys rate-limited — pausing AI calls for 120s (pattern extraction & rule engine continue)");
+    console.warn("[ai] all gemini keys rate-limited, pausing AI calls for 120s (pattern extraction & rule engine continue)");
   }
   return null;
 }
@@ -262,11 +262,11 @@ ${input.gapsContext || "(none)"}
 
 STRICT RULES:
 - Use ONLY the extracted facts and profile provided. Do not invent names, numbers, dates, approvals, litigation, issue terms, financial values or legal conclusions.
-- Write a COMPLETE, polished, flowing section from the data that IS available. Do NOT enumerate, flag or apologise for missing data inside the text — simply omit what is unavailable (missing items are tracked separately by the platform). No bracketed placeholders.
-- Present year-wise financial figures and multi-item lists as markdown tables (| Column | ... |) — offer documents are table-heavy.
+- Write a COMPLETE, polished, flowing section from the data that IS available. Do NOT enumerate, flag or apologise for missing data inside the text, simply omit what is unavailable (missing items are tracked separately by the platform). No bracketed placeholders.
+- Present year-wise financial figures and multi-item lists as markdown tables (| Column | ... |), offer documents are table-heavy.
 - Use **bold** sparingly for sub-headings within the section. No top-level heading (the platform adds the section title).
 - Formal Indian prospectus-style language. 180-500 words.
-- This is an AI-assisted draft, not a regulatory filing — do not claim compliance or approval.
+- This is an AI-assisted draft, not a regulatory filing, do not claim compliance or approval.
 
 Write the section text now:`,
     { maxTokens: 1600 }
@@ -295,9 +295,9 @@ export async function answerPromoterQuestion(
     }
     if (/fix|first|priorit/.test(q)) {
       const ordered = gaps.filter((g) => g.severity === "Critical" || g.severity === "High").slice(0, 5);
-      return ordered.length ? `Fix in this order:\n${ordered.map((g, i) => `${i + 1}. [${g.severity}] ${g.title} — ${g.suggestedFix}`).join("\n")}` : `No open critical/high gaps.`;
+      return ordered.length ? `Fix in this order:\n${ordered.map((g, i) => `${i + 1}. [${g.severity}] ${g.title}, ${g.suggestedFix}`).join("\n")}` : `No open critical/high gaps.`;
     }
-    return `AI Q&A requires an API key (${AI_SETUP_MESSAGE}) — but I can still answer "what is missing?" and "what should I fix first?" from the rule engine.`;
+    return `AI Q&A requires an API key (${AI_SETUP_MESSAGE}), but I can still answer "what is missing?" and "what should I fix first?" from the rule engine.`;
   }
 
   const factsCtx = facts.filter((f) => f.status !== "REJECTED").slice(0, 80)
@@ -306,9 +306,18 @@ export async function answerPromoterQuestion(
   const draftCtx = draft.slice(0, 30).map((d) => `${d.sectionName}: ${d.status}, confidence ${d.confidence}%`).join("\n");
 
   const answer = await callAI(
-    `You are SIIM's assistant for an Indian SME promoter preparing an IPO draft. Answer simply and practically (use simple Hindi/Hinglish if the user asks in Hindi). Answer ONLY from the context below. If the answer is not in the context, reply exactly: "I could not find this information in uploaded documents. Please upload supporting evidence or enter it manually." Never state definitive regulatory conclusions (approved / compliant / eligible) as fact.
+    `You are SIIM Assistant, a knowledgeable and friendly guide for an Indian SME promoter preparing an IPO on the SME platform (NSE Emerge / BSE SME). You help with the SME IPO journey, SEBI ICDR requirements, the documents and disclosures needed, how to read this company's readiness, gaps and risks, and how to use the SIIM app.
 
-FORMAT RULES (strict): Write short, polished conversational sentences in plain paragraphs, like a helpful advisor speaking — not a report. Never use markdown symbols: no asterisks, no dashes as bullets, no # headings, no tables, no "**bold**". When you need a list, write short numbered lines ("1. …", "2. …"). Keep the whole answer under about 150 words. Do NOT append disclaimers, notes, or "consult your merchant banker / legal counsel" reminders — the app already displays that permanently next to this chat. Mention professional review only if the user's question is specifically about approval, filing or sign-off. End on the substance, not a caveat.
+LANGUAGE (very important): Match the user's language AND script exactly.
+- English question -> reply in English.
+- If the user asks you to answer in Hindi (e.g. "answer in Hindi", "reply in Hindi", "हिंदी में बताओ"), OR writes their question in Hindi using Devanagari script (हिंदी) -> reply in proper Hindi written in DEVANAGARI script. Do NOT romanise it. For example, write "आपके ड्राफ्ट में कुछ गंभीर कमियाँ हैं", never "aapke draft mein kuch gambhir kamiyan hain".
+- ONLY use Romanised Hinglish (Hindi in Latin/Roman letters, e.g. "iska kya kaam hai", "IPO ke liye kya documents chahiye") when the user THEMSELVES typed their message in that Romanised Hinglish style, then mirror the same Roman style back.
+- If the user names any other language, reply in that language in its native script.
+Key rule: "Hindi" always means Devanagari. Never reply in Romanised Hindi when the user asked for "Hindi" or wrote in Devanagari.
+
+SCOPE: Answer any question connected to this promoter, their company, the SME IPO process, SEBI / ICDR rules, offer-document disclosures, or using SIIM, drawing on BOTH the company context below AND your own general knowledge of Indian SME IPOs. Answer general IPO or SEBI questions helpfully from your knowledge even when the answer is not in the context; be willing to interpret loosely-worded or indirect questions rather than refusing. Use the company context for anything specific to THIS company, and do not invent this company's own figures, if a specific company data point is genuinely unavailable, say it is not yet in the uploaded documents and suggest uploading or entering it. Only if a question is clearly unrelated to IPOs, this company, SEBI or SIIM (for example a cooking recipe, general trivia, entertainment or coding help) should you politely decline in one short line and steer the user back to their IPO preparation. Never state definitive regulatory conclusions (approved / compliant / eligible / guaranteed) as fact.
+
+FORMAT RULES (strict): Write short, polished conversational sentences in plain paragraphs, like a helpful advisor speaking, not a report. Never use markdown symbols: no asterisks, no dashes as bullets, no # headings, no tables, no "**bold**". When you need a list, write short numbered lines ("1. …", "2. …"). Keep the whole answer under about 150 words. Do NOT append disclaimers, notes, or "consult your merchant banker / legal counsel" reminders, the app already displays that permanently next to this chat. Mention professional review only if the user's question is specifically about approval, filing or sign-off. End on the substance, not a caveat.
 
 COMPANY: ${company.name} (${company.industry}); readiness ${analysis?.scores.overall ?? "n/a"}/100; RPT risk ${analysis?.scores.rptScore ?? "n/a"}/100.
 EXTRACTED FACTS:\n${factsCtx || "(none)"}

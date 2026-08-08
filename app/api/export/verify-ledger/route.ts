@@ -7,7 +7,7 @@ import { verifyLedger } from "@/lib/utils/hash-chain";
  * Verify a company's tamper-evident export ledger. Recomputes every entry's
  * chainHash from its stored fields and checks the linkage (each entry chains to
  * the previous, sequence increments by one). Anyone holding the exported pack's
- * `integrity.ledger.chain` can run the same check offline — this endpoint is the
+ * `integrity.ledger.chain` can run the same check offline, this endpoint is the
  * in-app equivalent for the promoter, merchant banker and supervisor.
  */
 export async function GET() {
@@ -37,8 +37,8 @@ export async function GET() {
       chainHash: e.chainHash,
     })),
     note:
-      "Proves the export history is intact and correctly sequenced (no alteration, reordering or deletion). It does not prove signer identity — that requires cryptographic signing.",
+      "Proves the export history is intact and correctly sequenced (no alteration, reordering or deletion). It does not prove signer identity, that requires cryptographic signing.",
     disclaimer:
-      "SIIM preparation artefact — not a regulatory submission or a legal certificate of authenticity.",
+      "SIIM preparation artefact, not a regulatory submission or a legal certificate of authenticity.",
   });
 }

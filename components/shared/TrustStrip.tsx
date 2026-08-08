@@ -1,11 +1,11 @@
 import { ShieldCheck, FileSearch, UserCheck, History, Lock } from "lucide-react";
 
 /**
- * A compact trust bar surfacing SIIM's safeguards — the guarantees a regulator
+ * A compact trust bar surfacing SIIM's safeguards, the guarantees a regulator
  * and a first-time promoter both care about. Presentational only.
  */
 const ITEMS = [
-  { icon: FileSearch, title: "Zero fabrication", body: "Every drafted line traces to an extracted fact — missing data is omitted, never invented." },
+  { icon: FileSearch, title: "Zero fabrication", body: "Every drafted line traces to an extracted fact, and missing data is left out rather than filled in." },
   { icon: ShieldCheck, title: "Evidence-linked", body: "Facts carry file + page + confidence provenance you can open and verify." },
   { icon: UserCheck, title: "Human-in-the-loop", body: "The promoter drafts; the SEBI-registered merchant banker reviews and certifies." },
   { icon: History, title: "Tamper-evident trail", body: "Every change is logged; exports carry a SHA-256 content hash." },
@@ -20,7 +20,7 @@ export default function TrustStrip({ className = "" }: { className?: string }) {
           <ShieldCheck size={15} />
         </span>
         <h3 className="text-sm font-semibold text-[#1e3a5f]">Built for trust &amp; supervision</h3>
-        <span className="ml-auto text-[11px] text-slate-400">Preparation aid — not a regulatory filing</span>
+        <span className="ml-auto text-[11px] text-slate-400">Preparation aid, not a regulatory filing</span>
       </div>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {ITEMS.map((it) => (

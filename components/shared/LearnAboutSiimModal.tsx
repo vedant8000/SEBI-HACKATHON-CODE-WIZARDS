@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -49,7 +49,7 @@ const COPY = {
       ["Run intelligence", "Find gaps, conflicts and likely reviewer questions."],
       ["Prepare the draft", "Generate traceable sections for merchant banker review."],
     ],
-    boundaryTitle: "Preparation aid—not regulatory approval",
+    boundaryTitle: "Preparation aid, not regulatory approval",
     boundaryBody: "SIIM does not approve an IPO or replace a SEBI-registered merchant banker, legal counsel or auditor. Every score and draft requires professional verification.",
   },
   hi: {
@@ -79,7 +79,7 @@ const COPY = {
       ["इंटेलिजेंस चलाएँ", "कमियाँ, विरोधाभास और संभावित समीक्षक प्रश्न खोजें।"],
       ["ड्राफ्ट तैयार करें", "मर्चेंट बैंकर समीक्षा के लिए स्रोत-समर्थित अनुभाग बनाएँ।"],
     ],
-    boundaryTitle: "तैयारी सहायक—नियामक स्वीकृति नहीं",
+    boundaryTitle: "तैयारी सहायक, नियामक स्वीकृति नहीं",
     boundaryBody: "SIIM किसी IPO को स्वीकृति नहीं देता और SEBI-पंजीकृत मर्चेंट बैंकर, कानूनी सलाहकार या ऑडिटर का स्थान नहीं लेता। हर स्कोर और ड्राफ्ट का पेशेवर सत्यापन आवश्यक है।",
   },
 } satisfies Record<ModalLang, {
@@ -121,7 +121,8 @@ export default function LearnAboutSiimModal({
   onClose: () => void;
   lang?: ModalLang;
 }) {
-  const t = COPY[lang];
+  const [selectedLang, setSelectedLang] = useState<ModalLang>(lang);
+  const t = COPY[selectedLang];
 
   useEffect(() => {
     if (!open) return;
@@ -160,6 +161,21 @@ export default function LearnAboutSiimModal({
               <h2 id="learn-siim-title" className="font-serif text-xl font-semibold">{t.title}</h2>
               <p className="mt-0.5 text-xs text-cyan-100">{t.subtitle}</p>
             </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={selectedLang === "hi"}
+              aria-label="Switch popup language"
+              onClick={() => setSelectedLang((current) => current === "en" ? "hi" : "en")}
+              className="relative grid shrink-0 grid-cols-2 items-center rounded-full border border-white/20 bg-white/10 p-1 text-[10px] font-semibold shadow-inner"
+            >
+              <span
+                aria-hidden
+                className={`absolute bottom-1 left-1 top-1 w-[calc(50%-4px)] rounded-full bg-white shadow-sm transition-transform duration-300 ${selectedLang === "hi" ? "translate-x-full" : ""}`}
+              />
+              <span className={`relative z-10 px-2.5 py-1 transition-colors ${selectedLang === "en" ? "text-[#174376]" : "text-blue-100"}`}>English</span>
+              <span className={`relative z-10 px-2.5 py-1 transition-colors ${selectedLang === "hi" ? "text-[#174376]" : "text-blue-100"}`}>हिंदी</span>
+            </button>
             <button type="button" onClick={onClose} aria-label="Close" className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/15 text-white transition hover:bg-white/25"><X size={18} /></button>
           </div>
         </header>

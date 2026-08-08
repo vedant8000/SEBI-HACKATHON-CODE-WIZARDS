@@ -67,7 +67,7 @@ export default function AssistantChat({
         body: JSON.stringify({ question }),
       });
       const data = await res.json();
-      setChat((c) => [...c, { role: "assistant", text: data.answer ?? "No response — please try again.", at: now() }]);
+      setChat((c) => [...c, { role: "assistant", text: data.answer ?? "No response, please try again.", at: now() }]);
     } catch {
       setChat((c) => [...c, { role: "assistant", text: "I could not respond (network or rate limit). Please try again in a moment.", at: now() }]);
     } finally {
@@ -98,7 +98,7 @@ export default function AssistantChat({
                   Namaste! Ask me anything about your IPO preparation.
                 </h2>
                 <p className="text-[13px] text-slate-500 mt-2 max-w-md">
-                  I answer only from your uploaded documents, extracted facts, gaps and draft — if I can&apos;t find it there, I&apos;ll say so.
+                  I answer only from your uploaded documents, extracted facts, gaps and draft, if I can&apos;t find it there, I&apos;ll say so.
                 </p>
                 <div className="flex flex-wrap justify-center gap-2 mt-6 max-w-lg">
                   {STARTER_PROMPTS.map((s) => (
@@ -143,7 +143,7 @@ export default function AssistantChat({
 
           <div className="px-5 pb-5 pt-3">
             <p className="text-[11px] text-slate-500 text-center mb-2">
-              Ask in English or Hindi. Answers come only from your uploaded documents, facts, gaps and draft — final judgement rests with your merchant banker.
+              Ask in English or Hindi. Answers come only from your uploaded documents, facts, gaps and draft, final judgement rests with your merchant banker.
             </p>
             <div className="flex items-center gap-2 bg-white/80 backdrop-blur-md border border-white/80 rounded-full shadow-md shadow-blue-900/[0.06] pl-5 pr-2 py-2 focus-within:ring-2 focus-within:ring-blue-400/50">
               <input
@@ -187,7 +187,7 @@ export default function AssistantChat({
                   return (
                     <button
                       key={g.title}
-                      onClick={() => ask(`Tell me more about "${g.title}" — why it matters and how I should fix it.`)}
+                      onClick={() => ask(`Tell me more about "${g.title}", why it matters and how I should fix it.`)}
                       disabled={asking}
                       className={`w-full text-left text-[12px] rounded-lg px-2.5 py-2 border transition-colors disabled:opacity-50 ${
                         critical
@@ -205,7 +205,7 @@ export default function AssistantChat({
           )}
 
           <p className="text-[11px] text-slate-500 leading-relaxed px-1">
-            The assistant cannot approve, clear or file anything. It prepares and explains — your merchant banker and
+            The assistant cannot approve, clear or file anything. It prepares and explains, your merchant banker and
             legal counsel decide.
           </p>
         </div>
