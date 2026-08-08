@@ -160,6 +160,21 @@ export async function callAI(prompt: string, opts: { json?: boolean; maxTokens?:
 /** Pace sequential AI calls to stay under free-tier per-minute limits. */
 export const paceAI = () => sleep(1500);
 
+/**
+ * How many extraction/classification calls to run in parallel. Scales with the
+ * number of Gemini keys in rotation — each in-flight call lands on a different
+ * key — so adding keys directly buys throughput. A single Gemini key still
+ * overlaps two calls to hide network latency. Overload is absorbed by callAI's
+ * own 429 key-rotation and backoff, so we no longer pad every call with a fixed
+ * sleep. Anthropic/OpenAI use one high-limit key, so a modest fixed width.
+ */
+export function aiConcurrency(): number {
+  const provider = activeProvider();
+  if (provider === "none") return 1;
+  if (provider === "gemini") return Math.min(8, Math.max(2, geminiKeys().length * 2));
+  return 4;
+}
+
 function parseJson<T>(raw: string | null): T | null {
   if (!raw) return null;
   try {

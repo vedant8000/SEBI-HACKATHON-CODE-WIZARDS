@@ -1,6 +1,7 @@
 import type { DocumentChunk, DocumentRecord, ExtractedFact, FactConflict } from "../types";
 import { uid } from "../store";
-import { extractFactsFromChunk, paceAI, type AiFact } from "../ai/provider";
+import { aiConcurrency, extractFactsFromChunk, type AiFact } from "../ai/provider";
+import { mapPool } from "../utils/pool";
 
 /**
  * Fact layer: every value the platform uses carries provenance
@@ -123,50 +124,67 @@ export function factsFromFields(doc: DocumentRecord, pages: string[]): Extracted
   return out;
 }
 
-// ── AI facts (chunk-wise) ───────────────────────────────────────────────────
+// ── AI facts (chunk-wise, parallel) ─────────────────────────────────────────
 
-const MAX_AI_CHUNKS_PER_DOC = 12;
+export const MAX_AI_CHUNKS_PER_DOC = 12;
 
-export async function aiFactsForDocument(
-  doc: DocumentRecord, chunks: DocumentChunk[]
-): Promise<ExtractedFact[]> {
+/** Map one raw AiFact from a chunk into a fully provenanced ExtractedFact. */
+function makeAiFact(doc: DocumentRecord, chunk: DocumentChunk, f: AiFact, now: string): ExtractedFact {
+  return {
+    id: uid("fact"),
+    companyId: doc.companyId,
+    documentId: doc.id,
+    chunkId: chunk.id,
+    factKey: f.factKey,
+    factLabel: FACT_META[f.factKey]?.label ?? humanizeLabel(f.factLabel || f.factKey),
+    factValue: f.factValue,
+    normalizedValue: f.normalizedValue || f.factValue,
+    financialYear: f.financialYear ?? null,
+    unit: f.unit ?? null,
+    confidence: Math.max(0, Math.min(100, Math.round(f.confidence ?? 60))),
+    sourceFileName: doc.fileName,
+    pageStart: chunk.pageStart,
+    pageEnd: chunk.pageEnd,
+    linkedProspectusSections: factSections(f.factKey),
+    status: (f.confidence ?? 60) >= 70 ? "ACCEPTED" : "NEEDS_REVIEW",
+    extractionMethod: "ai",
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+/** One chunk paired with its document, for global-pool extraction. */
+export interface ChunkJob { doc: DocumentRecord; chunk: DocumentChunk; }
+
+/**
+ * Extract AI facts for many chunks — potentially spanning many documents —
+ * through ONE bounded concurrency pool. Every configured API key stays busy and
+ * total in-flight requests are capped a single time, so wall-clock time is the
+ * slowest wave rather than the sum of every call. No fixed pacing: callAI
+ * already rotates keys and backs off on 429.
+ */
+export async function aiFactsForChunkJobs(jobs: ChunkJob[]): Promise<ExtractedFact[]> {
   const now = new Date().toISOString();
-  const out: ExtractedFact[] = [];
-  const batch = chunks.slice(0, MAX_AI_CHUNKS_PER_DOC);
-  for (const chunk of batch) {
+  const perJob = await mapPool(jobs, aiConcurrency(), async ({ doc, chunk }) => {
     try {
       const aiFacts: AiFact[] = await extractFactsFromChunk(chunk, doc.fileName, doc.category);
       chunk.processingStatus = "processed";
-      for (const f of aiFacts) {
-        out.push({
-          id: uid("fact"),
-          companyId: doc.companyId,
-          documentId: doc.id,
-          chunkId: chunk.id,
-          factKey: f.factKey,
-          factLabel: FACT_META[f.factKey]?.label ?? humanizeLabel(f.factLabel || f.factKey),
-          factValue: f.factValue,
-          normalizedValue: f.normalizedValue || f.factValue,
-          financialYear: f.financialYear ?? null,
-          unit: f.unit ?? null,
-          confidence: Math.max(0, Math.min(100, Math.round(f.confidence ?? 60))),
-          sourceFileName: doc.fileName,
-          pageStart: chunk.pageStart,
-          pageEnd: chunk.pageEnd,
-          linkedProspectusSections: factSections(f.factKey),
-          status: (f.confidence ?? 60) >= 70 ? "ACCEPTED" : "NEEDS_REVIEW",
-          extractionMethod: "ai",
-          createdAt: now,
-          updatedAt: now,
-        });
-      }
+      return aiFacts.map((f) => makeAiFact(doc, chunk, f, now));
     } catch {
       chunk.processingStatus = "failed";
+      return [] as ExtractedFact[];
     }
-    await paceAI(); // stay under free-tier per-minute limits
-  }
+  });
+  return perJob.flat();
+}
+
+/** Single-document convenience wrapper over the global chunk pool. */
+export async function aiFactsForDocument(
+  doc: DocumentRecord, chunks: DocumentChunk[]
+): Promise<ExtractedFact[]> {
+  const batch = chunks.slice(0, MAX_AI_CHUNKS_PER_DOC);
   for (const c of chunks.slice(MAX_AI_CHUNKS_PER_DOC)) c.processingStatus = "skipped";
-  return out;
+  return aiFactsForChunkJobs(batch.map((chunk) => ({ doc, chunk })));
 }
 
 // ── Merge & conflicts ───────────────────────────────────────────────────────

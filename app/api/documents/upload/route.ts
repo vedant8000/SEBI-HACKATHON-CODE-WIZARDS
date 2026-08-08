@@ -12,24 +12,35 @@ import {
   initialStatus, keyNumberBadges, summarize,
 } from "@/lib/document-processing/extract";
 import {
-  aiFactsForDocument, buildChunks, detectConflicts, factsFromFields,
-  mergeFacts, syncFieldsFromFacts,
+  aiFactsForChunkJobs, buildChunks, detectConflicts, factsFromFields,
+  mergeFacts, syncFieldsFromFacts, MAX_AI_CHUNKS_PER_DOC, type ChunkJob,
 } from "@/lib/document-processing/facts";
 import { aiAvailable, aiCoolingDown, classifyDocumentAI } from "@/lib/ai/provider";
 import { runAnalysis } from "@/lib/engine/analysis";
-import type { DocumentRecord } from "@/lib/types";
+import type { DocumentChunk, DocumentRecord, ExtractedFact } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
 const MAX_FILE_MB = 40;
 
+/** A document prepared in phase 1, awaiting global AI extraction in phase 2. */
+interface Prepared {
+  doc: DocumentRecord;
+  chunks: DocumentChunk[];
+  patternFacts: ExtractedFact[];
+  pageCount: number;
+  aiEligible: boolean; // AI configured AND the file had a readable text layer
+}
+
 /**
  * Upload pipeline (upload-driven, no seeded output):
- *  1. store file  2. extract text page-wise  3. build chunks
- *  4. classify (AI when configured, keyword fallback)
- *  5. pattern facts + AI chunk-wise facts, merged with provenance
- *  6. conflict detection  7. deterministic rule engine re-run
+ *  Phase 1 (sequential, CPU/IO): store file, read text, classify, pattern facts,
+ *          build chunks. Fast, deterministic, order-sensitive (dedupe/CIN).
+ *  Phase 2 (single global concurrency pool): AI fact extraction across ALL
+ *          chunks of ALL documents at once, so every API key stays saturated and
+ *          latency is the slowest wave, not the sum of every call.
+ *  Phase 3: merge pattern + AI facts, conflict detection, deterministic rules.
  */
 export async function POST(req: NextRequest) {
   const db = await loadDb();
@@ -47,8 +58,9 @@ export async function POST(req: NextRequest) {
 
   const created: DocumentRecord[] = [];
   const warnings: string[] = [];
+  const prepared: Prepared[] = [];
 
-  // The company's established identity, profile CIN, else the CIN most of its
+  // The company's established identity: profile CIN, else the CIN most of its
   // existing documents already carry. A new upload with a DIFFERENT CIN almost
   // certainly belongs to another company and gets flagged (not silently mixed).
   const establishedCin = (() => {
@@ -62,6 +74,7 @@ export async function POST(req: NextRequest) {
     return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
   })();
 
+  // ── Phase 1: prep every file (no AI extraction yet) ──────────────────────
   for (const file of files) {
     if (file.size > MAX_FILE_MB * 1024 * 1024) {
       warnings.push(`${file.name}: larger than ${MAX_FILE_MB} MB, please split the file and re-upload.`);
@@ -144,23 +157,46 @@ export async function POST(req: NextRequest) {
     db.documents.push(doc);
     created.push(doc);
 
-    // chunks + facts
     const chunks = buildChunks(doc, pages);
-    let facts = factsFromFields(doc, pages);
-    if (aiAvailable() && text.trim().length >= 100) {
-      const aiFacts = await aiFactsForDocument(doc, chunks);
-      facts = mergeFacts([...facts, ...aiFacts]);
-    } else {
-      for (const c of chunks) c.processingStatus = aiAvailable() ? "skipped" : "pending";
-      if (!aiAvailable()) warnings.push("AI provider not configured, pattern extraction only. Configure GEMINI_API_KEY for full fact extraction.");
-    }
-    db.chunks.push(...chunks);
-    db.facts.push(...facts);
-    syncFieldsFromFacts(doc, facts);
-    doc.keyNumbers = keyNumberBadges(doc.fields);
+    prepared.push({
+      doc,
+      chunks,
+      patternFacts: factsFromFields(doc, pages),
+      pageCount: pages.length,
+      aiEligible: aiAvailable() && text.trim().length >= 100,
+    });
+  }
 
-    logAudit(db, company.id, uploadedBy, `Uploaded: ${file.name}`, "",
-      `${category} · ${pages.length} page(s) · ${chunks.length} chunk(s) · ${facts.length} fact(s)`);
+  // ── Phase 2: AI fact extraction across ALL chunks in one bounded pool ─────
+  const jobs: ChunkJob[] = [];
+  for (const p of prepared) {
+    if (!p.aiEligible) {
+      // no text layer (or no AI): nothing to send to the model
+      for (const c of p.chunks) c.processingStatus = aiAvailable() ? "skipped" : "pending";
+      continue;
+    }
+    for (const c of p.chunks.slice(MAX_AI_CHUNKS_PER_DOC)) c.processingStatus = "skipped";
+    for (const chunk of p.chunks.slice(0, MAX_AI_CHUNKS_PER_DOC)) jobs.push({ doc: p.doc, chunk });
+  }
+  const aiFacts = jobs.length ? await aiFactsForChunkJobs(jobs) : [];
+  if (!aiAvailable())
+    warnings.push("AI provider not configured, pattern extraction only. Configure GEMINI_API_KEY for full fact extraction.");
+
+  // ── Phase 3: merge pattern + AI facts per document, persist ──────────────
+  const aiByDoc = new Map<string, ExtractedFact[]>();
+  for (const f of aiFacts) {
+    const list = aiByDoc.get(f.documentId) ?? [];
+    list.push(f);
+    aiByDoc.set(f.documentId, list);
+  }
+  for (const p of prepared) {
+    const facts = mergeFacts([...p.patternFacts, ...(aiByDoc.get(p.doc.id) ?? [])]);
+    db.chunks.push(...p.chunks);
+    db.facts.push(...facts);
+    syncFieldsFromFacts(p.doc, facts);
+    p.doc.keyNumbers = keyNumberBadges(p.doc.fields);
+    logAudit(db, company.id, uploadedBy, `Uploaded: ${p.doc.fileName}`, "",
+      `${p.doc.category} · ${p.pageCount} page(s) · ${p.chunks.length} chunk(s) · ${facts.length} fact(s)`);
   }
 
   if (aiAvailable() && aiCoolingDown())
