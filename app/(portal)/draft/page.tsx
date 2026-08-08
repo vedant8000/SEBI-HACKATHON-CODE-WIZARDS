@@ -1,6 +1,7 @@
 import { getContext } from "@/lib/server/context";
 import { Card, EmptyState, PageHeader } from "@/components/shared/ui";
 import DraftViewer, { type SectionMeta } from "@/components/draft/DraftViewer";
+import SendToBankerButton from "@/components/draft/SendToBankerButton";
 import DraftQa from "@/components/chat/DraftQa";
 import BankerFlagsCard from "@/components/shared/BankerFlagsCard";
 import TrustStrip from "@/components/shared/TrustStrip";
@@ -36,6 +37,8 @@ export default async function DraftPage() {
   }
 
   const generatable = coverage.filter((c) => c.canGenerate !== "NO").length;
+  const draftGenerated = draft.some((d) => d.status !== "Not Started" && d.generatedText.trim());
+  const alreadySent = draft.some((d) => d.status === "MB Review Pending" || d.status === "Approved");
   return (
     <>
       <PageHeader
@@ -46,6 +49,7 @@ export default async function DraftPage() {
             <a href="/api/export/draft" target="_blank" className="px-3 py-1.5 text-xs font-medium bg-slate-800 text-white rounded-lg hover:bg-slate-700">Export Draft Offer Document</a>
             <a href="/api/export/filing-pack" target="_blank" className="px-3 py-1.5 text-xs font-medium border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50" title="Structured, source-linked JSON disclosure data model with a tamper-evident hash-chain, for the merchant banker's systems and supervisory use.">Export Machine-Readable Pack (JSON)</a>
             <a href="/api/export/verify-ledger" target="_blank" className="px-3 py-1.5 text-xs font-medium border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50" title="Recompute and verify the tamper-evident hash-chain over this company's export history.">Verify Export Ledger</a>
+            <SendToBankerButton canSend={draftGenerated} alreadySent={alreadySent} />
           </div>
         }
       />

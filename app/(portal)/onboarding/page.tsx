@@ -2,13 +2,14 @@ import { getContext } from "@/lib/server/context";
 import { Building2, KeyRound } from "lucide-react";
 import OnboardingForm from "@/components/onboarding/OnboardingForm";
 import PromoterHero, { type HeroGap } from "@/components/onboarding/PromoterHero";
+import PreparationLeverage from "@/components/onboarding/PreparationLeverage";
 
 export const dynamic = "force-dynamic";
 
 const sevOrder = { Critical: 0, High: 1, Medium: 2, Low: 3 } as const;
 
 export default async function OnboardingPage() {
-  const { company, analysis, docs, draft } = await getContext();
+  const { company, analysis, docs, draft, facts, coverage } = await getContext();
 
   const openGaps = (analysis?.gaps ?? []).filter((g) => g.status !== "Resolved");
   const sortedGaps = [...openGaps].sort(
@@ -20,6 +21,15 @@ export default async function OnboardingPage() {
   const topGaps: HeroGap[] = sortedGaps.slice(0, 3).map((g) => ({
     title: g.title, severity: g.severity, section: g.affectedSection, href: "/intelligence",
   }));
+
+  // Preparation-leverage counts — live from analysis, never assumed.
+  const factsLinked = facts.filter((f) => f.status !== "REJECTED").length;
+  const sectionsReady = coverage.filter((c) => c.canGenerate === "YES").length;
+  const authFlags = docs.filter((d) => d.authenticity?.level === "flag").length;
+  const integrityFlags = analysis?.integrity?.signals.filter((s) => s.status === "flag").length ?? 0;
+  const finIssues = (analysis?.financialChecks ?? []).filter((f) => f.severity !== "Low").length;
+  const issuesSurfaced = openGaps.length + integrityFlags + finIssues + authFlags;
+  const checksRun = analysis?.checks.length ?? 0;
 
   const draftStarted = draft.some((d) => d.status !== "Not Started");
   const nextAction =
@@ -44,6 +54,17 @@ export default async function OnboardingPage() {
         topGaps={topGaps}
         nextAction={nextAction}
       />
+      {company && (docs.length > 0 || factsLinked > 0) && (
+        <PreparationLeverage
+          companyName={company.name}
+          documentsIngested={docs.length}
+          factsLinked={factsLinked}
+          sectionsReady={sectionsReady}
+          sectionsTotal={coverage.length}
+          issuesSurfaced={issuesSurfaced}
+          checksRun={checksRun}
+        />
+      )}
       <div className="flex flex-wrap items-center gap-4 mb-6">
         <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-blue-600 to-sky-500 shadow-lg shadow-blue-500/30">
           <Building2 size={24} strokeWidth={1.8} className="text-white" />
