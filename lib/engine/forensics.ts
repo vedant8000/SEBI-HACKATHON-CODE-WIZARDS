@@ -218,6 +218,27 @@ export function computeIntegrityScore(
       "Upload GST returns and objects evidence alongside audited financials.");
   }
 
+  // 8 ── Document authenticity (structural tamper forensics) ─────────────────
+  const authDocs = docs.filter((d) => d.authenticity?.applicable);
+  if (authDocs.length) {
+    const flagged = authDocs.filter((d) => d.authenticity!.level === "flag");
+    const review = authDocs.filter((d) => d.authenticity!.level === "review");
+    const status = flagged.length ? "flag" : review.length ? "watch" : "clean";
+    sig("doc-authenticity", "Document authenticity", 18, status, status === "flag" ? 1 : status === "watch" ? 0.5 : 0,
+      flagged.length
+        ? `${flagged.length} of ${authDocs.length} uploaded PDF(s) show structural signs of post-creation editing (e.g. ${flagged[0].fileName}).`
+        : review.length
+          ? `${review.length} of ${authDocs.length} uploaded PDF(s) warrant an authenticity review (a scan, or metadata modified after creation).`
+          : `All ${authDocs.length} uploaded PDF(s) look like single, unedited originals.`,
+      "Doctored financials or forged supporting documents are the costliest SME-IPO fraud; catching tampering at the source is direct investor protection.",
+      status === "clean" ? "—" : "Obtain the original signed/audited source files and verify the flagged documents before relying on their figures.");
+  } else {
+    sig("doc-authenticity", "Document authenticity", 18, "na", 0,
+      "No PDF documents have been analysed for authenticity yet.",
+      "Doctored or forged supporting documents are a primary SME-IPO fraud vector.",
+      "Upload the source PDFs (audited financials, bank statements) to run structural tamper forensics.");
+  }
+
   // ── Benford leading-digit check (indicative, low weight) ──────────────────
   const benford = benfordCheck(company, objects, docs);
   if (benford.checked && benford.madPct != null) {

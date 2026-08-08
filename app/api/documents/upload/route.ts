@@ -16,6 +16,7 @@ import {
   mergeFacts, syncFieldsFromFacts, MAX_AI_CHUNKS_PER_DOC, type ChunkJob,
 } from "@/lib/document-processing/facts";
 import { aiAvailable, aiCoolingDown, classifyDocumentAI } from "@/lib/ai/provider";
+import { analyzeDocumentAuthenticity } from "@/lib/document-processing/authenticity";
 import { runAnalysis } from "@/lib/engine/analysis";
 import type { DocumentChunk, DocumentRecord, ExtractedFact } from "@/lib/types";
 
@@ -116,6 +117,13 @@ export async function POST(req: NextRequest) {
       warnings.push(`${file.name}: CIN ${docCin} does not match this company (${establishedCin}), flagged as possibly belonging to another company.`);
     }
 
+    // Structural tamper forensics on the raw file bytes.
+    const authenticity = analyzeDocumentAuthenticity(file.name, buf, text, pages.length);
+    if (authenticity.level === "flag") {
+      issues.push("Document authenticity: structural signs of post-creation editing were detected. Verify the original source file before relying on its figures.");
+      warnings.push(`${file.name}: authenticity forensics flagged possible post-creation editing.`);
+    }
+
     const doc: DocumentRecord = {
       id: uid("doc"),
       companyId: company.id,
@@ -135,6 +143,7 @@ export async function POST(req: NextRequest) {
       keyNumbers: keyNumberBadges(fields),
       fields,
       storedPath,
+      authenticity,
     };
 
     // Re-uploading the same file REPLACES the previous version rather than

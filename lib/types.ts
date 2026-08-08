@@ -89,6 +89,29 @@ export interface ExtractedFields {
   [key: string]: unknown;
 }
 
+/** One structural signal from the document-authenticity forensics. */
+export interface AuthenticitySignal {
+  id: string;
+  label: string;
+  level: "info" | "review" | "flag";
+  detail: string;
+}
+
+/**
+ * Document-authenticity forensics: a deterministic, structural tamper check on a
+ * PDF's raw bytes (incremental edits, modified-after-creation, editor tools, no
+ * text layer, digital signature). Probabilistic "signs warranting review", never
+ * a claim that a document is forged.
+ */
+export interface DocumentAuthenticity {
+  applicable: boolean;
+  score: number;            // 0-100 (100 = no structural concerns)
+  level: "clean" | "review" | "flag" | "na";
+  summary: string;
+  signals: AuthenticitySignal[];
+  checkedAt: string;
+}
+
 export interface DocumentRecord {
   id: string;
   companyId: string;
@@ -109,6 +132,8 @@ export interface DocumentRecord {
   fields: ExtractedFields;
   manualOverride?: boolean; // promoter corrected extraction
   storedPath?: string;
+  /** Structural tamper-forensics result (PDF authenticity), computed at upload. */
+  authenticity?: DocumentAuthenticity;
 }
 
 export type CheckStatus = "pass" | "warning" | "fail" | "missing";

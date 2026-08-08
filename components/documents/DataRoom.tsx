@@ -5,6 +5,7 @@ import { useRef, useState } from "react";
 import { ChevronDown, ChevronRight, FileUp, Loader2, Trash2 } from "lucide-react";
 import type { DocumentRecord } from "@/lib/types";
 import { DocStatusBadge, GlassPanel, HeroBackdrop } from "@/components/shared/ui";
+import AuthenticityBadge from "./AuthenticityBadge";
 
 const CHECKLIST: { label: string; why: string }[] = [
   { label: "Audited financial statements (3 years)", why: "Your track record, the core of the offer document" },
@@ -126,6 +127,7 @@ export default function DataRoom({ docs }: { docs: DocumentRecord[] }) {
                   <th className="px-2 py-2.5">Status</th>
                   <th className="px-2 py-2.5">Issues</th>
                   <th className="px-2 py-2.5">Confidence</th>
+                  <th className="px-2 py-2.5">Authenticity</th>
                   <th className="px-2 py-2.5">Updated</th>
                   <th className="px-2 py-2.5"></th>
                 </tr>
@@ -157,6 +159,7 @@ function Row({ d, open, onToggle, onDelete }: { d: DocumentRecord; open: boolean
         <td className="px-2 py-2.5"><DocStatusBadge status={d.status} /></td>
         <td className="px-2 py-2.5 text-slate-600">{d.issuesFound.length || "—"}</td>
         <td className="px-2 py-2.5 text-slate-600">{d.confidence}%</td>
+        <td className="px-2 py-2.5"><AuthenticityBadge a={d.authenticity} /></td>
         <td className="px-2 py-2.5 text-slate-500 text-xs">{d.lastUpdated}</td>
         <td className="px-2 py-2.5">
           <button onClick={(e) => { e.stopPropagation(); onDelete(); }} className="text-slate-300 hover:text-red-500" title="Delete document">
@@ -166,7 +169,7 @@ function Row({ d, open, onToggle, onDelete }: { d: DocumentRecord; open: boolean
       </tr>
       {open && (
         <tr className="border-t border-white/60 bg-white/50">
-          <td colSpan={9} className="px-6 py-4">
+          <td colSpan={10} className="px-6 py-4">
             <DetailPanel d={d} />
           </td>
         </tr>
@@ -217,6 +220,27 @@ function DetailPanel({ d }: { d: DocumentRecord }) {
           <ul className="mt-2 space-y-1">
             {d.issuesFound.map((i) => <li key={i} className="text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 text-xs">⚠ {i}</li>)}
           </ul>
+        )}
+        {d.authenticity && (
+          <div className="mt-3 rounded-lg border border-slate-200 bg-white/70 p-3">
+            <div className="flex items-center gap-2">
+              <AuthenticityBadge a={d.authenticity} />
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Authenticity forensics</span>
+              {d.authenticity.applicable && <span className="ml-auto text-xs font-semibold text-slate-600">{d.authenticity.score}/100</span>}
+            </div>
+            <p className="mt-1.5 text-xs text-slate-600">{d.authenticity.summary}</p>
+            {d.authenticity.signals.length > 0 && (
+              <ul className="mt-2 space-y-1">
+                {d.authenticity.signals.map((sig) => (
+                  <li key={sig.id} className="flex gap-2 text-[11.5px]">
+                    <span className={`mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full ${sig.level === "flag" ? "bg-red-500" : sig.level === "review" ? "bg-amber-500" : "bg-slate-300"}`} />
+                    <span className="text-slate-600"><span className="font-medium text-slate-700">{sig.label}:</span> {sig.detail}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <p className="mt-2 text-[10px] text-slate-400">Structural signals only, not proof of forgery. Verify the original source document before relying on its figures.</p>
+          </div>
         )}
       </div>
       <div>
